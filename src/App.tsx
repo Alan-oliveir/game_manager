@@ -1,51 +1,36 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/tauri";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+    const [status, setStatus] = useState("Aguardando...");
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+    // Ao abrir o app, iniciamos o banco
+    useEffect(() => {
+        invoke("init_db")
+            .then((msg) => setStatus(msg as string))
+            .catch((err) => setStatus("Erro: " + err));
+    }, []);
 
-  return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    const handleSaveGame = async () => {
+        try {
+            // Chama a função 'add_game' definida no Rust
+            await invoke("add_game", {
+                id: crypto.randomUUID(), // Gera ID único no JS
+                name: "God of War",
+            });
+            alert("Jogo salvo no SQLite via Rust!");
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
-  );
+    return (
+        <div className="container">
+            <h1>Game Manager</h1>
+            <p>Status do Banco: {status}</p>
+            <button onClick={handleSaveGame}>Criar Jogo de Teste</button>
+        </div>
+    );
 }
 
 export default App;
