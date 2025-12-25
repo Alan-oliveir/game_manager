@@ -7,7 +7,7 @@ interface HeaderProps {
 }
 
 export default function Header({ onAddGame }: HeaderProps) {
-  const [isDark, setIsDark] = useState(true); // Começa true para bater com seu print dark
+  const [isDark, setIsDark] = useState(true);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -17,9 +17,9 @@ export default function Header({ onAddGame }: HeaderProps) {
   return (
     <header className="h-16 bg-background border-b border-border flex items-center justify-between px-6 gap-4">
       {/* SEARCH BAR
-               max-w-xl: Limita a largura em telas grandes
-               flex-1: Ocupa o espaço disponível, mas respeita o gap
-            */}
+            max-w-xl: Limita a largura em telas grandes
+            flex-1: Ocupa o espaço disponível, mas respeita o gap
+        */}
       <div className="flex-1 max-w-xl">
         <div className="relative group">
           <Search
@@ -39,9 +39,9 @@ export default function Header({ onAddGame }: HeaderProps) {
       {/* ACTIONS AREA */}
       <div className="flex items-center gap-2 md:gap-3 shrink-0">
         {/* BOTÃO ADAPTATIVO
-                    - Telas pequenas: Só ícone (quadrado)
-                    - Telas médias (md): Ícone + Texto (retangular)
-                */}
+              - Telas pequenas: Só ícone (quadrado)
+              - Telas médias (md): Ícone + Texto (retangular)
+          */}
         <Button
           onClick={onAddGame}
           size="lg"
@@ -50,7 +50,7 @@ export default function Header({ onAddGame }: HeaderProps) {
         >
           <Plus size={20} />
           {/* O texto só aparece de 'md' (768px) para cima */}
-          <span className="hidden md:inline">Adicionar Jogo</span>
+          <span className="hidden md:inline">Adicionar</span>
         </Button>
 
         {/* THEME TOGGLE */}
