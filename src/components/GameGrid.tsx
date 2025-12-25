@@ -7,7 +7,7 @@ interface GameGridProps {
   onToggleFavorite: (id: string) => void;
   onGameClick: (game: Game) => void;
   onDeleteGame: (id: string) => void;
-    onEditGame: (game: Game) => void;
+  onEditGame: (game: Game) => void;
 }
 
 export default function GameGrid({

@@ -53,42 +53,44 @@ export default function AddGameModal({
   };
 
   return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>
-              {gameToEdit ? "Editar Jogo" : "Adicionar Novo Jogo"}
-            </DialogTitle>
-          </DialogHeader>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>
+            {gameToEdit ? "Editar Jogo" : "Adicionar Novo Jogo"}
+          </DialogTitle>
+        </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Nome do Jogo</Label>
-              <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: The Witcher 3"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="cover">URL da Capa</Label>
-              <Input
-                  id="cover"
-                  value={coverUrl}
-                  onChange={(e) => setCoverUrl(e.target.value)}
-                  placeholder="https://..."
-              />
-            </div>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="name">Nome do Jogo</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ex: The Witcher 3"
+            />
           </div>
+          <div className="grid gap-2">
+            <Label htmlFor="cover">URL da Capa</Label>
+            <Input
+              id="cover"
+              value={coverUrl}
+              onChange={(e) => setCoverUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+        </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={!name.trim()}>
-              {gameToEdit ? "Salvar Alterações" : "Adicionar Jogo"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave} disabled={!name.trim()}>
+            {gameToEdit ? "Salvar Alterações" : "Adicionar Jogo"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
