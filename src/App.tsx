@@ -5,11 +5,13 @@ import { Game } from "./types";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import GameGrid from "./components/GameGrid";
+import AddGameModal from "./components/AddGameModal";
 
 function App() {
   // Estado dos dados
   const [games, setGames] = useState<Game[]>([]);
   const [activeSection, setActiveSection] = useState("library"); // Controla qual aba está ativa
+  const [isModalOpen, setIsModalOpen] = useState(false); // Estado do Modal de Adicionar Jogo
 
   // Função para recarregar a lista do banco
   const refreshGames = async () => {
@@ -30,19 +32,19 @@ function App() {
 
   // --- Ações do Usuário ---
 
-  const handleAddGame = async () => {
+  const handleAddGame = async (name: string, coverUrl: string) => {
     try {
-      // Aqui futuramente abriremos um Modal
-      // Por enquanto, cria um jogo random para testar
       await invoke("add_game", {
         id: crypto.randomUUID(),
-        name: `Novo Jogo ${Math.floor(Math.random() * 100)}`,
-        genre: "Aventura",
-        platform: "Steam",
+        name: name,
+        genre: "Desconhecido",
+        platform: "Manual",
+        coverUrl: coverUrl || null,
       });
       await refreshGames();
     } catch (e) {
       console.error(e);
+      alert("Erro ao salvar: " + e);
     }
   };
 
@@ -73,7 +75,7 @@ function App() {
       {/* 2. Área Principal */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Header no topo */}
-        <Header onAddGame={handleAddGame} />
+        <Header onAddGame={() => setIsModalOpen(true)} />
 
         {/* Conteúdo Variável */}
         {activeSection === "library" ? (
@@ -89,6 +91,13 @@ function App() {
           </div>
         )}
       </main>
+
+      {/* Modal de Adicionar Jogo */}
+      <AddGameModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleAddGame}
+      />
     </div>
   );
 }

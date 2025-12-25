@@ -40,12 +40,13 @@ fn add_game(
     name: String,
     genre: Option<String>,
     platform: Option<String>,
+    cover_url: Option<String>,
 ) -> Result<(), String> {
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
 
     conn.execute(
-        "INSERT INTO games (id, name, genre, platform) VALUES (?1, ?2, ?3, ?4)",
-        params![id, name, genre, platform],
+        "INSERT INTO games (id, name, genre, platform, cover_url) VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![id, name, genre, platform, cover_url],
     )
     .map_err(|e| e.to_string())?;
 
