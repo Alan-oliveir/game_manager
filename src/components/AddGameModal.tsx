@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,20 +9,38 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Game } from "../types";
 
 interface AddGameModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (name: string, coverUrl: string) => void;
+  gameToEdit?: Game | null;
 }
 
 export default function AddGameModal({
   isOpen,
   onClose,
   onSave,
+  gameToEdit,
 }: AddGameModalProps) {
   const [name, setName] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
+
+  // Reseta os campos quando o modal é aberto
+  useEffect(() => {
+    if (isOpen) {
+      if (gameToEdit) {
+        // Modo Edição: Preenche com os dados do jogo
+        setName(gameToEdit.name);
+        setCoverUrl(gameToEdit.cover_url || "");
+      } else {
+        // Modo Criação: Limpa tudo
+        setName("");
+        setCoverUrl("");
+      }
+    }
+  }, [isOpen, gameToEdit]);
 
   const handleSave = () => {
     if (!name.trim()) return;
@@ -35,50 +53,42 @@ export default function AddGameModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Adicionar Novo Jogo</DialogTitle>
-        </DialogHeader>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              {gameToEdit ? "Editar Jogo" : "Adicionar Novo Jogo"}
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          {/* Nome do Jogo */}
-          <div className="grid gap-2">
-            <Label htmlFor="name">Nome do Jogo</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: The Witcher 3"
-              className="col-span-3"
-            />
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Nome do Jogo</Label>
+              <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ex: The Witcher 3"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="cover">URL da Capa</Label>
+              <Input
+                  id="cover"
+                  value={coverUrl}
+                  onChange={(e) => setCoverUrl(e.target.value)}
+                  placeholder="https://..."
+              />
+            </div>
           </div>
 
-          {/* URL da Capa */}
-          <div className="grid gap-2">
-            <Label htmlFor="cover">URL da Capa (Opcional)</Label>
-            <Input
-              id="cover"
-              value={coverUrl}
-              onChange={(e) => setCoverUrl(e.target.value)}
-              placeholder="https://..."
-              className="col-span-3"
-            />
-            <p className="text-[0.8rem] text-muted-foreground">
-              Dica: Copie o endereço da imagem do Google Imagens ou SteamDB.
-            </p>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={!name.trim()}>
-            Salvar Jogo
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={!name.trim()}>
+              {gameToEdit ? "Salvar Alterações" : "Adicionar Jogo"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
   );
 }

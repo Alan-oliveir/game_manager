@@ -98,6 +98,34 @@ fn toggle_favorite(state: State<AppState>, id: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn delete_game(state: State<AppState>, id: String) -> Result<(), String> {
+    let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
+
+    conn.execute("DELETE FROM games WHERE id = ?1", params![id])
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn update_game(
+    state: State<AppState>,
+    id: String,
+    name: String,
+    cover_url: Option<String>,
+) -> Result<(), String> {
+    let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
+
+    conn.execute(
+        "UPDATE games SET name = ?1, cover_url = ?2 WHERE id = ?3",
+        params![name, cover_url, id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 // Função principal que configura o Tauri
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -113,7 +141,9 @@ pub fn run() {
             init_db,
             add_game,
             get_games,
-            toggle_favorite
+            toggle_favorite,
+            delete_game,
+            update_game
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

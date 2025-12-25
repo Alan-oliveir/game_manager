@@ -6,12 +6,16 @@ interface GameGridProps {
   games: Game[];
   onToggleFavorite: (id: string) => void;
   onGameClick: (game: Game) => void;
+  onDeleteGame: (id: string) => void;
+    onEditGame: (game: Game) => void;
 }
 
 export default function GameGrid({
   games,
   onToggleFavorite,
   onGameClick,
+  onDeleteGame,
+  onEditGame,
 }: GameGridProps) {
   // Mantendo seu Mock Data
   const mockGames: Game[] =
@@ -104,6 +108,8 @@ export default function GameGrid({
             game={game}
             onToggleFavorite={onToggleFavorite}
             onClick={onGameClick}
+            onDelete={onDeleteGame}
+            onEdit={(game) => onEditGame(game)}
           />
         ))}
       </div>

@@ -12,6 +12,7 @@ function App() {
   const [games, setGames] = useState<Game[]>([]);
   const [activeSection, setActiveSection] = useState("library"); // Controla qual aba está ativa
   const [isModalOpen, setIsModalOpen] = useState(false); // Estado do Modal de Adicionar Jogo
+  const [gameToEdit, setGameToEdit] = useState<Game | null>(null); // Jogo sendo editado
 
   // Função para recarregar a lista do banco
   const refreshGames = async () => {
@@ -23,7 +24,6 @@ function App() {
     }
   };
 
-  // Inicialização
   useEffect(() => {
     invoke("init_db")
       .then(() => refreshGames())
@@ -32,22 +32,36 @@ function App() {
 
   // --- Ações do Usuário ---
 
+  // Função para editar/adicionar um novo jogo
   const handleAddGame = async (name: string, coverUrl: string) => {
     try {
-      await invoke("add_game", {
-        id: crypto.randomUUID(),
-        name: name,
-        genre: "Desconhecido",
-        platform: "Manual",
-        coverUrl: coverUrl || null,
-      });
+      if (gameToEdit) {
+        // Edição de jogo existente
+        await invoke("update_game", {
+          id: gameToEdit.id, // Usa o ID do jogo que estamos editando
+          name: name,
+          coverUrl: coverUrl || null, // Lembra do camelCase!
+        });
+      } else {
+        // Adição de novo jogo
+        await invoke("add_game", {
+          id: crypto.randomUUID(),
+          name: name,
+          genre: "Desconhecido",
+          platform: "Manual",
+          coverUrl: coverUrl || null,
+        });
+      }
       await refreshGames();
+      setIsModalOpen(false);
+      setGameToEdit(null);
     } catch (e) {
       console.error(e);
       alert("Erro ao salvar: " + e);
     }
   };
 
+  // Função para favoritar/desfavoritar um jogo
   const handleToggleFavorite = async (id: string) => {
     try {
       // Chama o Rust para mudar no banco
@@ -59,23 +73,50 @@ function App() {
     }
   };
 
+  // Função para exibir detalhes do jogo
   const handleGameClick = (game: Game) => {
     console.log("Clicou no jogo:", game.name);
     // Futuro: Abrir detalhes do jogo
   };
 
+  // Função para excluir um jogo
+  const handleDeleteGame = async (id: string) => {
+    // Confirmação nativa simples
+    if (!confirm("Tem certeza que deseja excluir este jogo?")) return;
+
+    try {
+      await invoke("delete_game", { id });
+      await refreshGames(); // Atualiza a lista
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao excluir: " + e);
+    }
+  };
+
+  // Função chamada ao clicar em "Editar" no card
+  const handleEditClick = (game: Game) => {
+    setGameToEdit(game); // Define quem vamos editar
+    setIsModalOpen(true); // Abre o modal
+  };
+
+  // Função para abrir modal limpo (botão Adicionar)
+  const handleAddClick = () => {
+    setGameToEdit(null); // Garante que não tem lixo de edição
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      {/* 1. Sidebar Fixa */}
+      {/* Sidebar */}
       <Sidebar
         activeSection={activeSection}
         onSectionChange={setActiveSection}
       />
 
-      {/* 2. Área Principal */}
+      {/* Área Principal */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Header no topo */}
-        <Header onAddGame={() => setIsModalOpen(true)} />
+        <Header onAddGame={handleAddClick} />
 
         {/* Conteúdo Variável */}
         {activeSection === "library" ? (
@@ -83,6 +124,8 @@ function App() {
             games={games}
             onToggleFavorite={handleToggleFavorite}
             onGameClick={handleGameClick}
+            onDeleteGame={handleDeleteGame}
+            onEditGame={handleEditClick}
           />
         ) : (
           // Placeholder para outras abas (Home, Configurações, etc)
@@ -97,6 +140,7 @@ function App() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleAddGame}
+        gameToEdit={gameToEdit}
       />
     </div>
   );

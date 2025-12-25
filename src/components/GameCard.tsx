@@ -1,16 +1,34 @@
 import { Game } from "../types";
-import { Clock, Heart, Star, ImageOff } from "lucide-react";
+import {
+  Clock,
+  Heart,
+  Star,
+  ImageOff,
+  MoreVertical,
+  Trash2,
+  Edit,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface GameCardProps {
   game: Game;
   onToggleFavorite: (id: string) => void;
   onClick: (game: Game) => void;
+  onDelete: (id: string) => void;
+  onEdit: (game: Game) => void;
 }
 
 export default function GameCard({
   game,
   onToggleFavorite,
   onClick,
+  onDelete,
+  onEdit,
 }: GameCardProps) {
   return (
     <div
@@ -36,6 +54,41 @@ export default function GameCard({
             </span>
           </div>
         )}
+
+        {/* --- Menu de opções --- */}
+        <div className="absolute top-3 left-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-md"
+                onClick={(e) => e.stopPropagation()} // Impede de abrir o jogo ao clicar no menu
+              >
+                <MoreVertical size={16} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(game);
+                }}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                <span>Editar</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-600 focus:text-red-600 focus:bg-red-100/10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(game.id);
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Excluir</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Favorite Button */}
         <button
