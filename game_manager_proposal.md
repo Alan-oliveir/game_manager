@@ -291,13 +291,13 @@ game-manager/
 ```
 ┌─────────────────────────────────────────────────┐
 │                  FRONTEND                       │
-│  React Components + Shadcn UI + Tailwind       │
+│  React Components + Shadcn UI + Tailwind        │
 └─────────────────┬───────────────────────────────┘
                   │ invoke()
                   ↓
 ┌─────────────────────────────────────────────────┐
 │              TAURI COMMANDS                     │
-│  Rust functions expostas ao frontend           │
+│  Rust functions expostas ao frontend            │
 └─────────────────┬───────────────────────────────┘
                   │
         ┌─────────┴──────────┬──────────────────┐
