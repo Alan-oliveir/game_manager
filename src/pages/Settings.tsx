@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react";
 import {invoke} from "@tauri-apps/api/core";
+import {Store} from '@tauri-apps/plugin-store';
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
@@ -17,12 +18,27 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
         type: null,
         message: ""
     });
+    const [store, setStore] = useState<Store | null>(null);
 
     useEffect(() => {
-        const savedId = localStorage.getItem("steam_id");
-        const savedKey = localStorage.getItem("steam_api_key");
-        if (savedId) setSteamId(savedId);
-        if (savedKey) setApiKey(savedKey);
+        // Carregar configurações do store seguro
+        const loadSettings = async () => {
+            try {
+                // Usar Store.load() ao invés de new Store()
+                const storeInstance = await Store.load('.settings.dat');
+                setStore(storeInstance);
+
+                const savedId = await storeInstance.get<string>('steam_id');
+                const savedKey = await storeInstance.get<string>('steam_api_key');
+
+                if (savedId) setSteamId(savedId);
+                if (savedKey) setApiKey(savedKey);
+            } catch (error) {
+                console.error("Erro ao carregar configurações:", error);
+            }
+        };
+
+        loadSettings();
     }, []);
 
     const handleImport = async () => {
@@ -31,14 +47,20 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
             return;
         }
 
+        if (!store) {
+            setStatus({type: 'error', message: "Store ainda não foi inicializado."});
+            return;
+        }
+
         setIsLoading(true);
         setStatus({type: null, message: ""});
 
-        // Salvar nas configurações locais
-        localStorage.setItem("steam_id", steamId);
-        localStorage.setItem("steam_api_key", apiKey);
-
         try {
+            // Salvar de forma segura
+            await store.set('steam_id', steamId.trim());
+            await store.set('steam_api_key', apiKey.trim());
+            await store.save(); // Persiste no disco de forma criptografada
+
             const result = await invoke<string>("import_steam_library", {
                 steamId: steamId.trim(),
                 apiKey: apiKey.trim(),

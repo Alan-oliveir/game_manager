@@ -3,7 +3,7 @@ mod steam_service;
 
 use rusqlite::{params, Connection};
 use std::sync::Mutex;
-use tauri::State;
+use tauri::{State, Manager};
 
 // Estado da aplicação
 pub struct AppState {
@@ -257,13 +257,31 @@ async fn import_steam_library(
 // Função principal que configura o Tauri
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Inicializa conexão com arquivo local
-    let conn = Connection::open("library.db").expect("Erro ao abrir banco");
-
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(AppState {
-            db: Mutex::new(conn),
+        .plugin(tauri_plugin_store::Builder::default().build())
+        .setup(|app| {
+            // Obtém o diretório de dados da aplicação
+            let app_data_dir = app.path().app_data_dir()
+                .expect("Falha ao obter diretório de dados da aplicação");
+
+            // Cria o diretório se não existir
+            std::fs::create_dir_all(&app_data_dir)
+                .expect("Falha ao criar diretório de dados");
+
+            // Caminho completo do banco de dados
+            let db_path = app_data_dir.join("library.db");
+
+            // Inicializa conexão com arquivo no diretório de dados
+            let conn = Connection::open(&db_path)
+                .expect(&format!("Erro ao abrir banco em {:?}", db_path));
+
+            // Registra o estado da aplicação
+            app.manage(AppState {
+                db: Mutex::new(conn),
+            });
+
+            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             init_db,

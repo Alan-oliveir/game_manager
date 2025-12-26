@@ -12,7 +12,7 @@ import Home from "./pages/Home";
 function App() {
     // Estados principais
     const [games, setGames] = useState<Game[]>([]);
-    const [activeSection, setActiveSection] = useState("home");
+    const [activeSection, setActiveSection] = useState("library");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -115,8 +115,6 @@ function App() {
                 return (
                     <Home
                         games={games}
-                        onGameClick={handleGameClick}
-                        onChangeTab={setActiveSection}
                     />
                 );
             case "library":
