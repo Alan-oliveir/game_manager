@@ -33,25 +33,32 @@ function App() {
   // --- Ações do Usuário ---
 
   // Função para editar/adicionar um novo jogo
-  const handleAddGame = async (name: string, coverUrl: string) => {
+  const handleSaveGame = async (gameData: Partial<Game>) => {
     try {
       if (gameToEdit) {
-        // Edição de jogo existente
+        // Edição
         await invoke("update_game", {
-          id: gameToEdit.id, // Usa o ID do jogo que estamos editando
-          name: name,
-          coverUrl: coverUrl || null, // Lembra do camelCase!
+          id: gameToEdit.id,
+          name: gameData.name,
+          genre: gameData.genre,
+          platform: gameData.platform,
+          coverUrl: gameData.cover_url || null, // Lembra do camelCase!
+          playtime: gameData.playtime || 0,
+          rating: gameData.rating || null,
         });
       } else {
-        // Adição de novo jogo
+        // Criação
         await invoke("add_game", {
           id: crypto.randomUUID(),
-          name: name,
-          genre: "Desconhecido",
-          platform: "Manual",
-          coverUrl: coverUrl || null,
+          name: gameData.name,
+          genre: gameData.genre || "Desconhecido",
+          platform: gameData.platform || "Manual",
+          coverUrl: gameData.cover_url || null,
+          playtime: gameData.playtime || 0,
+          rating: gameData.rating || null,
         });
       }
+
       await refreshGames();
       setIsModalOpen(false);
       setGameToEdit(null);
@@ -139,7 +146,7 @@ function App() {
       <AddGameModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleAddGame}
+        onSave={handleSaveGame}
         gameToEdit={gameToEdit}
       />
     </div>

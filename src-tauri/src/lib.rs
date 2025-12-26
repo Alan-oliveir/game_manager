@@ -41,12 +41,14 @@ fn add_game(
     genre: Option<String>,
     platform: Option<String>,
     cover_url: Option<String>,
+    playtime: Option<i32>,
+    rating: Option<i32>,
 ) -> Result<(), String> {
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
 
     conn.execute(
-        "INSERT INTO games (id, name, genre, platform, cover_url) VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![id, name, genre, platform, cover_url],
+        "INSERT INTO games (id, name, genre, platform, cover_url, playtime, rating) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![id, name, genre, platform, cover_url, playtime, rating],
     )
     .map_err(|e| e.to_string())?;
 
@@ -113,13 +115,17 @@ fn update_game(
     state: State<AppState>,
     id: String,
     name: String,
+    genre: Option<String>,
+    platform: Option<String>,
     cover_url: Option<String>,
+    playtime: Option<i32>,
+    rating: Option<i32>,
 ) -> Result<(), String> {
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
 
     conn.execute(
-        "UPDATE games SET name = ?1, cover_url = ?2 WHERE id = ?3",
-        params![name, cover_url, id],
+        "UPDATE games SET name = ?1, cover_url = ?2, platform = ?3, cover_url = ?4, playtime = ?5, rating = ?6 WHERE id = ?7",
+        params![name, genre, platform, cover_url, playtime, rating, id],
     )
     .map_err(|e| e.to_string())?;
 
