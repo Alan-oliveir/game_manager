@@ -1,5 +1,6 @@
 import GameGrid from "../components/GameGrid";
 import {Game} from "../types";
+import { useMemo } from "react";
 
 interface LibraryProps {
     games: Game[];
@@ -11,14 +12,15 @@ interface LibraryProps {
 }
 
 export default function Library({games, searchTerm, ...actions}: LibraryProps) {
-    const displayedGames = games.filter((game) => {
-        if (!searchTerm) return true;
+    const displayedGames = useMemo(() => {
+        if (!searchTerm) return games;
         const term = searchTerm.toLowerCase();
-        return (
+        return games.filter((game) =>
             game.name.toLowerCase().includes(term) ||
-            (game.genre && game.genre.toLowerCase().includes(term))
+            (game.genre && game.genre.toLowerCase().includes(term)) ||
+            (game.platform && game.platform.toLowerCase().includes(term))
         );
-    });
+    }, [games, searchTerm]);
 
     return (
         <GameGrid games={displayedGames} {...actions} />

@@ -7,11 +7,12 @@ import AddGameModal from "./components/AddGameModal";
 import Library from "./pages/Library";
 import Favorites from "./pages/Favorites";
 import Settings from "./pages/Settings";
+import Home from "./pages/Home";
 
 function App() {
     // Estados principais
     const [games, setGames] = useState<Game[]>([]);
-    const [activeSection, setActiveSection] = useState("library");
+    const [activeSection, setActiveSection] = useState("home");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -110,6 +111,14 @@ function App() {
     // Renderiza o conteúdo baseado na seção ativa
     const renderContent = () => {
         switch (activeSection) {
+            case "home":
+                return (
+                    <Home
+                        games={games}
+                        onGameClick={handleGameClick}
+                        onChangeTab={setActiveSection}
+                    />
+                );
             case "library":
                 return (
                     <Library

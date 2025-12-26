@@ -30,6 +30,29 @@ fn init_db(state: State<AppState>) -> Result<String, String> {
     )
     .map_err(|e| e.to_string())?;
 
+    // Criar índices para melhorar performance de queries
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_favorite ON games(favorite)",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_name ON games(name COLLATE NOCASE)",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_platform ON games(platform)",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Ativar modo WAL para melhor concorrência
+    conn.execute("PRAGMA journal_mode=WAL", [])
+        .map_err(|e| e.to_string())?;
+
     Ok("Banco inicializado com sucesso!".to_string())
 }
 
@@ -45,6 +68,33 @@ fn add_game(
     playtime: Option<i32>,
     rating: Option<i32>,
 ) -> Result<(), String> {
+    // Validações de entrada
+    if name.trim().is_empty() {
+        return Err("Nome do jogo não pode ser vazio".to_string());
+    }
+    
+    if name.len() > 200 {
+        return Err("Nome do jogo muito longo (máximo 200 caracteres)".to_string());
+    }
+
+    if let Some(ref url) = cover_url {
+        if url.len() > 500 {
+            return Err("URL da capa muito longa".to_string());
+        }
+    }
+
+    if let Some(time) = playtime {
+        if time < 0 {
+            return Err("Tempo jogado não pode ser negativo".to_string());
+        }
+    }
+
+    if let Some(r) = rating {
+        if r < 1 || r > 5 {
+            return Err("Avaliação deve estar entre 1 e 5".to_string());
+        }
+    }
+
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
 
     conn.execute(
@@ -124,6 +174,27 @@ fn update_game(
     playtime: Option<i32>,
     rating: Option<i32>,
 ) -> Result<(), String> {
+    // Validações de entrada
+    if name.trim().is_empty() {
+        return Err("Nome do jogo não pode ser vazio".to_string());
+    }
+    
+    if name.len() > 200 {
+        return Err("Nome do jogo muito longo (máximo 200 caracteres)".to_string());
+    }
+
+    if let Some(time) = playtime {
+        if time < 0 {
+            return Err("Tempo jogado não pode ser negativo".to_string());
+        }
+    }
+
+    if let Some(r) = rating {
+        if r < 1 || r > 5 {
+            return Err("Avaliação deve estar entre 1 e 5".to_string());
+        }
+    }
+
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
 
     conn.execute(
@@ -151,9 +222,9 @@ async fn import_steam_library(
 
     // Salva cada jogo no banco (se não existir)
     for game in steam_games {
-        // Monta a URL da capa (formato padrão da Steam)
+        // Monta a URL da capa (formato atualizado da Steam CDN)
         let cover_url = format!(
-            "https://steamcdn-a.akamaihd.net/steam/apps/{}/library_600x900_2x.jpg",
+            "https://cdn.cloudflare.steamstatic.com/steam/apps/{}/library_600x900.jpg",
             game.appid
         );
 
@@ -167,7 +238,7 @@ async fn import_steam_library(
                 "Desconhecido", // API básica não dá gênero do jogo
                 "Steam",
                 cover_url,
-                game.playtime_forever / 60, // Converte minutos para horas
+                (game.playtime_forever as f32 / 60.0).round() as i32, // Converte minutos para horas corretamente
                 None::<i32>                 // Sem avaliação inicial
             ],
         );

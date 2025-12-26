@@ -1,6 +1,7 @@
 import GameGrid from "../components/GameGrid";
 import {Game} from "../types";
 import {Heart} from "lucide-react";
+import { useMemo } from "react";
 
 interface FavoritesProps {
     games: Game[];
@@ -12,15 +13,20 @@ interface FavoritesProps {
 }
 
 export default function Favorites({games, searchTerm, ...actions}: FavoritesProps) {
-    const favorites = games.filter(g => g.favorite);
+    const displayedGames = useMemo(() => {
+        const favorites = games.filter(g => g.favorite);
 
-    const displayedGames = favorites.filter((game) => {
-        if (!searchTerm) return true;
+        if (!searchTerm) return favorites;
+
         const term = searchTerm.toLowerCase();
-        return game.name.toLowerCase().includes(term);
-    });
+        return favorites.filter((game) =>
+            game.name.toLowerCase().includes(term) ||
+            (game.genre && game.genre.toLowerCase().includes(term)) ||
+            (game.platform && game.platform.toLowerCase().includes(term))
+        );
+    }, [games, searchTerm]);
 
-    if (favorites.length === 0) {
+    if (displayedGames.length === 0 && games.filter(g => g.favorite).length === 0) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
                 <Heart className="w-16 h-16 mb-4 opacity-20"/>
