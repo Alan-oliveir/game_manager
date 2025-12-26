@@ -211,6 +211,61 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 - [ ] Iniciar integração com Steam API (Backend Rust).
 - [ ] Criar sistema de importação automática de jogos.
 
+---
+
+## Fase 2: Integração com Lojas Digitais
+
+### 📅 26/12/2025 - Integração Steam, Refatoração e Hardening de Segurança
+
+**Tempo investido:** ~5h
+**Objetivo:** Conectar a aplicação à API da Steam para importação automática, refatorar a arquitetura do frontend para suportar múltiplas páginas e corrigir vulnerabilidades de segurança.
+
+#### ✨ Implementações
+- **Integração com Steam API:**
+  - Criado módulo Rust (`steam_service`) usando `reqwest` para buscar jogos do usuário.
+  - Implementada lógica de "Upsert" (Inserir ou Ignorar) para não duplicar jogos existentes no banco.
+- **Refatoração Arquitetural (Frontend):**
+  - Quebra do `App.tsx` em rotas manuais e criação da estrutura de pastas `/pages` (`Home`, `Library`, `Favorites`, `Settings`).
+  - Centralização das ações (`gameActions`) para limpar a passagem de props.
+- **Segurança (Security Hardening):**
+  - Substituição do `localStorage` pelo `tauri-plugin-store` para armazenamento seguro/criptografado da API Key e Steam ID.
+- **Dashboard (Home):**
+  - Criação da tela inicial com KPIs (Tempo Total, Total de Jogos), lista de "Mais Jogados" e componente de "Sugestão Aleatória".
+- **Infraestrutura:**
+  - Configuração do banco SQLite para ser criado no diretório `app_data_dir` (AppData/Library), corrigindo conflitos de watcher do Tauri.
+
+#### 🐛 Problemas Encontrados
+**1. Loop de Reinício Infinito**
+- **Causa:** O arquivo `library.db` estava sendo criado dentro da pasta `src-tauri`. Como o Tauri monitora essa pasta para "Hot Reload", cada alteração no banco disparava uma recompilação, que alterava o banco novamente, criando um loop.
+- **Solução:** Alteração no `lib.rs` para usar a API `app.path().app_data_dir()`, salvando o banco na pasta de dados do usuário do Sistema Operacional.
+
+**2. API Key Exposta**
+- **Causa:** Inicialmente salvamos a API Key da Steam no `localStorage` do navegador.
+- **Solução:** Auditoria de código apontou risco de segurança. Migramos para o plugin nativo `tauri-plugin-store` que persiste dados no disco com maior segurança e isolamento da WebView.
+
+**3. Capas de Jogos Quebradas**
+- **Causa:** A API da Steam retorna URLs de imagem baseadas no ID, mas nem todos os jogos antigos possuem a imagem vertical no servidor da CDN.
+- **Solução:** Adicionado tratamento de erro `onError` no componente `GameCard` para ativar o fallback visual (card cinza com nome) automaticamente.
+
+**4. Duplicação de Chamada na Importação**
+- **Causa:** Erro de "Copy & Paste" no `Settings.tsx` gerou dois blocos de código idênticos para importar jogos.
+- **Solução:** Remoção do código duplicado na função `handleImport`.
+
+#### 💡 Decisões Técnicas
+- **Pages vs Components:** Decidi separar "Telas" (que têm acesso ao estado global e roteamento) de "Componentes" (que apenas recebem dados puros). Isso facilitou a leitura do `App.tsx`.
+- **Persistência Local de Chaves:** Optei por salvar as credenciais da Steam apenas no dispositivo do usuário (client-side) em vez de criar um backend na nuvem, mantendo a filosofia "Local-First" e privacidade do projeto.
+- **Pausa no Enriquecimento de Dados:** A API `GetOwnedGames` da Steam não retorna gêneros. Decidi manter os dados como "Desconhecido" temporariamente e focar na estrutura do App, deixando a implementação de um Crawler de metadados para uma sessão futura dedicada.
+
+#### 📚 Recursos Úteis
+- [Tauri Plugin Store Documentation](https://v2.tauri.app/plugin/store/)
+- [Steam Web API Documentation](https://developer.valvesoftware.com/wiki/Steam_Web_API)
+- [Reqwest Crate (Rust)](https://docs.rs/reqwest/latest/reqwest/)
+
+#### ⏭️ Próxima Sessão
+- [ ] Estudo aprofundado do código gerado (Rust/Tauri Bridge e Security).
+- [ ] Planejamento do "Crawler" para buscar Gêneros e Tags dos jogos (Enriquecimento).
+- [ ] Desenvolvimento da página "Em Alta" (Trending).
+
 ## 🎯 Roadmap Futuro
 
 ### Fase 2: Features Avançadas (Desktop)

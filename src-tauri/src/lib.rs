@@ -1,8 +1,9 @@
 mod models;
+mod steam_service;
 
 use rusqlite::{params, Connection};
 use std::sync::Mutex;
-use tauri::State;
+use tauri::{State, Manager};
 
 // Estado da aplicação
 pub struct AppState {
@@ -29,6 +30,29 @@ fn init_db(state: State<AppState>) -> Result<String, String> {
     )
     .map_err(|e| e.to_string())?;
 
+    // Criar índices para melhorar performance de queries
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_favorite ON games(favorite)",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_name ON games(name COLLATE NOCASE)",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_platform ON games(platform)",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Ativar modo WAL para melhor concorrência
+    conn.execute("PRAGMA journal_mode=WAL", [])
+        .map_err(|e| e.to_string())?;
+
     Ok("Banco inicializado com sucesso!".to_string())
 }
 
@@ -44,6 +68,33 @@ fn add_game(
     playtime: Option<i32>,
     rating: Option<i32>,
 ) -> Result<(), String> {
+    // Validações de entrada
+    if name.trim().is_empty() {
+        return Err("Nome do jogo não pode ser vazio".to_string());
+    }
+    
+    if name.len() > 200 {
+        return Err("Nome do jogo muito longo (máximo 200 caracteres)".to_string());
+    }
+
+    if let Some(ref url) = cover_url {
+        if url.len() > 500 {
+            return Err("URL da capa muito longa".to_string());
+        }
+    }
+
+    if let Some(time) = playtime {
+        if time < 0 {
+            return Err("Tempo jogado não pode ser negativo".to_string());
+        }
+    }
+
+    if let Some(r) = rating {
+        if r < 1 || r > 5 {
+            return Err("Avaliação deve estar entre 1 e 5".to_string());
+        }
+    }
+
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
 
     conn.execute(
@@ -100,6 +151,7 @@ fn toggle_favorite(state: State<AppState>, id: String) -> Result<(), String> {
     Ok(())
 }
 
+// Comando para deletar um jogo
 #[tauri::command]
 fn delete_game(state: State<AppState>, id: String) -> Result<(), String> {
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
@@ -110,6 +162,7 @@ fn delete_game(state: State<AppState>, id: String) -> Result<(), String> {
     Ok(())
 }
 
+// Comando para atualizar informações de um jogo
 #[tauri::command]
 fn update_game(
     state: State<AppState>,
@@ -121,6 +174,27 @@ fn update_game(
     playtime: Option<i32>,
     rating: Option<i32>,
 ) -> Result<(), String> {
+    // Validações de entrada
+    if name.trim().is_empty() {
+        return Err("Nome do jogo não pode ser vazio".to_string());
+    }
+    
+    if name.len() > 200 {
+        return Err("Nome do jogo muito longo (máximo 200 caracteres)".to_string());
+    }
+
+    if let Some(time) = playtime {
+        if time < 0 {
+            return Err("Tempo jogado não pode ser negativo".to_string());
+        }
+    }
+
+    if let Some(r) = rating {
+        if r < 1 || r > 5 {
+            return Err("Avaliação deve estar entre 1 e 5".to_string());
+        }
+    }
+
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
 
     conn.execute(
@@ -132,16 +206,82 @@ fn update_game(
     Ok(())
 }
 
+// Comando para importar jogos da biblioteca Steam
+#[tauri::command]
+async fn import_steam_library(
+    state: State<'_, AppState>,
+    api_key: String,
+    steam_id: String,
+) -> Result<String, String> {
+    // Busca os jogos na API da Steam
+    let steam_games = steam_service::list_steam_games(&api_key, &steam_id).await?;
+
+    let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
+
+    let mut count = 0;
+
+    // Salva cada jogo no banco (se não existir)
+    for game in steam_games {
+        // Monta a URL da capa (formato atualizado da Steam CDN)
+        let cover_url = format!(
+            "https://cdn.cloudflare.steamstatic.com/steam/apps/{}/library_600x900.jpg",
+            game.appid
+        );
+
+        // Tenta inserir. O "OR IGNORE" pula se o ID já existir.
+        let result = conn.execute(
+            "INSERT OR IGNORE INTO games (id, name, genre, platform, cover_url, playtime, rating)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                game.appid.to_string(), // Usamos o ID da Steam como ID do jogo
+                game.name,
+                "Desconhecido", // API básica não dá gênero do jogo
+                "Steam",
+                cover_url,
+                (game.playtime_forever as f32 / 60.0).round() as i32, // Converte minutos para horas corretamente
+                None::<i32>                 // Sem avaliação inicial
+            ],
+        );
+
+        if let Ok(rows) = result {
+            count += rows;
+        }
+    }
+
+    Ok(format!(
+        "Importação concluída! {} novos jogos adicionados.",
+        count
+    ))
+}
+
 // Função principal que configura o Tauri
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Inicializa conexão com arquivo local
-    let conn = Connection::open("library.db").expect("Erro ao abrir banco");
-
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(AppState {
-            db: Mutex::new(conn),
+        .plugin(tauri_plugin_store::Builder::default().build())
+        .setup(|app| {
+            // Obtém o diretório de dados da aplicação
+            let app_data_dir = app.path().app_data_dir()
+                .expect("Falha ao obter diretório de dados da aplicação");
+
+            // Cria o diretório se não existir
+            std::fs::create_dir_all(&app_data_dir)
+                .expect("Falha ao criar diretório de dados");
+
+            // Caminho completo do banco de dados
+            let db_path = app_data_dir.join("library.db");
+
+            // Inicializa conexão com arquivo no diretório de dados
+            let conn = Connection::open(&db_path)
+                .expect(&format!("Erro ao abrir banco em {:?}", db_path));
+
+            // Registra o estado da aplicação
+            app.manage(AppState {
+                db: Mutex::new(conn),
+            });
+
+            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             init_db,
@@ -149,7 +289,8 @@ pub fn run() {
             get_games,
             toggle_favorite,
             delete_game,
-            update_game
+            update_game,
+            import_steam_library
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
