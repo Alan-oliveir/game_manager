@@ -1,19 +1,6 @@
 import { Game } from "../types";
-import {
-  Clock,
-  Heart,
-  Star,
-  ImageOff,
-  MoreVertical,
-  Trash2,
-  Edit,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Clock, Heart, Star, ImageOff, MoreVertical, Trash2, Edit } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface GameCardProps {
   game: Game;

@@ -124,7 +124,7 @@ fn update_game(
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
 
     conn.execute(
-        "UPDATE games SET name = ?1, cover_url = ?2, platform = ?3, cover_url = ?4, playtime = ?5, rating = ?6 WHERE id = ?7",
+        "UPDATE games SET name = ?1, genre = ?2, platform = ?3, cover_url = ?4, playtime = ?5, rating = ?6 WHERE id = ?7",
         params![name, genre, platform, cover_url, playtime, rating, id],
     )
     .map_err(|e| e.to_string())?;
