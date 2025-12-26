@@ -179,6 +179,38 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 
 ---
 
+### 📅 26/12/2025 - Finalização da Fase 1 (Busca e Navegação)
+
+**Tempo investido:** ~2h
+**Objetivo:** Implementar sistema de busca em tempo real e lógica de navegação entre Biblioteca e Favoritos.
+
+#### ✨ Implementações
+- **Busca Reativa:**
+  - Transformado o input do Header em componente controlado.
+  - Criada lógica centralizada `getDisplayedGames` que filtra por Nome, Gênero ou Plataforma instantaneamente.
+- **Navegação (Sidebar):**
+  - Implementada lógica para a aba "Favoritos", exibindo apenas jogos marcados.
+  - A busca agora funciona globalmente (filtra dentro da biblioteca ou dentro dos favoritos).
+- **Refatoração:**
+  - Removido sistema de "Mock Data" (dados falsos). Agora o Grid lida com estados vazios ("Nenhum jogo encontrado").
+  - Limpeza de código morto no `App.tsx`.
+
+#### 🐛 Problemas Encontrados
+**1. Edição de Gênero não salvando**
+- **Causa:** O comando SQL `update_game` no Rust estava desatualizado, atualizando apenas `name` e `cover_url`, ignorando os novos campos.
+- **Solução:** Atualizei a query SQL para incluir `genre`, `platform`, `rating` e `playtime`.
+
+**2. Busca exibindo dados falsos**
+- **Causa:** O componente `GameGrid` tinha uma regra antiga para mostrar dados de exemplo se a lista estivesse vazia. Ao buscar um termo sem resultados, a lista ficava vazia e os dados falsos apareciam.
+- **Solução:** Removi a lógica de mock. Agora exibe um componente "Empty State" informativo.
+
+#### 💡 Decisões Técnicas
+- **Filtragem no Client-Side:** Como a biblioteca local dificilmente passará de alguns milhares de jogos, optei por filtrar os arrays no Javascript (`.filter`) em vez de fazer queries SQL complexas (`LIKE %...%`) a cada tecla digitada. Isso garante UI instantânea (Zero Latência).
+
+#### ⏭️ Próxima Fase (Fase 2)
+- [ ] Iniciar integração com Steam API (Backend Rust).
+- [ ] Criar sistema de importação automática de jogos.
+
 ## 🎯 Roadmap Futuro
 
 ### Fase 2: Features Avançadas (Desktop)
@@ -231,4 +263,4 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 ---
 
 *Autor: Alan de Oliveira Gonçalves*  
-*Última atualização: 25/12/2025*
+*Última atualização: 26/12/2025*
