@@ -31,15 +31,31 @@ function App() {
       .catch(console.error);
   }, []);
 
-  // Filtra os jogos com base no termo de busca
-  const filteredGames = games.filter((game) => {
-    const term = searchTerm.toLowerCase();
-    return (
-      game.name.toLowerCase().includes(term) ||
-      (game.genre && game.genre.toLowerCase().includes(term)) ||
-      (game.platform && game.platform.toLowerCase().includes(term))
-    );
-  });
+  // Função para obter a lista de jogos a serem exibidos com base na seção ativa e no termo de busca
+  const getDisplayedGames = () => {
+    let result = games;
+
+    // Filtro de Seção: Se estiver na aba Favoritos, filtra apenas os favoritados
+    if (activeSection === "favorites") {
+      result = result.filter((game) => game.favorite);
+    }
+
+    // Filtro de Busca: Aplica o texto da barra de pesquisa
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (game) =>
+          game.name.toLowerCase().includes(term) ||
+          (game.genre && game.genre.toLowerCase().includes(term)) ||
+          (game.platform && game.platform.toLowerCase().includes(term))
+      );
+    }
+
+    return result;
+  };
+
+  // Chama a função a cada render para ter a lista atualizada
+  const displayedGames = getDisplayedGames();
 
   // Função para editar/adicionar um novo jogo
   const handleSaveGame = async (gameData: Partial<Game>) => {
@@ -120,39 +136,57 @@ function App() {
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      {/* Sidebar */}
       <Sidebar
         activeSection={activeSection}
-        onSectionChange={setActiveSection}
+        onSectionChange={(section) => {
+          setActiveSection(section);
+        }}
       />
 
-      {/* Área Principal */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Header no topo */}
         <Header
           onAddGame={handleAddClick}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
         />
 
-        {/* Conteúdo Variável */}
-        {activeSection === "library" ? (
+        {/* Caso 1: Seções que usam o Grid (Biblioteca e Favoritos) */}
+        {activeSection === "library" || activeSection === "favorites" ? (
           <GameGrid
-            games={filteredGames}
+            games={displayedGames}
             onToggleFavorite={handleToggleFavorite}
             onGameClick={handleGameClick}
             onDeleteGame={handleDeleteGame}
             onEditGame={handleEditClick}
           />
+        ) : activeSection === "settings" ? (
+          /* Caso 2: Página de Configurações (Placeholder simples por enquanto) */
+          <div className="flex-1 p-8">
+            <h2 className="text-2xl font-bold mb-4">Configurações</h2>
+            <div className="p-4 border rounded-lg bg-card max-w-md">
+              <h3 className="font-semibold mb-2">Dados</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Gerencie seus dados locais.
+              </p>
+              <button
+                onClick={() => alert("Funcionalidade de exportar em breve!")}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm font-medium"
+              >
+                Exportar Backup (JSON)
+              </button>
+            </div>
+          </div>
         ) : (
-          // Placeholder para outras abas (Home, Configurações, etc)
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <p>Seção {activeSection} em construção...</p>
+          /* Caso 3: Outras páginas (Home, Trending) */
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground opacity-50">
+            <div className="text-6xl mb-4">🚧</div>
+            <p className="text-xl font-medium">
+              Seção "{activeSection}" em desenvolvimento
+            </p>
           </div>
         )}
       </main>
 
-      {/* Modal de Adicionar Jogo */}
       <AddGameModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
