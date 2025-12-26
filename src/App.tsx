@@ -6,8 +6,7 @@ import Header from "./components/Header";
 import AddGameModal from "./components/AddGameModal";
 import Library from "./pages/Library";
 import Favorites from "./pages/Favorites";
-
-// import Settings from "./pages/Settings"; // Futuro
+import Settings from "./pages/Settings";
 
 function App() {
     // Estados principais
@@ -128,24 +127,7 @@ function App() {
                     />
                 );
             case "settings":
-                // Placeholder temporário até criarmos o Settings.tsx
-                return (
-                    <div className="flex-1 p-8">
-                        <h2 className="text-2xl font-bold mb-4">Configurações</h2>
-                        <div className="p-4 border rounded-lg bg-card max-w-md">
-                            <h3 className="font-semibold mb-2">Dados</h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                                Gerencie seus dados locais.
-                            </p>
-                            <button
-                                onClick={() => alert("Funcionalidade de exportar em breve!")}
-                                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm font-medium"
-                            >
-                                Exportar Backup (JSON)
-                            </button>
-                        </div>
-                    </div>
-                );
+                return <Settings onLibraryUpdate={refreshGames}/>;
             default:
                 return (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground opacity-50">

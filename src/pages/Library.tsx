@@ -1,5 +1,5 @@
 import GameGrid from "../components/GameGrid";
-import { Game } from "../types";
+import {Game} from "../types";
 
 interface LibraryProps {
     games: Game[];
@@ -10,7 +10,7 @@ interface LibraryProps {
     onEditGame: (game: Game) => void;
 }
 
-export default function Library({ games, searchTerm, ...actions }: LibraryProps) {
+export default function Library({games, searchTerm, ...actions}: LibraryProps) {
     const displayedGames = games.filter((game) => {
         if (!searchTerm) return true;
         const term = searchTerm.toLowerCase();
@@ -21,8 +21,6 @@ export default function Library({ games, searchTerm, ...actions }: LibraryProps)
     });
 
     return (
-        <div className="flex-1 flex flex-col h-full">
-            <GameGrid games={displayedGames} {...actions} />
-        </div>
+        <GameGrid games={displayedGames} {...actions} />
     );
 }
