@@ -1,7 +1,7 @@
 import GameGrid from "../components/GameGrid";
 import {Game} from "../types";
 import {Heart} from "lucide-react";
-import { useMemo } from "react";
+import {useMemo} from "react";
 
 interface FavoritesProps {
     games: Game[];

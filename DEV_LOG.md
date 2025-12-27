@@ -268,40 +268,59 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 
 ---
 
-### 📅 27/12/2025 - Estabilização, Debugging de Persistência e Documentação
+### 📅 27/12/2025 - Estabilização, Crawler de Gêneros e Página Em Alta
 
-**Tempo investido:** ~2h
-**Objetivo:** Retomar o desenvolvimento, auditar o código com ferramentas de IA, corrigir bugs de inicialização e documentar o progresso público.
+**Tempo investido:** ~5h  
+**Objetivo:** Corrigir bugs críticos de persistência, implementar segurança de chaves, enriquecer dados com gêneros reais (Crawler) e criar a página de tendências (Trending) com API externa.
 
 #### ✨ Implementações
-- **Refatoração de Segurança:** Implementação completa do `tauri-plugin-store` para gerenciamento seguro de chaves de API (substituindo o localStorage vulnerável).
-- **Correção de Inicialização (Persistência):** Ajuste no ciclo de vida do banco de dados.
-  - Movida a configuração `PRAGMA journal_mode=WAL` do comando `init_db` (invocado pelo frontend) para o `setup` do Tauri (backend), evitando erros de execução que impediam o carregamento da lista de jogos.
-  - Atualizado `App.tsx` para garantir que `refreshGames` seja chamado mesmo se a inicialização do banco retornar avisos não críticos.
-- **Documentação:** Atualização dos arquivos README e docs públicos do repositório.
+
+- **Estabilização e Segurança:**
+  - **Refatoração de Segurança:** Migração do `localStorage` para `tauri-plugin-store` (armazenamento criptografado).
+  - **Correção de Persistência:** Ajuste no ciclo de vida do SQLite (movendo `PRAGMA journal_mode` para o backend) para evitar erros silenciosos que impediam o carregamento da lista.
+- **Enriquecimento de Dados (Crawler Steam):**
+  - Implementado sistema que busca metadados detalhados (Gêneros, Datas) na **Steam Store API** para jogos listados como "Desconhecido".
+  - Lógica de **Rate Limiting** (pausa de 1.5s entre requisições) para evitar bloqueios de IP pela Valve.
+- **Página "Em Alta" (Integração RAWG):**
+  - Integração com a **RAWG API** para buscar jogos populares e lançamentos.
+  - **Filtro Inteligente:** A lista exclui automaticamente jogos que o usuário já possui na biblioteca local.
+  - **Otimização (Cache):** Implementado padrão de *State Lifting* no `App.tsx` para cachear os resultados da RAWG, eliminando loadings desnecessários ao trocar de abas.
+- **UX de Configurações:**
+  - Unificação do salvamento de chaves em um único botão "Salvar Todas as Configurações".
 
 #### 🐛 Problemas Encontrados
-**1. Falsa "Perda de Dados" ao Reiniciar**
-- **Problema:** Ao fechar e abrir o app, a lista de jogos aparecia vazia, embora o arquivo `library.db` tivesse dados. Reimportar da Steam trazia os jogos de volta (0 adicionados).
-- **Causa:** O comando SQL `PRAGMA journal_mode=WAL` retorna uma linha de resultado ("wal"). A função `init_db` usava `conn.execute` (que espera 0 linhas de retorno), causando um erro silencioso. Esse erro quebrava a promessa no `useEffect` do React, impedindo a chamada de `refreshGames`.
-- **Solução:** Mover a configuração do PRAGMA para o `setup` da aplicação (onde erros podem ser ignorados ou tratados sem afetar o frontend) e remover do `init_db`.
 
-**2. Bug de Duplicação no Settings**
-- **Problema:** A função de importação estava duplicada no arquivo `Settings.tsx`, podendo causar condições de corrida.
-- **Solução:** Remoção do código redundante identificada na revisão.
+**1. Falsa "Perda de Dados" ao Reiniciar**
+
+- **Causa:** O comando SQL `PRAGMA journal_mode=WAL` retornava dados inesperados para o frontend, quebrando a promessa de inicialização.
+- **Solução:** Configuração movida para o `setup` do Rust (backend), onde o retorno é tratado corretamente.
+
+**2. Deadlock no Banco de Dados (Crawler)**
+
+- **Causa:** O Crawler travava a interface inteira pois mantinha o banco bloqueado (`mutex lock`) enquanto esperava o tempo do Rate Limit (`sleep`).
+- **Solução:** Uso de escopo `{}` no Rust para liberar o Mutex imediatamente após a escrita, permitindo que a UI respire enquanto o Crawler "dorme".
+
+**3. Re-fetching Excessivo na Página Em Alta**
+
+- **Causa:** O componente `Trending` era desmontado ao trocar de aba, perdendo os dados e forçando nova chamada de API (lenta) ao voltar.
+- **Solução:** Elevação do estado (`trendingCache`) para o `App.tsx`, persistindo os dados na memória durante a sessão.
 
 #### 💡 Decisões Técnicas
-- **Persistência em AppData vs Portátil:** Mantida a decisão de usar `app_data_dir` (AppData no Windows). Embora impeça o app de ser "portátil" (rodar de pen drive com dados), garante compatibilidade com permissões de usuário do Windows e segue padrões de instalação profissional.
-- **Uso de Ferramentas de Análise (IA):** Utilização de análise estática via LLM para identificar vulnerabilidades de segurança (API Key) e bugs lógicos que passariam despercebidos em testes manuais simples.
+
+- **Store API vs User API:** Optou-se por usar a API da Loja Steam (mais lenta e restrita) para o enriquecimento, pois a API de Usuário não fornece Gêneros/Tags, essenciais para o futuro sistema de recomendação.
+- **Persistência em AppData:** Mantida a decisão de usar diretórios padrão do SO (`AppData`), sacrificando a portabilidade em pen-drives em favor de maior compatibilidade com permissões do Windows.
 
 #### 📚 Recursos Úteis
-- [Rusqlite Documentation (Pragmas)](https://docs.rs/rusqlite/latest/rusqlite/)
-- [Tauri Directories Guide](https://v2.tauri.app/reference/javascript/path/)
 
-#### ⏭️ Próxima Sessão
-- [ ] Implementar Crawler/Scraper para buscar Gêneros e Tags reais (substituindo "Desconhecido").
-- [ ] Desenvolver a página "Em Alta" com integração de API pública (RAWG/IGDB).
-- [ ] Polimento final da UI da Home com dados reais.
+- [Rusqlite Documentation (Pragmas)](https://docs.rs/rusqlite/latest/rusqlite/)
+- [RAWG API Documentation](https://rawg.io/apidocs)
+- [React State Lifting Pattern](https://react.dev/learn/sharing-state-between-components)
+
+#### ⏭️ Próxima Sessão (Fase 3 & 4)
+
+- [ ] **Lista de Desejos:** Criar tabela no banco e integrar com API de preços (CheapShark).
+- [ ] **Sistema de Recomendação V1:** Algoritmo *Content-Based* usando os gêneros capturados pelo Crawler.
+- [ ] **Playlists Inteligentes:** Sugestão de "Backlog" baseada no tempo de jogo e afinidade.
 
 ---
 
@@ -357,4 +376,4 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 ---
 
 *Autor: Alan de Oliveira Gonçalves*  
-*Última atualização: 26/12/2025*
+*Última atualização: 27/12/2025*

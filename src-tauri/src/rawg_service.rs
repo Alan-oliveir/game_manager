@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use chrono::Datelike;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RawgGame {
@@ -22,13 +23,13 @@ struct RawgResponse {
 
 // Busca os jogos mais populares do momento
 pub async fn fetch_trending_games(api_key: &str) -> Result<Vec<RawgGame>, String> {
-    // Ordena por rating, filtrando datas recentes (exemplo simplificado, pega top geral por enquanto)
-    // Para "Trending" real, geralmente pegamos lançamentos recentes com rating alto.
-    // Vamos usar a endpoint "lists/main" ou ordenar por popularidade.
+    // Ordena por rating, filtrando datas recentes
+    let current_year = chrono::Utc::now().year();
+    let last_year = current_year - 1;
 
     let url = format!(
-        "https://api.rawg.io/api/games?key={}&dates=2024-01-01,2025-12-31&ordering=-added&page_size=20",
-        api_key
+        "https://api.rawg.io/api/games?key={}&dates={}-01-01,{}-12-31&ordering=-added&page_size=20",
+        api_key, last_year, current_year
     );
 
     let client = reqwest::Client::new();

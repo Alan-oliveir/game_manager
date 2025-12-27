@@ -1,6 +1,6 @@
 import GameGrid from "../components/GameGrid";
 import {Game} from "../types";
-import { useMemo } from "react";
+import {useMemo} from "react";
 
 interface LibraryProps {
     games: Game[];

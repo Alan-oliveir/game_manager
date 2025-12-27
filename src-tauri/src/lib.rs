@@ -1,6 +1,7 @@
 mod models;
-mod steam_service;
 mod rawg_service;
+mod steam_service;
+mod constants;
 
 use rusqlite::{params, Connection};
 use std::sync::Mutex;
@@ -73,13 +74,31 @@ fn add_game(
         return Err("Nome do jogo não pode ser vazio".to_string());
     }
 
-    if name.len() > 200 {
-        return Err("Nome do jogo muito longo (máximo 200 caracteres)".to_string());
+    if name.len() > constants::MAX_NAME_LENGTH {
+        return Err(format!("Nome do jogo muito longo (máximo {} caracteres)", constants::MAX_NAME_LENGTH));
     }
 
+    // Validação de URL
     if let Some(ref url) = cover_url {
-        if url.len() > 500 {
-            return Err("URL da capa muito longa".to_string());
+        if url.len() > constants::MAX_URL_LENGTH {
+            return Err(format!("URL da capa muito longa (máximo {} caracteres)", constants::MAX_URL_LENGTH));
+        }
+        // Verifica se a URL é válida (começa com http:// ou https://)
+        if !url.is_empty() && !url.starts_with("http://") && !url.starts_with("https://") {
+            return Err("URL da capa deve começar com http:// ou https://".to_string());
+        }
+    }
+
+    // Validação de genre e platform
+    if let Some(ref g) = genre {
+        if g.len() > constants::MAX_GENRE_LENGTH {
+            return Err(format!("Gênero muito longo (máximo {} caracteres)", constants::MAX_GENRE_LENGTH));
+        }
+    }
+
+    if let Some(ref p) = platform {
+        if p.len() > constants::MAX_PLATFORM_LENGTH {
+            return Err(format!("Plataforma muito longa (máximo {} caracteres)", constants::MAX_PLATFORM_LENGTH));
         }
     }
 
@@ -87,15 +106,31 @@ fn add_game(
         if time < 0 {
             return Err("Tempo jogado não pode ser negativo".to_string());
         }
+        if time > constants::MAX_PLAYTIME {
+            return Err(format!("Tempo jogado inválido (máximo {} horas)", constants::MAX_PLAYTIME));
+        }
     }
 
     if let Some(r) = rating {
-        if r < 1 || r > 5 {
-            return Err("Avaliação deve estar entre 1 e 5".to_string());
+        if r < constants::MIN_RATING || r > constants::MAX_RATING {
+            return Err(format!("Avaliação deve estar entre {} e {}", constants::MIN_RATING, constants::MAX_RATING));
         }
     }
 
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
+
+    // Verifica se já existe um jogo com este ID
+    let exists: bool = conn
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM games WHERE id = ?1)",
+            params![id],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("Erro ao verificar duplicata: {}", e))?;
+
+    if exists {
+        return Err("Já existe um jogo com este ID".to_string());
+    }
 
     conn.execute(
         "INSERT INTO games (id, name, genre, platform, cover_url, playtime, rating) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
@@ -179,19 +214,22 @@ fn update_game(
         return Err("Nome do jogo não pode ser vazio".to_string());
     }
 
-    if name.len() > 200 {
-        return Err("Nome do jogo muito longo (máximo 200 caracteres)".to_string());
+    if name.len() > constants::MAX_NAME_LENGTH {
+        return Err(format!("Nome do jogo muito longo (máximo {} caracteres)", constants::MAX_NAME_LENGTH));
     }
 
     if let Some(time) = playtime {
         if time < 0 {
             return Err("Tempo jogado não pode ser negativo".to_string());
         }
+        if time > constants::MAX_PLAYTIME {
+            return Err(format!("Tempo jogado inválido (máximo {} horas)", constants::MAX_PLAYTIME));
+        }
     }
 
     if let Some(r) = rating {
-        if r < 1 || r > 5 {
-            return Err("Avaliação deve estar entre 1 e 5".to_string());
+        if r < constants::MIN_RATING || r > constants::MAX_RATING {
+            return Err(format!("Avaliação deve estar entre {} e {}", constants::MIN_RATING, constants::MAX_RATING));
         }
     }
 
@@ -224,7 +262,8 @@ async fn import_steam_library(
     for game in steam_games {
         // Monta a URL da capa (formato atualizado da Steam CDN)
         let cover_url = format!(
-            "https://cdn.cloudflare.steamstatic.com/steam/apps/{}/library_600x900.jpg",
+            "{}/steam/apps/{}/library_600x900.jpg",
+            constants::STEAM_CDN_URL,
             game.appid
         );
 
@@ -235,8 +274,8 @@ async fn import_steam_library(
             params![
                 game.appid.to_string(), // Usamos o ID da Steam como ID do jogo
                 game.name,
-                "Desconhecido", // API básica não dá gênero do jogo
-                "Steam",
+                constants::DEFAULT_GENRE, // API básica não dá gênero do jogo
+                constants::DEFAULT_PLATFORM_STEAM,
                 cover_url,
                 (game.playtime_forever as f32 / 60.0).round() as i32, // Converte minutos para horas corretamente
                 None::<i32>                                           // Sem avaliação inicial
@@ -261,10 +300,11 @@ async fn enrich_library(state: State<'_, AppState>) -> Result<String, String> {
         {
             let conn = state.db.lock().map_err(|_| "Mutex error")?;
             let mut stmt = conn.prepare(
-            "SELECT id, name FROM games WHERE genre = 'Desconhecido' AND platform = 'Steam'"
+            "SELECT id, name FROM games WHERE genre = ?1 AND platform = ?2"
         ).map_err(|e| e.to_string())?;
 
-            let mut rows = stmt.query([]).map_err(|e| e.to_string())?;
+            let mut rows = stmt.query([constants::DEFAULT_GENRE, constants::DEFAULT_PLATFORM_STEAM])
+                .map_err(|e| e.to_string())?;
             let mut games = Vec::new();
 
             while let Some(row) = rows.next().map_err(|e| e.to_string())? {
@@ -306,14 +346,14 @@ async fn enrich_library(state: State<'_, AppState>) -> Result<String, String> {
                     success_count += 1;
                 }
                 Err(e) => {
-                    println!("Falha ao buscar {}: {}", name, e);
+                    eprintln!("[ERRO] Falha ao buscar metadata para {}: {}", name, e);
                 }
             }
 
             // RATE LIMIT THROTTLE
-            // Espera 1.5 segundos entre requisições.
+            // Espera entre requisições para respeitar limites da API Steam
             // A Steam permite ~200 reqs/5min. 1.5s = 200 reqs em 5 min. Seguro.
-            sleep(Duration::from_millis(1500)).await;
+            sleep(Duration::from_millis(constants::STEAM_RATE_LIMIT_MS)).await;
         }
     }
 

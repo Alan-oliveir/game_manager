@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import {invoke} from "@tauri-apps/api/core";
-import {Game} from "./types";
+import {Game, RawgGame} from "./types";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import AddGameModal from "./components/AddGameModal";
@@ -17,6 +17,7 @@ function App() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [trendingCache, setTrendingCache] = useState<RawgGame[]>([]);
 
     // Consulta os jogos na base de dados
     const refreshGames = async () => {
@@ -139,6 +140,8 @@ function App() {
                     <Trending
                         userGames={games}
                         onChangeTab={setActiveSection}
+                        cachedGames={trendingCache}
+                        setCachedGames={setTrendingCache}
                     />
                 );
             case "settings":
@@ -160,6 +163,7 @@ function App() {
             <Sidebar
                 activeSection={activeSection}
                 onSectionChange={setActiveSection}
+                games={games}
             />
 
             <main className="flex-1 flex flex-col min-w-0">
