@@ -313,7 +313,7 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 
 - Microsoft Store (Windows 11)
 - Epic Games Launcher
-- Hydra
+- Hydra Launcher
 
 ---
 
