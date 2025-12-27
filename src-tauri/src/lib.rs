@@ -1,5 +1,6 @@
 mod models;
 mod steam_service;
+mod rawg_service;
 
 use rusqlite::{params, Connection};
 use std::sync::Mutex;
@@ -322,6 +323,11 @@ async fn enrich_library(state: State<'_, AppState>) -> Result<String, String> {
     ))
 }
 
+#[tauri::command]
+async fn get_trending_games(api_key: String) -> Result<Vec<rawg_service::RawgGame>, String> {
+    rawg_service::fetch_trending_games(&api_key).await
+}
+
 // Função principal que configura o Tauri
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -363,7 +369,8 @@ pub fn run() {
             delete_game,
             update_game,
             import_steam_library,
-            enrich_library
+            enrich_library,
+            get_trending_games
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

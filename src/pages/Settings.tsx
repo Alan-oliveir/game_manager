@@ -4,7 +4,7 @@ import {Store} from '@tauri-apps/plugin-store';
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {AlertCircle, CheckCircle, CloudDownload, Loader2, Sparkles} from "lucide-react";
+import {AlertCircle, CheckCircle, CloudDownload, Loader2, Sparkles, Gamepad2} from "lucide-react";
 
 interface SettingsProps {
     onLibraryUpdate: () => void;
@@ -20,6 +20,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
     });
     const [store, setStore] = useState<Store | null>(null);
     const [isEnriching, setIsEnriching] = useState(false);
+    const [rawgApiKey, setRawgApiKey] = useState("");
 
     useEffect(() => {
         // Carregar configurações do store seguro
@@ -31,9 +32,11 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
 
                 const savedId = await storeInstance.get<string>('steam_id');
                 const savedKey = await storeInstance.get<string>('steam_api_key');
+                const savedRawg = await storeInstance.get<string>('rawg_api_key');
 
                 if (savedId) setSteamId(savedId);
                 if (savedKey) setApiKey(savedKey);
+                if (savedRawg) setRawgApiKey(savedRawg);
             } catch (error) {
                 console.error("Erro ao carregar configurações:", error);
             }
@@ -41,6 +44,21 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
 
         loadSettings();
     }, []);
+
+    const handleSaveKeys = async () => {
+        // Vamos criar uma função genérica ou adicionar no handleImport/handleEnrich
+        // Mas o ideal é salvar assim que digita ou ter um botão "Salvar Chaves" geral.
+        // Para simplificar, vamos salvar dentro do handleImport ou criar um botão de salvar específico.
+
+        // Sugestão: Adicione isso no início do handleImport ou crie um useEffect que salva quando muda (com debounce)
+        // Ou melhor: Vamos salvar ao clicar nos botões de ação existente por enquanto.
+        if (store) {
+            await store.set('rawg_api_key', rawgApiKey.trim());
+            await store.save();
+        }
+    };
+
+    // Duvida: não seria melhor salvar as chaves steam e rawg juntas numa função só, assim que o usuário digitar?
 
     const handleImport = async () => {
         if (!steamId || !apiKey) {
@@ -98,7 +116,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
         <div className="flex-1 p-8 overflow-y-auto">
             <h2 className="text-3xl font-bold mb-6">Configurações</h2>
 
-            {/* Card de Integração Steam */}
+            {/* Card de importação de games da Steam */}
             <div className="max-w-2xl border border-border rounded-xl bg-card p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-6 border-b border-border pb-4">
                     <div className="p-2 bg-blue-900/20 rounded-lg">
@@ -167,6 +185,37 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
                 </div>
             </div>
 
+            {/* Card integração RAWG */}
+            <div className="max-w-2xl border border-border rounded-xl bg-card p-6 shadow-sm mt-6">
+                <div className="flex items-center gap-3 mb-6 border-b border-border pb-4">
+                    <div className="p-2 bg-orange-900/20 rounded-lg">
+                        <Gamepad2 size={24} className="text-orange-500"/>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold">Descoberta de Jogos (RAWG)</h3>
+                        <p className="text-sm text-muted-foreground">Necessário para a aba "Em Alta".</p>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="rawgKey">RAWG API Key</Label>
+                        <Input
+                            id="rawgKey"
+                            type="password"
+                            placeholder="Cole sua chave RAWG aqui..."
+                            value={rawgApiKey}
+                            onChange={(e) => setRawgApiKey(e.target.value)}
+                            onBlur={handleSaveKeys} // Salva quando sair do campo
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Obtenha gratuitamente em rawg.io/apidocs
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Card de Enriquecimento de Dados */}
             <div className="max-w-2xl border border-border rounded-xl bg-card p-6 shadow-sm mt-6">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-purple-900/20 rounded-lg">

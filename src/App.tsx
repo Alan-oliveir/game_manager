@@ -8,11 +8,12 @@ import Library from "./pages/Library";
 import Favorites from "./pages/Favorites";
 import Settings from "./pages/Settings";
 import Home from "./pages/Home";
+import Trending from "./pages/Trending.tsx";
 
 function App() {
     // Estados principais
     const [games, setGames] = useState<Game[]>([]);
-    const [activeSection, setActiveSection] = useState("library");
+    const [activeSection, setActiveSection] = useState("home");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -131,6 +132,13 @@ function App() {
                         games={games}
                         searchTerm={searchTerm}
                         {...gameActions}
+                    />
+                );
+            case "trending":
+                return (
+                    <Trending
+                        userGames={games}
+                        onChangeTab={setActiveSection}
                     />
                 );
             case "settings":
