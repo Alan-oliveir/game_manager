@@ -4,7 +4,7 @@ import {Store} from '@tauri-apps/plugin-store';
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {AlertCircle, CheckCircle, CloudDownload, Loader2} from "lucide-react";
+import {AlertCircle, CheckCircle, CloudDownload, Loader2, Sparkles} from "lucide-react";
 
 interface SettingsProps {
     onLibraryUpdate: () => void;
@@ -19,6 +19,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
         message: ""
     });
     const [store, setStore] = useState<Store | null>(null);
+    const [isEnriching, setIsEnriching] = useState(false);
 
     useEffect(() => {
         // Carregar configurações do store seguro
@@ -75,6 +76,21 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
 
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleEnrich = async () => {
+        setIsEnriching(true);
+        setStatus({type: null, message: "Buscando gêneros na Steam... Isso pode demorar."});
+
+        try {
+            const result = await invoke<string>("enrich_library");
+            setStatus({type: 'success', message: result});
+            onLibraryUpdate(); // Atualiza a UI para ver os novos gêneros
+        } catch (error) {
+            setStatus({type: 'error', message: String(error)});
+        } finally {
+            setIsEnriching(false);
         }
     };
 
@@ -148,6 +164,37 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
                             )}
                         </Button>
                     </div>
+                </div>
+            </div>
+
+            <div className="max-w-2xl border border-border rounded-xl bg-card p-6 shadow-sm mt-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-purple-900/20 rounded-lg">
+                        <Sparkles size={24} className="text-purple-500"/>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold">Enriquecer Dados</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Busca gêneros e tags reais para jogos que estão como "Desconhecido".
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex justify-end">
+                    <Button
+                        onClick={handleEnrich}
+                        disabled={isEnriching}
+                        variant="secondary"
+                    >
+                        {isEnriching ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                                Processando... (Veja o terminal)
+                            </>
+                        ) : (
+                            "Buscar Gêneros Faltantes"
+                        )}
+                    </Button>
                 </div>
             </div>
         </div>

@@ -3,7 +3,10 @@ mod steam_service;
 
 use rusqlite::{params, Connection};
 use std::sync::Mutex;
-use tauri::{State, Manager};
+use tauri::{Manager, State};
+
+use std::time::Duration;
+use tokio::time::sleep;
 
 // Estado da aplicação
 pub struct AppState {
@@ -68,7 +71,7 @@ fn add_game(
     if name.trim().is_empty() {
         return Err("Nome do jogo não pode ser vazio".to_string());
     }
-    
+
     if name.len() > 200 {
         return Err("Nome do jogo muito longo (máximo 200 caracteres)".to_string());
     }
@@ -174,7 +177,7 @@ fn update_game(
     if name.trim().is_empty() {
         return Err("Nome do jogo não pode ser vazio".to_string());
     }
-    
+
     if name.len() > 200 {
         return Err("Nome do jogo muito longo (máximo 200 caracteres)".to_string());
     }
@@ -235,7 +238,7 @@ async fn import_steam_library(
                 "Steam",
                 cover_url,
                 (game.playtime_forever as f32 / 60.0).round() as i32, // Converte minutos para horas corretamente
-                None::<i32>                 // Sem avaliação inicial
+                None::<i32>                                           // Sem avaliação inicial
             ],
         );
 
@@ -250,6 +253,75 @@ async fn import_steam_library(
     ))
 }
 
+#[tauri::command]
+async fn enrich_library(state: State<'_, AppState>) -> Result<String, String> {
+    // 1. Busca IDs de jogos que ainda estão como "Desconhecido" e são da Steam
+    let games_to_update =
+        {
+            let conn = state.db.lock().map_err(|_| "Mutex error")?;
+            let mut stmt = conn.prepare(
+            "SELECT id, name FROM games WHERE genre = 'Desconhecido' AND platform = 'Steam'"
+        ).map_err(|e| e.to_string())?;
+
+            let mut rows = stmt.query([]).map_err(|e| e.to_string())?;
+            let mut games = Vec::new();
+
+            while let Some(row) = rows.next().map_err(|e| e.to_string())? {
+                let id: String = row.get(0).map_err(|e| e.to_string())?;
+                let name: String = row.get(1).map_err(|e| e.to_string())?;
+                games.push((id, name));
+            }
+
+            games
+        }; // conn, stmt, and rows are all dropped here
+
+    let total = games_to_update.len();
+    if total == 0 {
+        return Ok("Todos os jogos Steam já estão atualizados!".to_string());
+    }
+
+    println!("Iniciando enriquecimento de {} jogos...", total);
+    let mut success_count = 0;
+
+    // 2. Loop do Crawler
+    for (id_str, name) in games_to_update {
+        // Tenta converter ID para u32 (Steam ID)
+        if let Ok(app_id) = id_str.parse::<u32>() {
+            // Chama a API da Loja
+            match steam_service::fetch_game_metadata(app_id).await {
+                Ok(metadata) => {
+                    // Salva no Banco
+                    {
+                        let conn = state.db.lock().map_err(|_| "Mutex error")?;
+                        let _ = conn.execute(
+                            "UPDATE games SET genre = ?1 WHERE id = ?2",
+                            params![metadata.genre, id_str],
+                        );
+                        // conn is dropped here
+                    }
+                    // Futuro: Poderíamos salvar description e release_date se tivéssemos colunas pra isso
+
+                    println!("Atualizado: {} -> {}", name, metadata.genre);
+                    success_count += 1;
+                }
+                Err(e) => {
+                    println!("Falha ao buscar {}: {}", name, e);
+                }
+            }
+
+            // RATE LIMIT THROTTLE
+            // Espera 1.5 segundos entre requisições.
+            // A Steam permite ~200 reqs/5min. 1.5s = 200 reqs em 5 min. Seguro.
+            sleep(Duration::from_millis(1500)).await;
+        }
+    }
+
+    Ok(format!(
+        "Processo finalizado. {} de {} jogos atualizados.",
+        success_count, total
+    ))
+}
+
 // Função principal que configura o Tauri
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -258,19 +330,20 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .setup(|app| {
             // Obtém o diretório de dados da aplicação
-            let app_data_dir = app.path().app_data_dir()
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
                 .expect("Falha ao obter diretório de dados da aplicação");
 
             // Cria o diretório se não existir
-            std::fs::create_dir_all(&app_data_dir)
-                .expect("Falha ao criar diretório de dados");
+            std::fs::create_dir_all(&app_data_dir).expect("Falha ao criar diretório de dados");
 
             // Caminho completo do banco de dados
             let db_path = app_data_dir.join("library.db");
 
             // Inicializa conexão com arquivo no diretório de dados
-            let conn = Connection::open(&db_path)
-                .expect(&format!("Erro ao abrir banco em {:?}", db_path));
+            let conn =
+                Connection::open(&db_path).expect(&format!("Erro ao abrir banco em {:?}", db_path));
 
             // Configura o journal mode para WAL (Write-Ahead Logging) para melhor performance
             let _ = conn.execute("PRAGMA journal_mode=WAL", []);
@@ -289,7 +362,8 @@ pub fn run() {
             toggle_favorite,
             delete_game,
             update_game,
-            import_steam_library
+            import_steam_library,
+            enrich_library
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
