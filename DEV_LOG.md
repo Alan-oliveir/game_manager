@@ -266,6 +266,45 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 - [ ] Planejamento do "Crawler" para buscar Gêneros e Tags dos jogos (Enriquecimento).
 - [ ] Desenvolvimento da página "Em Alta" (Trending).
 
+---
+
+### 📅 27/12/2025 - Estabilização, Debugging de Persistência e Documentação
+
+**Tempo investido:** ~2h
+**Objetivo:** Retomar o desenvolvimento, auditar o código com ferramentas de IA, corrigir bugs de inicialização e documentar o progresso público.
+
+#### ✨ Implementações
+- **Refatoração de Segurança:** Implementação completa do `tauri-plugin-store` para gerenciamento seguro de chaves de API (substituindo o localStorage vulnerável).
+- **Correção de Inicialização (Persistência):** Ajuste no ciclo de vida do banco de dados.
+  - Movida a configuração `PRAGMA journal_mode=WAL` do comando `init_db` (invocado pelo frontend) para o `setup` do Tauri (backend), evitando erros de execução que impediam o carregamento da lista de jogos.
+  - Atualizado `App.tsx` para garantir que `refreshGames` seja chamado mesmo se a inicialização do banco retornar avisos não críticos.
+- **Documentação:** Atualização dos arquivos README e docs públicos do repositório.
+
+#### 🐛 Problemas Encontrados
+**1. Falsa "Perda de Dados" ao Reiniciar**
+- **Problema:** Ao fechar e abrir o app, a lista de jogos aparecia vazia, embora o arquivo `library.db` tivesse dados. Reimportar da Steam trazia os jogos de volta (0 adicionados).
+- **Causa:** O comando SQL `PRAGMA journal_mode=WAL` retorna uma linha de resultado ("wal"). A função `init_db` usava `conn.execute` (que espera 0 linhas de retorno), causando um erro silencioso. Esse erro quebrava a promessa no `useEffect` do React, impedindo a chamada de `refreshGames`.
+- **Solução:** Mover a configuração do PRAGMA para o `setup` da aplicação (onde erros podem ser ignorados ou tratados sem afetar o frontend) e remover do `init_db`.
+
+**2. Bug de Duplicação no Settings**
+- **Problema:** A função de importação estava duplicada no arquivo `Settings.tsx`, podendo causar condições de corrida.
+- **Solução:** Remoção do código redundante identificada na revisão.
+
+#### 💡 Decisões Técnicas
+- **Persistência em AppData vs Portátil:** Mantida a decisão de usar `app_data_dir` (AppData no Windows). Embora impeça o app de ser "portátil" (rodar de pen drive com dados), garante compatibilidade com permissões de usuário do Windows e segue padrões de instalação profissional.
+- **Uso de Ferramentas de Análise (IA):** Utilização de análise estática via LLM para identificar vulnerabilidades de segurança (API Key) e bugs lógicos que passariam despercebidos em testes manuais simples.
+
+#### 📚 Recursos Úteis
+- [Rusqlite Documentation (Pragmas)](https://docs.rs/rusqlite/latest/rusqlite/)
+- [Tauri Directories Guide](https://v2.tauri.app/reference/javascript/path/)
+
+#### ⏭️ Próxima Sessão
+- [ ] Implementar Crawler/Scraper para buscar Gêneros e Tags reais (substituindo "Desconhecido").
+- [ ] Desenvolver a página "Em Alta" com integração de API pública (RAWG/IGDB).
+- [ ] Polimento final da UI da Home com dados reais.
+
+---
+
 ## 🎯 Roadmap Futuro
 
 ### Fase 2: Features Avançadas (Desktop)

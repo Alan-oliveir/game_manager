@@ -49,10 +49,6 @@ fn init_db(state: State<AppState>) -> Result<String, String> {
     )
     .map_err(|e| e.to_string())?;
 
-    // Ativar modo WAL para melhor concorrência
-    conn.execute("PRAGMA journal_mode=WAL", [])
-        .map_err(|e| e.to_string())?;
-
     Ok("Banco inicializado com sucesso!".to_string())
 }
 
@@ -275,6 +271,9 @@ pub fn run() {
             // Inicializa conexão com arquivo no diretório de dados
             let conn = Connection::open(&db_path)
                 .expect(&format!("Erro ao abrir banco em {:?}", db_path));
+
+            // Configura o journal mode para WAL (Write-Ahead Logging) para melhor performance
+            let _ = conn.execute("PRAGMA journal_mode=WAL", []);
 
             // Registra o estado da aplicação
             app.manage(AppState {

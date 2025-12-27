@@ -29,7 +29,7 @@ function App() {
 
     useEffect(() => {
         invoke("init_db")
-            .then(() => refreshGames())
+            .finally(() => refreshGames())
             .catch(console.error);
     }, []);
 
