@@ -2,22 +2,18 @@ mod models;
 mod rawg_service;
 mod steam_service;
 mod constants;
-mod crypto;
+mod keychain;
 
 use serde::Serialize;
-use std::collections::HashMap;
-
 use rusqlite::{params, Connection};
 use std::sync::Mutex;
 use tauri::{Manager, State};
-use std::path::PathBuf;
 
 use std::time::Duration;
 use tokio::time::sleep;
 
 pub struct AppState {
     db: Mutex<Connection>,
-    app_data_dir: PathBuf,
 }
 
 #[derive(Serialize)]
@@ -29,88 +25,36 @@ pub struct KeysBatch {
 
 /// Recupera todas as chaves de configuração de uma vez
 #[tauri::command]
-fn get_all_encrypted_keys(state: State<AppState>) -> Result<KeysBatch, String> {
-    let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
-
-    // Busca todas as 3 chaves em uma única query
-    let mut stmt = conn
-        .prepare(
-            "SELECT key_name, ciphertext, nonce, salt
-             FROM encrypted_keys
-             WHERE key_name IN ('steam_id', 'steam_api_key', 'rawg_api_key')"
-        )
-        .map_err(|e| e.to_string())?;
-
-    let rows = stmt
-        .query_map([], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                crypto::EncryptedData {
-                    ciphertext: row.get(1)?,
-                    nonce: row.get(2)?,
-                    salt: row.get(3)?,
-                }
-            ))
-        })
-        .map_err(|e| e.to_string())?;
-
-    // Cria um HashMap para lookup rápido
-    let mut keys_map: HashMap<String, crypto::EncryptedData> = HashMap::new();
-    for row in rows {
-        let (key_name, encrypted) = row.map_err(|e| e.to_string())?;
-        keys_map.insert(key_name, encrypted);
-    }
-
-    // Descriptografa cada chave (se existir)
-    let steam_id = if let Some(encrypted) = keys_map.get("steam_id") {
-        crypto::decrypt(encrypted, &state.app_data_dir, "steam_id").unwrap_or_default()
-    } else {
-        String::new()
-    };
-
-    let steam_api_key = if let Some(encrypted) = keys_map.get("steam_api_key") {
-        crypto::decrypt(encrypted, &state.app_data_dir, "steam_api_key").unwrap_or_default()
-    } else {
-        String::new()
-    };
-
-    let rawg_api_key = if let Some(encrypted) = keys_map.get("rawg_api_key") {
-        crypto::decrypt(encrypted, &state.app_data_dir, "rawg_api_key").unwrap_or_default()
-    } else {
-        String::new()
-    };
-
+fn get_all_encrypted_keys() -> Result<KeysBatch, String> {
     Ok(KeysBatch {
-        steam_id,
-        steam_api_key,
-        rawg_api_key,
+        steam_id: keychain::get_secret("steam_id")?,
+        steam_api_key: keychain::get_secret("steam_api_key")?,
+        rawg_api_key: keychain::get_secret("rawg_api_key")?,
     })
 }
 
 /// Salva todas as chaves de configuração de uma vez
 #[tauri::command]
 fn save_all_encrypted_keys(
-    state: State<AppState>,
     steam_id: Option<String>,
     steam_api_key: Option<String>,
     rawg_api_key: Option<String>,
 ) -> Result<(), String> {
-    // Criptografa e salva cada chave (se fornecida)
     if let Some(id) = steam_id {
         if !id.trim().is_empty() {
-            save_encrypted_key(state.clone(), "steam_id".to_string(), id)?;
+            keychain::set_secret("steam_id", &id)?;
         }
     }
 
     if let Some(key) = steam_api_key {
         if !key.trim().is_empty() {
-            save_encrypted_key(state.clone(), "steam_api_key".to_string(), key)?;
+            keychain::set_secret("steam_api_key", &key)?;
         }
     }
 
     if let Some(rawg) = rawg_api_key {
         if !rawg.trim().is_empty() {
-            save_encrypted_key(state.clone(), "rawg_api_key".to_string(), rawg)?;
+            keychain::set_secret("rawg_api_key", &rawg)?;
         }
     }
 
@@ -119,121 +63,29 @@ fn save_all_encrypted_keys(
 
 /// Salva uma API key de forma criptografada
 #[tauri::command]
-fn save_encrypted_key(
-    state: State<AppState>,
-    key_name: String,
-    key_value: String,
-) -> Result<(), String> {
-    if key_value.trim().is_empty() {
-        return Err("Chave não pode ser vazia".to_string());
-    }
-
-    // Criptografa a chave
-    let encrypted = crypto::encrypt(
-        &key_value,
-        &state.app_data_dir,
-        &key_name,
-    )?;
-
-    // Salva no banco de dados
-    let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
-
-    // Cria tabela se não existir
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS encrypted_keys (
-            key_name TEXT PRIMARY KEY,
-            ciphertext TEXT NOT NULL,
-            nonce TEXT NOT NULL,
-            salt TEXT NOT NULL,
-            updated_at INTEGER DEFAULT (strftime('%s', 'now'))
-        )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    // Insere ou atualiza
-    conn.execute(
-        "INSERT OR REPLACE INTO encrypted_keys (key_name, ciphertext, nonce, salt, updated_at)
-         VALUES (?1, ?2, ?3, ?4, strftime('%s', 'now'))",
-        params![
-            key_name,
-            encrypted.ciphertext,
-            encrypted.nonce,
-            encrypted.salt
-        ],
-    )
-        .map_err(|e| e.to_string())?;
-
-    Ok(())
+fn save_encrypted_key(key_name: String, key_value: String) -> Result<(), String> {
+    keychain::set_secret(&key_name, &key_value)
 }
 
 /// Recupera uma API key criptografada
 #[tauri::command]
-fn get_encrypted_key(
-    state: State<AppState>,
-    key_name: String,
-) -> Result<String, String> {
-    let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
-
-    // Busca dados criptografados
-    let result = conn.query_row(
-        "SELECT ciphertext, nonce, salt FROM encrypted_keys WHERE key_name = ?1",
-        params![key_name],
-        |row| {
-            Ok(crypto::EncryptedData {
-                ciphertext: row.get(0)?,
-                nonce: row.get(1)?,
-                salt: row.get(2)?,
-            })
-        },
-    );
-
-    match result {
-        Ok(encrypted) => {
-            // Descriptografa
-            crypto::decrypt(&encrypted, &state.app_data_dir, &key_name)
-        }
-        Err(rusqlite::Error::QueryReturnedNoRows) => {
-            // Chave não encontrada - retorna string vazia
-            Ok(String::new())
-        }
-        Err(e) => Err(format!("Erro ao buscar chave: {}", e)),
-    }
+fn get_encrypted_key(key_name: String) -> Result<String, String> {
+    keychain::get_secret(&key_name)
 }
 
 /// Deleta uma API key
 #[tauri::command]
-fn delete_encrypted_key(
-    state: State<AppState>,
-    key_name: String,
-) -> Result<(), String> {
-    let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
-
-    conn.execute(
-        "DELETE FROM encrypted_keys WHERE key_name = ?1",
-        params![key_name],
-    )
-        .map_err(|e| e.to_string())?;
-
-    Ok(())
+fn delete_encrypted_key(key_name: String) -> Result<(), String> {
+    keychain::delete_secret(&key_name)
 }
 
 /// Lista todas as chaves armazenadas (sem revelar os valores)
 #[tauri::command]
-fn list_encrypted_keys(state: State<AppState>) -> Result<Vec<String>, String> {
-    let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
-
-    let mut stmt = conn
-        .prepare("SELECT key_name FROM encrypted_keys ORDER BY key_name")
-        .map_err(|e| e.to_string())?;
-
-    let keys = stmt
-        .query_map([], |row| row.get(0))
-        .map_err(|e| e.to_string())?
-        .collect::<Result<Vec<String>, _>>()
-        .map_err(|e| e.to_string())?;
-
-    Ok(keys)
+fn list_encrypted_keys() -> Result<Vec<String>, String> {
+    Ok(keychain::list_supported_keys()
+        .into_iter()
+        .map(|s| s.to_string())
+        .collect())
 }
 
 #[tauri::command]
@@ -660,14 +512,13 @@ pub fn run() {
 
             let db_path = app_data_dir.join("library.db");
 
-            let conn =
-                Connection::open(&db_path).expect(&format!("Erro ao abrir banco em {:?}", db_path));
+            let conn = Connection::open(&db_path)
+                .expect(&format!("Erro ao abrir banco em {:?}", db_path));
 
             let _ = conn.execute("PRAGMA journal_mode=WAL", []);
 
             app.manage(AppState {
                 db: Mutex::new(conn),
-                app_data_dir,
             });
 
             Ok(())

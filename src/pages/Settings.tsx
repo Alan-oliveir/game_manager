@@ -65,7 +65,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
 
             setStatus({
                 type: 'success',
-                message: "Configurações salvas com segurança (criptografadas)"
+                message: "Configurações salvas com segurança (Keychain do sistema)"
             });
         } catch (error) {
             console.error(error);
@@ -156,7 +156,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
                 <div className="grid gap-6 border border-border rounded-xl bg-card p-6">
                     <div className="flex items-center gap-2">
                         <Shield className="text-green-500" size={20}/>
-                        <h3 className="text-lg font-semibold">Credenciais de API (Criptografadas)</h3>
+                        <h3 className="text-lg font-semibold">Credenciais de API (Keychain do sistema)</h3>
                     </div>
 
                     <div className="grid gap-2">

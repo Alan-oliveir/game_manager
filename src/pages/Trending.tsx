@@ -28,7 +28,7 @@ export default function Trending({userGames, onChangeTab, cachedGames, setCached
             }
             try {
                 const apiKey = await invoke<string>('get_encrypted_key', {
-                    keyName: 'rawg_api_key'
+                    key_name: 'rawg_api_key'
                 });
 
                 if (!apiKey || apiKey.trim() === "") {
