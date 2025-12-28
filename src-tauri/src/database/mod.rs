@@ -27,6 +27,22 @@ pub fn init_db(state: State<AppState>) -> Result<String, String> {
     )
     .map_err(|e| e.to_string())?;
 
+    // Tabela da Lista de Desejos
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS wishlist (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            cover_url TEXT,
+            store_url TEXT,
+            current_price REAL,
+            lowest_price REAL,
+            on_sale BOOLEAN DEFAULT 0,
+            added_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_favorite ON games(favorite)",
         [],
@@ -41,6 +57,13 @@ pub fn init_db(state: State<AppState>) -> Result<String, String> {
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_platform ON games(platform)",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Índice para ordenar por data de adição rapidamente na wishlist
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_wishlist_added ON wishlist(added_at)",
         [],
     )
     .map_err(|e| e.to_string())?;

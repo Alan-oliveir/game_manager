@@ -12,6 +12,18 @@ pub struct Game {
     pub favorite: bool,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WishlistGame {
+    pub id: String,
+    pub name: String,
+    pub cover_url: Option<String>,
+    pub store_url: Option<String>,
+    pub current_price: Option<f64>, // Usamos Option porque pode ser nulo ou zero
+    pub lowest_price: Option<f64>,
+    pub on_sale: bool,
+    pub added_at: Option<String>, // SQLite retorna datas como String
+}
+
 // Enum de erros personalizados para melhor diagnóstico
 #[allow(dead_code)]
 #[derive(Debug, Serialize)]
@@ -31,7 +43,9 @@ impl std::fmt::Display for AppError {
             AppError::ValidationError(msg) => write!(f, "Erro de validação: {}", msg),
             AppError::NetworkError(msg) => write!(f, "Erro de rede: {}", msg),
             AppError::NotFound(msg) => write!(f, "Não encontrado: {}", msg),
-            AppError::MutexError => write!(f, "Erro interno: falha ao acessar recurso compartilhado"),
+            AppError::MutexError => {
+                write!(f, "Erro interno: falha ao acessar recurso compartilhado")
+            }
         }
     }
 }

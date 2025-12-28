@@ -44,6 +44,11 @@ pub fn run() {
             commands::games::toggle_favorite,
             commands::games::delete_game,
             commands::games::update_game,
+            // Comandos da Lista de Desejos
+            commands::wishlist::add_to_wishlist,
+            commands::wishlist::remove_from_wishlist,
+            commands::wishlist::get_wishlist,
+            commands::wishlist::check_wishlist_status,
             // Comandos de Integração (Steam/RAWG)
             commands::integrations::import_steam_library,
             commands::integrations::enrich_library,
