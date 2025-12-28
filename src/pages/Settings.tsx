@@ -39,7 +39,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
                 if (keys.steam_api_key) setApiKey(keys.steam_api_key);
                 if (keys.rawg_api_key) setRawgApiKey(keys.rawg_api_key);
 
-                console.log("✓ Chaves carregadas em batch:", {
+                console.log("Chaves carregadas em batch:", {
                     steam_id: keys.steam_id ? "✓" : "✗",
                     steam_api_key: keys.steam_api_key ? "✓" : "✗",
                     rawg_api_key: keys.rawg_api_key ? "✓" : "✗"
@@ -65,7 +65,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
 
             setStatus({
                 type: 'success',
-                message: "✓ Configurações salvas com segurança (criptografadas)"
+                message: "Configurações salvas com segurança (criptografadas)"
             });
         } catch (error) {
             console.error(error);
