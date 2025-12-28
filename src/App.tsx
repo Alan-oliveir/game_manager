@@ -18,6 +18,7 @@ function App() {
     const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [trendingCache, setTrendingCache] = useState<RawgGame[]>([]);
+    const [trendingKey, setTrendingKey] = useState(0); // Para forçar re-render do Trending
 
     // Consulta os jogos na base de dados
     const refreshGames = async () => {
@@ -34,6 +35,15 @@ function App() {
             .finally(() => refreshGames())
             .catch(console.error);
     }, []);
+
+    // Callback para quando as configurações forem atualizadas
+    const handleSettingsUpdate = () => {
+        refreshGames();
+        // Limpa o cache do Trending para forçar nova busca
+        setTrendingCache([]);
+        setTrendingKey(prev => prev + 1); // Força re-render do componente Trending
+        console.log("Cache do Trending limpo após atualização de configurações");
+    };
 
     // Ações de manipulação de jogos
     const handleSaveGame = async (gameData: Partial<Game>) => {
@@ -138,6 +148,7 @@ function App() {
             case "trending":
                 return (
                     <Trending
+                        key={trendingKey} // Força re-render quando trendingKey muda
                         userGames={games}
                         onChangeTab={setActiveSection}
                         cachedGames={trendingCache}
@@ -145,7 +156,7 @@ function App() {
                     />
                 );
             case "settings":
-                return <Settings onLibraryUpdate={refreshGames}/>;
+                return <Settings onLibraryUpdate={handleSettingsUpdate}/>;
             default:
                 return (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground opacity-50">

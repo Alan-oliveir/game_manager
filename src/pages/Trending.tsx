@@ -13,7 +13,7 @@ interface TrendingProps {
 
 export default function Trending({userGames, onChangeTab, cachedGames, setCachedGames}: TrendingProps) {
     const [games, setGames] = useState<RawgGame[]>(cachedGames);
-    const [loading, setLoading] = useState(cachedGames.length === 0);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedGenre, setSelectedGenre] = useState<string>("all");
     const [heroIndex, setHeroIndex] = useState<number>(0);
@@ -21,14 +21,20 @@ export default function Trending({userGames, onChangeTab, cachedGames, setCached
     // Buscar dados ao carregar a página
     useEffect(() => {
         const fetchTrending = async () => {
-            if (cachedGames.length > 0) {
+            // Se já tem cache E não teve erro anterior, usa o cache
+            if (cachedGames.length > 0 && !error) {
                 console.log("Usando cache para Trending - API não chamada.");
-                setLoading(false);
+                setGames(cachedGames);
                 return;
             }
+
+            // Caso contrário, busca novamente
+            setLoading(true);
+            setError(null);
+
             try {
-                const apiKey = await invoke<string>('get_encrypted_key', {
-                    key_name: 'rawg_api_key'
+                const apiKey = await invoke<string>('get_secret', {
+                    keyName: 'rawg_api_key'
                 });
 
                 if (!apiKey || apiKey.trim() === "") {
@@ -58,8 +64,44 @@ export default function Trending({userGames, onChangeTab, cachedGames, setCached
                 setLoading(false);
             }
         };
+
         fetchTrending();
-    }, [cachedGames.length, setCachedGames]);
+    }, []); // Remove dependências para executar apenas no mount
+
+    // Função para tentar buscar dados novamente
+    const handleRetry = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const apiKey = await invoke<string>('get_secret', {
+                keyName: 'rawg_api_key'
+            });
+
+            if (!apiKey || apiKey.trim() === "") {
+                setError("API Key da RAWG não configurada. Verifique nas Configurações.");
+                return;
+            }
+
+            console.log("Tentando buscar jogos trending novamente...");
+            const result = await invoke<RawgGame[]>("get_trending_games", {apiKey});
+
+            setGames(result);
+            setCachedGames(result);
+            setError(null);
+        } catch (err) {
+            console.error("Erro ao buscar trending:", err);
+            const errorMessage = String(err);
+
+            if (errorMessage.includes("Invalid API key") || errorMessage.includes("401")) {
+                setError("API Key da RAWG inválida. Verifique nas Configurações.");
+            } else {
+                setError(`Erro ao buscar jogos em alta: ${errorMessage}`);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Remove jogos que o usuário já tem (comparando nomes normalizados)
     const userGameNames = userGames.map(g => g.name.toLowerCase().replace(/[^a-z0-9]/g, ""));
@@ -105,8 +147,24 @@ export default function Trending({userGames, onChangeTab, cachedGames, setCached
                 </div>
                 <h2 className="text-xl font-bold mb-2">Ops! Algo deu errado.</h2>
                 <p className="text-muted-foreground mb-6 max-w-md">{error}</p>
-                <Button onClick={() => onChangeTab("settings")}>
-                    Configurar API Key
+                <div className="flex gap-3">
+                    <Button onClick={() => onChangeTab("settings")} variant="outline">
+                        Configurar API Key
+                    </Button>
+                    <Button onClick={handleRetry}>
+                        Tentar Novamente
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (heroGames.length === 0 && games.length === 0) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+                <p className="text-muted-foreground">Nenhum jogo encontrado.</p>
+                <Button onClick={handleRetry} variant="outline">
+                    Buscar Jogos
                 </Button>
             </div>
         );
@@ -115,9 +173,9 @@ export default function Trending({userGames, onChangeTab, cachedGames, setCached
     if (heroGames.length === 0) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center">
-                <p className="text-muted-foreground">Nenhum jogo novo encontrado.</p>
+                <p className="text-muted-foreground">Você já tem todos os jogos em alta! 🎉</p>
             </div>
-        )
+        );
     }
 
     return (
@@ -251,7 +309,6 @@ export default function Trending({userGames, onChangeTab, cachedGames, setCached
 
                                 <div
                                     className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                    {/* Botão Fake de Wishlist por enquanto */}
                                     <Button size="sm" variant="secondary" className="h-8 text-xs">
                                         <Heart size={14} className="mr-1"/> Desejos
                                     </Button>

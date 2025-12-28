@@ -1,12 +1,13 @@
+mod constants;
 mod models;
 mod rawg_service;
 mod steam_service;
-mod constants;
-mod keychain;
+mod storage;
 
-use serde::Serialize;
 use rusqlite::{params, Connection};
+use serde::Serialize;
 use std::sync::Mutex;
+use tauri::AppHandle;
 use tauri::{Manager, State};
 
 use std::time::Duration;
@@ -23,66 +24,79 @@ pub struct KeysBatch {
     pub rawg_api_key: String,
 }
 
-/// Recupera todas as chaves de configuração de uma vez
 #[tauri::command]
-fn get_all_encrypted_keys() -> Result<KeysBatch, String> {
+fn get_secrets(app: AppHandle) -> Result<KeysBatch, String> {
     Ok(KeysBatch {
-        steam_id: keychain::get_secret("steam_id")?,
-        steam_api_key: keychain::get_secret("steam_api_key")?,
-        rawg_api_key: keychain::get_secret("rawg_api_key")?,
+        steam_id: storage::get_secret(&app, "steam_id")?,
+        steam_api_key: storage::get_secret(&app, "steam_api_key")?,
+        rawg_api_key: storage::get_secret(&app, "rawg_api_key")?,
     })
 }
 
-/// Salva todas as chaves de configuração de uma vez
 #[tauri::command]
-fn save_all_encrypted_keys(
+fn set_secrets(
+    app: AppHandle,
     steam_id: Option<String>,
     steam_api_key: Option<String>,
     rawg_api_key: Option<String>,
 ) -> Result<(), String> {
+    // Steam ID
     if let Some(id) = steam_id {
-        if !id.trim().is_empty() {
-            keychain::set_secret("steam_id", &id)?;
+        let trimmed = id.trim();
+        if trimmed.is_empty() {
+            storage::delete_secret(&app, "steam_id")?;
+        } else {
+            storage::set_secret(&app, "steam_id", trimmed)?;
         }
     }
 
+    // Steam API Key
     if let Some(key) = steam_api_key {
-        if !key.trim().is_empty() {
-            keychain::set_secret("steam_api_key", &key)?;
+        let trimmed = key.trim();
+        if trimmed.is_empty() {
+            storage::delete_secret(&app, "steam_api_key")?;
+        } else {
+            storage::set_secret(&app, "steam_api_key", trimmed)?;
         }
     }
 
+    // Rawg API Key
     if let Some(rawg) = rawg_api_key {
-        if !rawg.trim().is_empty() {
-            keychain::set_secret("rawg_api_key", &rawg)?;
+        let trimmed = rawg.trim();
+        if trimmed.is_empty() {
+            storage::delete_secret(&app, "rawg_api_key")?;
+        } else {
+            storage::set_secret(&app, "rawg_api_key", trimmed)?;
         }
     }
 
     Ok(())
 }
 
-/// Salva uma API key de forma criptografada
 #[tauri::command]
-fn save_encrypted_key(key_name: String, key_value: String) -> Result<(), String> {
-    keychain::set_secret(&key_name, &key_value)
+fn set_secret(app: AppHandle, key_name: String, key_value: String) -> Result<(), String> {
+    let trimmed_val = key_value.trim();
+
+    if trimmed_val.is_empty() {
+        return Err("Valor não pode ser vazio".to_string());
+    }
+
+    storage::set_secret(&app, &key_name, trimmed_val)
 }
 
-/// Recupera uma API key criptografada
 #[tauri::command]
-fn get_encrypted_key(key_name: String) -> Result<String, String> {
-    keychain::get_secret(&key_name)
+fn get_secret(app: AppHandle, key_name: String) -> Result<String, String> {
+    storage::get_secret(&app, &key_name)
 }
 
-/// Deleta uma API key
 #[tauri::command]
-fn delete_encrypted_key(key_name: String) -> Result<(), String> {
-    keychain::delete_secret(&key_name)
+fn delete_secret(app: AppHandle, key_name: String) -> Result<(), String> {
+    storage::delete_secret(&app, &key_name)
 }
 
-/// Lista todas as chaves armazenadas (sem revelar os valores)
 #[tauri::command]
-fn list_encrypted_keys() -> Result<Vec<String>, String> {
-    Ok(keychain::list_supported_keys()
+fn list_secrets() -> Result<Vec<String>, String> {
+    Ok(storage::list_supported_keys()
         .into_iter()
         .map(|s| s.to_string())
         .collect())
@@ -105,25 +119,25 @@ fn init_db(state: State<AppState>) -> Result<String, String> {
         )",
         [],
     )
-        .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_favorite ON games(favorite)",
         [],
     )
-        .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_name ON games(name COLLATE NOCASE)",
         [],
     )
-        .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_platform ON games(platform)",
         [],
     )
-        .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_string())?;
 
     Ok("Banco inicializado com sucesso!".to_string())
 }
@@ -144,12 +158,18 @@ fn add_game(
     }
 
     if name.len() > constants::MAX_NAME_LENGTH {
-        return Err(format!("Nome do jogo muito longo (máximo {} caracteres)", constants::MAX_NAME_LENGTH));
+        return Err(format!(
+            "Nome do jogo muito longo (máximo {} caracteres)",
+            constants::MAX_NAME_LENGTH
+        ));
     }
 
     if let Some(ref url) = cover_url {
         if url.len() > constants::MAX_URL_LENGTH {
-            return Err(format!("URL da capa muito longa (máximo {} caracteres)", constants::MAX_URL_LENGTH));
+            return Err(format!(
+                "URL da capa muito longa (máximo {} caracteres)",
+                constants::MAX_URL_LENGTH
+            ));
         }
         if !url.is_empty() && !url.starts_with("http://") && !url.starts_with("https://") {
             return Err("URL da capa deve começar com http:// ou https://".to_string());
@@ -158,13 +178,19 @@ fn add_game(
 
     if let Some(ref g) = genre {
         if g.len() > constants::MAX_GENRE_LENGTH {
-            return Err(format!("Gênero muito longo (máximo {} caracteres)", constants::MAX_GENRE_LENGTH));
+            return Err(format!(
+                "Gênero muito longo (máximo {} caracteres)",
+                constants::MAX_GENRE_LENGTH
+            ));
         }
     }
 
     if let Some(ref p) = platform {
         if p.len() > constants::MAX_PLATFORM_LENGTH {
-            return Err(format!("Plataforma muito longa (máximo {} caracteres)", constants::MAX_PLATFORM_LENGTH));
+            return Err(format!(
+                "Plataforma muito longa (máximo {} caracteres)",
+                constants::MAX_PLATFORM_LENGTH
+            ));
         }
     }
 
@@ -173,13 +199,20 @@ fn add_game(
             return Err("Tempo jogado não pode ser negativo".to_string());
         }
         if time > constants::MAX_PLAYTIME {
-            return Err(format!("Tempo jogado inválido (máximo {} horas)", constants::MAX_PLAYTIME));
+            return Err(format!(
+                "Tempo jogado inválido (máximo {} horas)",
+                constants::MAX_PLAYTIME
+            ));
         }
     }
 
     if let Some(r) = rating {
         if r < constants::MIN_RATING || r > constants::MAX_RATING {
-            return Err(format!("Avaliação deve estar entre {} e {}", constants::MIN_RATING, constants::MAX_RATING));
+            return Err(format!(
+                "Avaliação deve estar entre {} e {}",
+                constants::MIN_RATING,
+                constants::MAX_RATING
+            ));
         }
     }
 
@@ -244,7 +277,7 @@ fn toggle_favorite(state: State<AppState>, id: String) -> Result<(), String> {
         "UPDATE games SET favorite = NOT favorite WHERE id = ?1",
         params![id],
     )
-        .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -275,7 +308,10 @@ fn update_game(
     }
 
     if name.len() > constants::MAX_NAME_LENGTH {
-        return Err(format!("Nome do jogo muito longo (máximo {} caracteres)", constants::MAX_NAME_LENGTH));
+        return Err(format!(
+            "Nome do jogo muito longo (máximo {} caracteres)",
+            constants::MAX_NAME_LENGTH
+        ));
     }
 
     if let Some(time) = playtime {
@@ -283,13 +319,20 @@ fn update_game(
             return Err("Tempo jogado não pode ser negativo".to_string());
         }
         if time > constants::MAX_PLAYTIME {
-            return Err(format!("Tempo jogado inválido (máximo {} horas)", constants::MAX_PLAYTIME));
+            return Err(format!(
+                "Tempo jogado inválido (máximo {} horas)",
+                constants::MAX_PLAYTIME
+            ));
         }
     }
 
     if let Some(r) = rating {
         if r < constants::MIN_RATING || r > constants::MAX_RATING {
-            return Err(format!("Avaliação deve estar entre {} e {}", constants::MIN_RATING, constants::MAX_RATING));
+            return Err(format!(
+                "Avaliação deve estar entre {} e {}",
+                constants::MIN_RATING,
+                constants::MAX_RATING
+            ));
         }
     }
 
@@ -369,12 +412,11 @@ async fn import_steam_library(
         }
 
         // Commita transação (torna mudanças permanentes)
-        conn.execute("COMMIT", [])
-            .map_err(|e| {
-                // Se commit falhar, faz rollback
-                let _ = conn.execute("ROLLBACK", []);
-                format!("Erro ao commitar transação: {}", e)
-            })?;
+        conn.execute("COMMIT", []).map_err(|e| {
+            // Se commit falhar, faz rollback
+            let _ = conn.execute("ROLLBACK", []);
+            format!("Erro ao commitar transação: {}", e)
+        })?;
 
         println!(
             "Import completado: {} inseridos, {} já existiam",
@@ -464,12 +506,11 @@ async fn enrich_library(state: State<'_, AppState>) -> Result<String, String> {
             }
         }
 
-        conn.execute("COMMIT", [])
-            .map_err(|e| {
-                // Se commit falhar, tenta rollback
-                let _ = conn.execute("ROLLBACK", []);
-                format!("Erro ao commitar transação: {}", e)
-            })?;
+        conn.execute("COMMIT", []).map_err(|e| {
+            // Se commit falhar, tenta rollback
+            let _ = conn.execute("ROLLBACK", []);
+            format!("Erro ao commitar transação: {}", e)
+        })?;
 
         println!(
             "Batch update completado: {} registros atualizados no banco",
@@ -512,8 +553,8 @@ pub fn run() {
 
             let db_path = app_data_dir.join("library.db");
 
-            let conn = Connection::open(&db_path)
-                .expect(&format!("Erro ao abrir banco em {:?}", db_path));
+            let conn =
+                Connection::open(&db_path).expect(&format!("Erro ao abrir banco em {:?}", db_path));
 
             let _ = conn.execute("PRAGMA journal_mode=WAL", []);
 
@@ -533,12 +574,12 @@ pub fn run() {
             import_steam_library,
             enrich_library,
             get_trending_games,
-            save_encrypted_key,
-            get_encrypted_key,
-            delete_encrypted_key,
-            list_encrypted_keys,
-            get_all_encrypted_keys,
-            save_all_encrypted_keys,
+            set_secret,
+            get_secret,
+            delete_secret,
+            list_secrets,
+            get_secrets,
+            set_secrets,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -33,7 +33,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
             try {
                 setIsLoadingKeys(true);
 
-                const keys = await invoke<KeysBatch>('get_all_encrypted_keys');
+                const keys = await invoke<KeysBatch>('get_secrets');
 
                 if (keys.steam_id) setSteamId(keys.steam_id);
                 if (keys.steam_api_key) setApiKey(keys.steam_api_key);
@@ -57,7 +57,9 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
         setIsLoading(true);
         setStatus({type: null, message: ""});
         try {
-            await invoke('save_all_encrypted_keys', {
+            // VOLTAR PARA CAMELCASE
+            // O Tauri vai pegar 'steamId' e entregar para 'steam_id' no Rust automaticamente
+            await invoke('set_secrets', {
                 steamId: steamId.trim() || null,
                 steamApiKey: apiKey.trim() || null,
                 rawgApiKey: rawgApiKey.trim() || null,
