@@ -1,6 +1,5 @@
 import {useEffect, useState} from "react";
 import {invoke} from "@tauri-apps/api/core";
-import {Store} from '@tauri-apps/plugin-store';
 import {AlertCircle, ChevronLeft, ChevronRight, Filter, Flame, Heart, Loader2, Star, TrendingUp} from "lucide-react";
 import {Game, RawgGame} from "../types";
 import {Button} from "@/components/ui/button";
@@ -28,35 +27,47 @@ export default function Trending({userGames, onChangeTab, cachedGames, setCached
                 return;
             }
             try {
-                const store = await Store.load('.settings.dat');
-                const apiKey = await store.get<string>('rawg_api_key');
-                if (!apiKey) {
-                    setError("API Key da RAWG não configurada.");
+                const apiKey = await invoke<string>('get_encrypted_key', {
+                    keyName: 'rawg_api_key'
+                });
+
+                if (!apiKey || apiKey.trim() === "") {
+                    setError("API Key da RAWG não configurada. Verifique nas Configurações.");
                     setLoading(false);
                     return;
                 }
+
+                console.log("Buscando jogos trending com API RAWG...");
                 const result = await invoke<RawgGame[]>("get_trending_games", {apiKey});
+
                 setGames(result);
                 setCachedGames(result);
+                setError(null);
             } catch (err) {
-                console.error(err);
-                setError("Erro ao buscar jogos em alta.");
+                console.error("Erro ao buscar trending:", err);
+
+                const errorMessage = String(err);
+                if (errorMessage.includes("não configurada") || errorMessage.includes("not found")) {
+                    setError("API Key da RAWG não configurada. Vá em Configurações para adicionar.");
+                } else if (errorMessage.includes("Invalid API key")) {
+                    setError("API Key da RAWG inválida. Verifique nas Configurações.");
+                } else {
+                    setError(`Erro ao buscar jogos em alta: ${errorMessage}`);
+                }
             } finally {
                 setLoading(false);
             }
         };
         fetchTrending();
-    }, []);
+    }, [cachedGames.length, setCachedGames]);
 
     // Remove jogos que o usuário já tem (comparando nomes normalizados)
     const userGameNames = userGames.map(g => g.name.toLowerCase().replace(/[^a-z0-9]/g, ""));
     const availableGames = games.filter(rawgGame => {
         const rawgName = rawgGame.name.toLowerCase().replace(/[^a-z0-9]/g, "");
-        // Se o usuário NÃO tem o jogo, mantemos na lista
         return !userGameNames.includes(rawgName);
     });
 
-    // Filtra por Gênero selecionado na UI
     const filteredGames = availableGames.filter(game => {
         if (selectedGenre === "all") return true;
         return game.genres.some(g => g.name === selectedGenre);

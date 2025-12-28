@@ -1,10 +1,9 @@
 import {useEffect, useState} from "react";
 import {invoke} from "@tauri-apps/api/core";
-import {Store} from '@tauri-apps/plugin-store';
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import {AlertCircle, CheckCircle, CloudDownload, Loader2, Save, Sparkles} from "lucide-react";
+import {AlertCircle, CheckCircle, CloudDownload, Loader2, Save, Sparkles, Shield} from "lucide-react";
 
 interface SettingsProps {
     onLibraryUpdate: () => void;
@@ -19,18 +18,16 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
         type: null,
         message: ""
     });
-    const [store, setStore] = useState<Store | null>(null);
     const [isEnriching, setIsEnriching] = useState(false);
 
     useEffect(() => {
-        // Carrega as configurações salvas ao montar o componente
+        // Carrega as configurações criptografadas ao montar o componente
         const loadSettings = async () => {
             try {
-                const storeInstance = await Store.load('.settings.dat');
-                setStore(storeInstance);
-                const savedId = await storeInstance.get<string>('steam_id');
-                const savedKey = await storeInstance.get<string>('steam_api_key');
-                const savedRawg = await storeInstance.get<string>('rawg_api_key');
+                const savedId = await invoke<string>('get_encrypted_key', {keyName: 'steam_id'});
+                const savedKey = await invoke<string>('get_encrypted_key', {keyName: 'steam_api_key'});
+                const savedRawg = await invoke<string>('get_encrypted_key', {keyName: 'rawg_api_key'});
+
                 if (savedId) setSteamId(savedId);
                 if (savedKey) setApiKey(savedKey);
                 if (savedRawg) setRawgApiKey(savedRawg);
@@ -41,20 +38,42 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
         loadSettings();
     }, []);
 
-    // Função para salvar todas as configurações
+    // Função para salvar todas as configurações criptografadas
     const handleSaveAll = async () => {
-        if (!store) return;
         setIsLoading(true);
         setStatus({type: null, message: ""});
         try {
-            await store.set('steam_id', steamId.trim());
-            await store.set('steam_api_key', apiKey.trim());
-            await store.set('rawg_api_key', rawgApiKey.trim());
-            await store.save();
-            setStatus({type: 'success', message: "Configurações salvas com sucesso!"});
+            if (steamId.trim()) {
+                await invoke('save_encrypted_key', {
+                    keyName: 'steam_id',
+                    keyValue: steamId.trim()
+                });
+            }
+
+            if (apiKey.trim()) {
+                await invoke('save_encrypted_key', {
+                    keyName: 'steam_api_key',
+                    keyValue: apiKey.trim()
+                });
+            }
+
+            if (rawgApiKey.trim()) {
+                await invoke('save_encrypted_key', {
+                    keyName: 'rawg_api_key',
+                    keyValue: rawgApiKey.trim()
+                });
+            }
+
+            setStatus({
+                type: 'success',
+                message: "Configurações salvas com segurança!"
+            });
         } catch (error) {
             console.error(error);
-            setStatus({type: 'error', message: "Erro ao salvar configurações."});
+            setStatus({
+                type: 'error',
+                message: `Erro ao salvar: ${error}`
+            });
         } finally {
             setIsLoading(false);
         }
@@ -83,7 +102,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
         }
     };
 
-    // Busca dados do gênero do jogo na Steam
+    // Busca gênero dos jogos na Steam
     const handleEnrich = async () => {
         setIsEnriching(true);
         setStatus({type: null, message: "Buscando gêneros na Steam... Isso pode demorar."});
@@ -115,9 +134,10 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
             <div className="space-y-6">
                 {/* Inputs para inserir KEYs */}
                 <div className="grid gap-6 border border-border rounded-xl bg-card p-6">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <Save size={20}/> Credenciais de API
-                    </h3>
+                    <div className="flex items-center gap-2">
+                        <Shield className="text-green-500" size={20}/>
+                        <h3 className="text-lg font-semibold">Credenciais de API (Criptografadas)</h3>
+                    </div>
 
                     <div className="grid gap-2">
                         <Label>Steam ID</Label>
@@ -126,13 +146,22 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
 
                     <div className="grid gap-2">
                         <Label>Steam API Key</Label>
-                        <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)}/>
+                        <Input
+                            type="password"
+                            value={apiKey}
+                            onChange={e => setApiKey(e.target.value)}
+                            placeholder="••••••••••••••••"
+                        />
                     </div>
 
                     <div className="grid gap-2">
                         <Label>RAWG API Key</Label>
-                        <Input type="password" value={rawgApiKey} onChange={e => setRawgApiKey(e.target.value)}
-                               placeholder="Cole sua chave RAWG..."/>
+                        <Input
+                            type="password"
+                            value={rawgApiKey}
+                            onChange={e => setRawgApiKey(e.target.value)}
+                            placeholder="••••••••••••••••"
+                        />
                     </div>
 
                     <Button onClick={handleSaveAll} className="w-full mt-2" disabled={isLoading}>

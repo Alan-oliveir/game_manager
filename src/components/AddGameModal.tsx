@@ -39,7 +39,6 @@ export default function AddGameModal({
                 setPlaytime(gameToEdit.playtime?.toString() || "0");
                 setRating(gameToEdit.rating || 0);
             } else {
-                // Reset
                 setName("");
                 setCoverUrl("");
                 setGenre("");
