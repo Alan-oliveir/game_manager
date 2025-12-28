@@ -9,11 +9,19 @@ interface SettingsProps {
     onLibraryUpdate: () => void;
 }
 
+// Interface para o batch de chaves
+interface KeysBatch {
+    steam_id: string;
+    steam_api_key: string;
+    rawg_api_key: string;
+}
+
 export default function Settings({onLibraryUpdate}: SettingsProps) {
     const [steamId, setSteamId] = useState("");
     const [apiKey, setApiKey] = useState("");
     const [rawgApiKey, setRawgApiKey] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingKeys, setIsLoadingKeys] = useState(true); // Novo: loading inicial
     const [status, setStatus] = useState<{ type: 'success' | 'error' | null, message: string }>({
         type: null,
         message: ""
@@ -21,52 +29,43 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
     const [isEnriching, setIsEnriching] = useState(false);
 
     useEffect(() => {
-        // Carrega as configurações criptografadas ao montar o componente
         const loadSettings = async () => {
             try {
-                const savedId = await invoke<string>('get_encrypted_key', {keyName: 'steam_id'});
-                const savedKey = await invoke<string>('get_encrypted_key', {keyName: 'steam_api_key'});
-                const savedRawg = await invoke<string>('get_encrypted_key', {keyName: 'rawg_api_key'});
+                setIsLoadingKeys(true);
 
-                if (savedId) setSteamId(savedId);
-                if (savedKey) setApiKey(savedKey);
-                if (savedRawg) setRawgApiKey(savedRawg);
+                const keys = await invoke<KeysBatch>('get_all_encrypted_keys');
+
+                if (keys.steam_id) setSteamId(keys.steam_id);
+                if (keys.steam_api_key) setApiKey(keys.steam_api_key);
+                if (keys.rawg_api_key) setRawgApiKey(keys.rawg_api_key);
+
+                console.log("✓ Chaves carregadas em batch:", {
+                    steam_id: keys.steam_id ? "✓" : "✗",
+                    steam_api_key: keys.steam_api_key ? "✓" : "✗",
+                    rawg_api_key: keys.rawg_api_key ? "✓" : "✗"
+                });
             } catch (error) {
                 console.error("Erro ao carregar configurações:", error);
+            } finally {
+                setIsLoadingKeys(false);
             }
         };
         loadSettings();
     }, []);
 
-    // Função para salvar todas as configurações criptografadas
     const handleSaveAll = async () => {
         setIsLoading(true);
         setStatus({type: null, message: ""});
         try {
-            if (steamId.trim()) {
-                await invoke('save_encrypted_key', {
-                    keyName: 'steam_id',
-                    keyValue: steamId.trim()
-                });
-            }
-
-            if (apiKey.trim()) {
-                await invoke('save_encrypted_key', {
-                    keyName: 'steam_api_key',
-                    keyValue: apiKey.trim()
-                });
-            }
-
-            if (rawgApiKey.trim()) {
-                await invoke('save_encrypted_key', {
-                    keyName: 'rawg_api_key',
-                    keyValue: rawgApiKey.trim()
-                });
-            }
+            await invoke('save_all_encrypted_keys', {
+                steamId: steamId.trim() || null,
+                steamApiKey: apiKey.trim() || null,
+                rawgApiKey: rawgApiKey.trim() || null,
+            });
 
             setStatus({
                 type: 'success',
-                message: "Configurações salvas com segurança!"
+                message: "✓ Configurações salvas com segurança (criptografadas)"
             });
         } catch (error) {
             console.error(error);
@@ -79,7 +78,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
         }
     };
 
-    // Importa a biblioteca da Steam
+    // Importa a biblioteca da Steam usando chaves criptografadas
     const handleImport = async () => {
         if (!steamId || !apiKey) {
             setStatus({type: 'error', message: "Preencha e SALVE as chaves antes de importar."});
@@ -102,7 +101,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
         }
     };
 
-    // Busca gênero dos jogos na Steam
+    // Busca dados do gênero do jogo na Steam
     const handleEnrich = async () => {
         setIsEnriching(true);
         setStatus({type: null, message: "Buscando gêneros na Steam... Isso pode demorar."});
@@ -116,6 +115,27 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
             setIsEnriching(false);
         }
     };
+
+    if (isLoadingKeys) {
+        return (
+            <div className="flex-1 p-8 overflow-y-auto pb-20">
+                <h2 className="text-3xl font-bold mb-6">Configurações</h2>
+                <div className="space-y-6">
+                    <div className="grid gap-6 border border-border rounded-xl bg-card p-6">
+                        <div className="flex items-center gap-2">
+                            <Shield className="text-green-500 animate-pulse" size={20}/>
+                            <h3 className="text-lg font-semibold">Carregando credenciais...</h3>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="h-10 bg-muted animate-pulse rounded"></div>
+                            <div className="h-10 bg-muted animate-pulse rounded"></div>
+                            <div className="h-10 bg-muted animate-pulse rounded"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex-1 p-8 overflow-y-auto pb-20">
@@ -141,7 +161,12 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
 
                     <div className="grid gap-2">
                         <Label>Steam ID</Label>
-                        <Input value={steamId} onChange={e => setSteamId(e.target.value)} placeholder="765..."/>
+                        <Input
+                            value={steamId}
+                            onChange={e => setSteamId(e.target.value)}
+                            placeholder="765..."
+                            disabled={isLoadingKeys}
+                        />
                     </div>
 
                     <div className="grid gap-2">
@@ -151,6 +176,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
                             value={apiKey}
                             onChange={e => setApiKey(e.target.value)}
                             placeholder="••••••••••••••••"
+                            disabled={isLoadingKeys}
                         />
                     </div>
 
@@ -161,10 +187,15 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
                             value={rawgApiKey}
                             onChange={e => setRawgApiKey(e.target.value)}
                             placeholder="••••••••••••••••"
+                            disabled={isLoadingKeys}
                         />
                     </div>
 
-                    <Button onClick={handleSaveAll} className="w-full mt-2" disabled={isLoading}>
+                    <Button
+                        onClick={handleSaveAll}
+                        className="w-full mt-2"
+                        disabled={isLoading || isLoadingKeys}
+                    >
                         {isLoading ? <Loader2 className="animate-spin mr-2"/> : <Save className="mr-2 h-4 w-4"/>}
                         Salvar Todas as Configurações
                     </Button>

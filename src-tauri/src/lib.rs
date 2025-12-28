@@ -4,6 +4,9 @@ mod steam_service;
 mod constants;
 mod crypto;
 
+use serde::Serialize;
+use std::collections::HashMap;
+
 use rusqlite::{params, Connection};
 use std::sync::Mutex;
 use tauri::{Manager, State};
@@ -15,6 +18,103 @@ use tokio::time::sleep;
 pub struct AppState {
     db: Mutex<Connection>,
     app_data_dir: PathBuf,
+}
+
+#[derive(Serialize)]
+pub struct KeysBatch {
+    pub steam_id: String,
+    pub steam_api_key: String,
+    pub rawg_api_key: String,
+}
+
+/// Recupera todas as chaves de configuração de uma vez
+#[tauri::command]
+fn get_all_encrypted_keys(state: State<AppState>) -> Result<KeysBatch, String> {
+    let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
+
+    // Busca todas as 3 chaves em uma única query
+    let mut stmt = conn
+        .prepare(
+            "SELECT key_name, ciphertext, nonce, salt
+             FROM encrypted_keys
+             WHERE key_name IN ('steam_id', 'steam_api_key', 'rawg_api_key')"
+        )
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                crypto::EncryptedData {
+                    ciphertext: row.get(1)?,
+                    nonce: row.get(2)?,
+                    salt: row.get(3)?,
+                }
+            ))
+        })
+        .map_err(|e| e.to_string())?;
+
+    // Cria um HashMap para lookup rápido
+    let mut keys_map: HashMap<String, crypto::EncryptedData> = HashMap::new();
+    for row in rows {
+        let (key_name, encrypted) = row.map_err(|e| e.to_string())?;
+        keys_map.insert(key_name, encrypted);
+    }
+
+    // Descriptografa cada chave (se existir)
+    let steam_id = if let Some(encrypted) = keys_map.get("steam_id") {
+        crypto::decrypt(encrypted, &state.app_data_dir, "steam_id").unwrap_or_default()
+    } else {
+        String::new()
+    };
+
+    let steam_api_key = if let Some(encrypted) = keys_map.get("steam_api_key") {
+        crypto::decrypt(encrypted, &state.app_data_dir, "steam_api_key").unwrap_or_default()
+    } else {
+        String::new()
+    };
+
+    let rawg_api_key = if let Some(encrypted) = keys_map.get("rawg_api_key") {
+        crypto::decrypt(encrypted, &state.app_data_dir, "rawg_api_key").unwrap_or_default()
+    } else {
+        String::new()
+    };
+
+    Ok(KeysBatch {
+        steam_id,
+        steam_api_key,
+        rawg_api_key,
+    })
+}
+
+/// Salva todas as chaves de configuração de uma vez
+#[tauri::command]
+fn save_all_encrypted_keys(
+    state: State<AppState>,
+    steam_id: Option<String>,
+    steam_api_key: Option<String>,
+    rawg_api_key: Option<String>,
+) -> Result<(), String> {
+    // Criptografa e salva cada chave (se fornecida)
+    if let Some(id) = steam_id {
+        if !id.trim().is_empty() {
+            save_encrypted_key(state.clone(), "steam_id".to_string(), id)?;
+        }
+    }
+
+    if let Some(key) = steam_api_key {
+        if !key.trim().is_empty() {
+            save_encrypted_key(state.clone(), "steam_api_key".to_string(), key)?;
+        }
+    }
+
+    if let Some(rawg) = rawg_api_key {
+        if !rawg.trim().is_empty() {
+            save_encrypted_key(state.clone(), "rawg_api_key".to_string(), rawg)?;
+        }
+    }
+
+    Ok(())
 }
 
 /// Salva uma API key de forma criptografada
@@ -502,6 +602,8 @@ pub fn run() {
             get_encrypted_key,
             delete_encrypted_key,
             list_encrypted_keys,
+            get_all_encrypted_keys,
+            save_all_encrypted_keys,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
