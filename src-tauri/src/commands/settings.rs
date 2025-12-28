@@ -1,5 +1,4 @@
 use crate::storage;
-// Importa o módulo storage da raiz
 use serde::Serialize;
 use tauri::AppHandle;
 

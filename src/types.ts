@@ -17,3 +17,14 @@ export interface RawgGame {
   released: string | null;
   genres: { name: string }[];
 }
+
+export interface WishlistGame {
+  id: string;
+  name: string;
+  cover_url: string | null;
+  store_url: string | null;
+  current_price: number | null;
+  lowest_price: number | null;
+  on_sale: boolean;
+  added_at: string;
+}

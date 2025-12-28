@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import {invoke} from "@tauri-apps/api/core";
-import {AlertCircle, ChevronLeft, ChevronRight, Filter, Flame, Heart, Loader2, Star, TrendingUp} from "lucide-react";
+import {AlertCircle, ChevronLeft, ChevronRight, Filter, Flame, Heart, Loader2, Star, TrendingUp, ExternalLink} from "lucide-react";
 import {Game, RawgGame} from "../types";
 import {Button} from "@/components/ui/button";
 
@@ -129,6 +129,25 @@ export default function Trending({userGames, onChangeTab, cachedGames, setCached
     const nextHero = () => setHeroIndex((prev) => (prev + 1) % heroGames.length);
     const prevHero = () => setHeroIndex((prev) => (prev - 1 + heroGames.length) % heroGames.length);
 
+    const handleAddToWishlist = async (game: RawgGame) => {
+        try {
+            await invoke("add_to_wishlist", {
+                id: game.id.toString(), // Convertendo ID numérico da RAWG para String
+                name: game.name,
+                coverUrl: game.background_image,
+                storeUrl: null,       // Ainda não temos link da loja
+                currentPrice: null,   // Ainda não temos preço (próxima fase)
+            });
+
+            // Feedback visual simples (depois podemos usar um Toast/Notificação melhor)
+            alert(`❤️ ${game.name} adicionado à Lista de Desejos!`);
+
+        } catch (error) {
+            console.error("Erro ao salvar:", error);
+            alert("Erro ao adicionar à lista.");
+        }
+    };
+
     // Renderização condicional
     if (loading) {
         return (
@@ -252,6 +271,27 @@ export default function Trending({userGames, onChangeTab, cachedGames, setCached
                                     </div>
                                 )}
                             </div>
+
+                            <div className="flex gap-3 justify-center md:justify-start mt-6">
+                                <Button
+                                    variant="secondary"
+                                    className="gap-2"
+                                    onClick={() => handleAddToWishlist(currentHero)}
+                                >
+                                    <Heart size={18} className="text-red-500" />
+                                    Lista de Desejos
+                                </Button>
+
+                                <Button
+                                    variant="outline"
+                                    className="gap-2 bg-transparent text-white border-white/20 hover:bg-white/10"
+                                    onClick={() => window.open(`https://rawg.io/games/${currentHero.id}`, '_blank')}
+                                >
+                                    <ExternalLink size={18} />
+                                    Ver Detalhes
+                                </Button>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -309,7 +349,7 @@ export default function Trending({userGames, onChangeTab, cachedGames, setCached
 
                                 <div
                                     className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                    <Button size="sm" variant="secondary" className="h-8 text-xs">
+                                    <Button size="sm" variant="secondary" className="h-8 text-xs" onClick={() => handleAddToWishlist(game)}>
                                         <Heart size={14} className="mr-1"/> Desejos
                                     </Button>
                                 </div>

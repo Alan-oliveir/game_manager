@@ -1,4 +1,4 @@
-import {Heart, Home, Library, Settings, TrendingUp} from "lucide-react";
+import {Heart, Home, Library, Settings, TrendingUp, ShoppingCart} from "lucide-react";
 import {Game} from "../types";
 
 interface SidebarProps {
@@ -12,6 +12,7 @@ const menuItems = [
     {id: "library", label: "Biblioteca", icon: Library},
     {id: "favorites", label: "Favoritos", icon: Heart},
     {id: "trending", label: "Em alta", icon: TrendingUp},
+    {id: "wishlist", label: "Lista de Desejos", icon: ShoppingCart},
     {id: "settings", label: "Configurações", icon: Settings},
 ];
 

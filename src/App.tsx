@@ -8,7 +8,8 @@ import Library from "./pages/Library";
 import Favorites from "./pages/Favorites";
 import Settings from "./pages/Settings";
 import Home from "./pages/Home";
-import Trending from "./pages/Trending.tsx";
+import Trending from "./pages/Trending";
+import Wishlist from "./pages/Wishlist.tsx";
 
 function App() {
     // Estados principais
@@ -155,6 +156,8 @@ function App() {
                         setCachedGames={setTrendingCache}
                     />
                 );
+            case "wishlist":
+                return <Wishlist />;
             case "settings":
                 return <Settings onLibraryUpdate={handleSettingsUpdate}/>;
             default:
