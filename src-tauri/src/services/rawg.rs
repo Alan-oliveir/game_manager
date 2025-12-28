@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use chrono::Datelike;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RawgGame {

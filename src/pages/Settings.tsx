@@ -57,8 +57,6 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
         setIsLoading(true);
         setStatus({type: null, message: ""});
         try {
-            // VOLTAR PARA CAMELCASE
-            // O Tauri vai pegar 'steamId' e entregar para 'steam_id' no Rust automaticamente
             await invoke('set_secrets', {
                 steamId: steamId.trim() || null,
                 steamApiKey: apiKey.trim() || null,
@@ -80,7 +78,7 @@ export default function Settings({onLibraryUpdate}: SettingsProps) {
         }
     };
 
-    // Importa a biblioteca da Steam usando chaves criptografadas
+    // Importa a biblioteca da Steam
     const handleImport = async () => {
         if (!steamId || !apiKey) {
             setStatus({type: 'error', message: "Preencha e SALVE as chaves antes de importar."});
