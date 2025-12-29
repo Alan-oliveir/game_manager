@@ -370,6 +370,31 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 
 ---
 
+### 📅 29/12/2025 - Motor de Recomendação V1 (Content-Based)
+
+**Tempo investido:** ~2h
+**Objetivo:** Implementar a primeira versão do algoritmo de recomendação, capaz de aprender o perfil do utilizador (afinidade por géneros) e personalizar a interface.
+
+#### ✨ Implementações
+- **Backend (Rust):**
+  - Criação do serviço `recommendation.rs`: Lógica matemática que calcula pesos para cada género baseado no tempo de jogo e favoritos.
+  - Novo comando `get_user_profile`: Expõe o perfil calculado para o frontend.
+  - Desacoplamento total: O motor de recomendação não sabe onde os dados serão usados, apenas processa números.
+- **Frontend (React):**
+  - Hook `useRecommendation`: Encapsula a lógica de calcular a afinidade de um jogo específico com o perfil do utilizador.
+  - **Reordenação Inteligente:** A página "Em Alta" agora ordena as sugestões baseada na afinidade (Score do Utilizador) em vez da ordem padrão da API.
+  - **Feedback Visual:** Adição da badge "TOP PICK" para jogos com alta compatibilidade.
+
+#### 💡 Decisões Técnicas
+- **Algoritmo Deterministico:** Optei por não usar ML complexo ou vetores multidimensionais agora. Um sistema de pesos simples (`Playtime * 1.0 + Favorites * 50.0`) é mais fácil de debugar, extremamente rápido e funciona offline.
+- **Cálculo no Frontend:** O Backend entrega o perfil (`{"RPG": 1000, "FPS": 0}`), mas é o Frontend que calcula a nota de cada jogo da lista "Em Alta". Isso poupa o Backend de ter que processar listas que vêm de APIs externas (RAWG).
+
+#### ⏭️ Próxima Sessão
+- [ ] **Playlist Sugerida (Home):** Usar este mesmo motor para sugerir jogos da *própria biblioteca* que estão parados (Backlog Inteligente).
+- [ ] **Importação de Plataformas:** Trazer jogos da Epic/GOG para enriquecer os dados do perfil.
+
+---
+
 ## 🎯 Roadmap Futuro
 
 ### Fase 2: Features Avançadas (Desktop)
