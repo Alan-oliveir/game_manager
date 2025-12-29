@@ -184,7 +184,7 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
           <div className="flex items-center gap-2">
             <Shield className="text-green-500" size={20} />
             <h3 className="text-lg font-semibold">
-              Credenciais de API (Keychain do sistema)
+              Credenciais de API
             </h3>
           </div>
 
