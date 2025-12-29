@@ -64,6 +64,8 @@ pub fn run() {
             commands::settings::list_secrets,
             commands::settings::get_secrets,
             commands::settings::set_secrets,
+            // Comandos de Recomendação
+            commands::recommendations::get_user_profile
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

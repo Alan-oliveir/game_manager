@@ -42,7 +42,6 @@ export interface KeysBatch {
   rawg_api_key: string;
 }
 
-// Adicione ao final do arquivo existente
 export interface GameDetails {
   description_raw: string; // Descrição em texto puro
   metacritic: number | null;
@@ -52,11 +51,19 @@ export interface GameDetails {
   publishers: { name: string }[];
 }
 
-// Interface auxiliar para lidar com múltiplas plataformas do mesmo jogo
 export interface GamePlatformLink {
   id: string;
   platform: string;
 }
 
-// Duvidas:
-// Poderia usar a interface RawgGame 
+export interface GenreScore {
+  name: string;
+  score: number;
+  game_count: number;
+}
+
+export interface UserProfile {
+  top_genres: GenreScore[];
+  total_playtime: number;
+  total_games: number;
+}

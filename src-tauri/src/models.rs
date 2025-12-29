@@ -55,3 +55,17 @@ impl From<rusqlite::Error> for AppError {
         AppError::DatabaseError(err.to_string())
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GenreScore {
+    pub name: String,
+    pub score: f32, // Pontuação calculada
+    pub game_count: i32, // Quantos jogos desse gênero o usuário tem
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserProfile {
+    pub top_genres: Vec<GenreScore>,
+    pub total_playtime: i32,
+    pub total_games: i32,
+}

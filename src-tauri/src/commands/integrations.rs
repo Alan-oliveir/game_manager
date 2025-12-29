@@ -5,7 +5,7 @@ use crate::storage;
 
 use rusqlite::params;
 use std::time::Duration;
-use tauri::{command, State, AppHandle};
+use tauri::{State, AppHandle};
 use tokio::time::sleep;
 
 #[tauri::command]

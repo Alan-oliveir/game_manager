@@ -7,14 +7,16 @@ import {
   Flame,
   Heart,
   Loader2,
+  Sparkles,
   Star,
   TrendingUp,
   ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RawgGame, Game } from "../types";
-import { useTrending } from "../hooks/useTrending"; // Hook criado
-import { openExternalLink } from "../utils/navigation"; // Util criado
+import { useTrending } from "../hooks/useTrending";
+import { useRecommendation } from "../hooks/useRecommendation";
+import { openExternalLink } from "../utils/navigation";
 
 interface TrendingProps {
   userGames: Game[];
@@ -36,17 +38,29 @@ export default function Trending(props: TrendingProps) {
     addToWishlist,
   } = useTrending(props);
 
+  // Hook de Recomendação
+  const { calculateAffinity, profile } = useRecommendation();
+
   // Estado estritamente visual (Carrossel)
   const [heroIndex, setHeroIndex] = useState(0);
 
   // Helpers de UI
   const heroGames = games.slice(0, 5);
-  const gridGames = games.slice(5);
   const currentHero = heroGames[heroIndex];
-
   const nextHero = () => setHeroIndex((prev) => (prev + 1) % heroGames.length);
   const prevHero = () =>
     setHeroIndex((prev) => (prev - 1 + heroGames.length) % heroGames.length);
+
+  // Jogos para o grid, ordenados por afinidade se houver perfil
+  let gridGames = games.slice(5);
+  if (profile) {
+    gridGames = [...gridGames].sort((a, b) => {
+      const scoreA = calculateAffinity(a.genres);
+      const scoreB = calculateAffinity(b.genres);
+      // Ordem decrescente (maior score primeiro)
+      return scoreB - scoreA;
+    });
+  }
 
   const handleWishlistClick = async (game: RawgGame) => {
     try {
@@ -236,69 +250,82 @@ export default function Trending(props: TrendingProps) {
       <div className="p-8 max-w-7xl mx-auto">
         <div className="flex items-center gap-2 mb-6">
           <TrendingUp className="text-primary" />
-          <h2 className="text-2xl font-bold">Mais Sugestões</h2>
+          <h2 className="text-2xl font-bold">Mais Sugestões {profile && "(Recomendadas)"}</h2>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {gridGames.map((game) => (
-            <div
-              key={game.id}
-              className="group relative bg-card rounded-xl overflow-hidden border border-border hover:shadow-xl transition-all hover:-translate-y-1"
-            >
-              <div className="aspect-video overflow-hidden relative">
-                {game.background_image ? (
-                  <img
-                    src={game.background_image}
-                    alt={game.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
-                    Sem Imagem
-                  </div>
-                )}
+          {gridGames.map((game) => {
+            // Calculando afinidade para renderizar badge (Opcional)
+            const affinity = calculateAffinity(game.genres);
+            // Exemplo: Se o score for > 0 e estiver no top 20% do perfil (lógica simplificada aqui: > 100 pts)
+            const isRecommended = affinity > 100;
 
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-8 text-xs"
-                    onClick={() => handleWishlistClick(game)}
-                  >
-                    <Heart size={14} className="mr-1" /> Desejos
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-8 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openExternalLink(`https://rawg.io/games/${game.id}`);
-                    }}
-                  >
-                    <ExternalLink size={14} /> Detalhes
-                  </Button>
-                </div>
-              </div>
+            return (
+                <div
+                    key={game.id}
+                    className="group relative bg-card rounded-xl overflow-hidden border border-border hover:shadow-xl transition-all hover:-translate-y-1"
+                >
+                  {/* Badge de Recomendação */}
+                  {isRecommended && (
+                      <div className="absolute top-2 left-2 z-10 bg-purple-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm border border-purple-400/30">
+                        <Sparkles size={10} /> TOP PICK
+                      </div>
+                  )}
 
-              <div className="p-3">
-                <div className="flex justify-between items-start gap-2 mb-1">
-                  <h3
-                    className="font-semibold text-sm line-clamp-1"
-                    title={game.name}
-                  >
-                    {game.name}
-                  </h3>
-                  <div className="flex items-center gap-1 shrink-0 bg-yellow-500/10 px-1.5 py-0.5 rounded text-[10px] text-yellow-500 font-bold">
-                    <Star size={10} className="fill-yellow-500" /> {game.rating}
+                  <div className="aspect-video overflow-hidden relative">
+                    {game.background_image ? (
+                        <img
+                            src={game.background_image}
+                            alt={game.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
+                          Sem Imagem
+                        </div>
+                    )}
+
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      {/* Botões Wishlist e Detalhes */}
+                      <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 text-xs"
+                          onClick={() => handleWishlistClick(game)}
+                      >
+                        <Heart size={14} className="mr-1" /> Desejos
+                      </Button>
+                      <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openExternalLink(`https://rawg.io/games/${game.id}`);
+                          }}
+                      >
+                        <ExternalLink size={14} /> Detalhes
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="p-3">
+                    {/* Info do card */}
+                    <div className="flex justify-between items-start gap-2 mb-1">
+                      <h3 className="font-semibold text-sm line-clamp-1" title={game.name}>
+                        {game.name}
+                      </h3>
+                      <div className="flex items-center gap-1 shrink-0 bg-yellow-500/10 px-1.5 py-0.5 rounded text-[10px] text-yellow-500 font-bold">
+                        <Star size={10} className="fill-yellow-500" /> {game.rating}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground line-clamp-1">
+                      {game.genres.map((g) => g.name).join(", ")}
+                    </div>
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground line-clamp-1">
-                  {game.genres.map((g) => g.name).join(", ")}
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
