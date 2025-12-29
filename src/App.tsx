@@ -6,6 +6,7 @@ import { useLibrary } from "./hooks/useLibrary";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import AddGameModal from "./components/AddGameModal";
+import GameDetailsModal from "./components/GameDetailsModal.tsx";
 
 // Páginas
 import Library from "./pages/Library";
@@ -27,6 +28,12 @@ function App() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
+
+  // Estado para detalhes do jogo selecionado
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+
+  // Jogo selecionado para o modal de detalhes
+  const selectedGame = games.find(g => g.id === selectedGameId) || null;
 
   // Cache do Trending
   const [trendingCache, setTrendingCache] = useState<RawgGame[]>([]);
@@ -66,10 +73,20 @@ function App() {
     }
   };
 
+  const handleGameClick = (game: Game) => {
+    setSelectedGameId(game.id); // Abre o modal de detalhes
+  };
+
+  const handleSwitchGame = (id: string) => {
+    setSelectedGameId(id); // Troca o jogo visualizado dentro do modal
+  };
+
+  const closeDetails = () => setSelectedGameId(null);
+
   // Props comuns passadas para as listas de jogos
   const commonGameActions = {
     onToggleFavorite: toggleFavorite,
-    onGameClick: (g: Game) => console.log("Click:", g.name),
+    onGameClick: handleGameClick,
     onDeleteGame: handleDeleteWrapper,
     onEditGame: openEditModal,
   };
@@ -137,6 +154,14 @@ function App() {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveGameWrapper}
         gameToEdit={gameToEdit}
+      />
+
+      <GameDetailsModal
+        isOpen={!!selectedGameId}
+        onClose={closeDetails}
+        game={selectedGame}
+        allGames={games}
+        onSwitchGame={handleSwitchGame}
       />
     </div>
   );

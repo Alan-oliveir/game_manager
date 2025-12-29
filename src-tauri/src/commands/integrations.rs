@@ -1,10 +1,11 @@
 use crate::constants;
 use crate::database::AppState;
 use crate::services::{rawg, steam};
+use crate::storage;
 
 use rusqlite::params;
 use std::time::Duration;
-use tauri::State;
+use tauri::{command, State, AppHandle};
 use tokio::time::sleep;
 
 #[tauri::command]
@@ -185,7 +186,23 @@ pub async fn enrich_library(state: State<'_, AppState>) -> Result<String, String
     Ok(summary)
 }
 
+fn get_api_key(app_handle: &tauri::AppHandle) -> Result<String, String> {
+    storage::get_secret(app_handle, "rawg_api_key")
+}
+
 #[tauri::command]
-pub async fn get_trending_games(api_key: String) -> Result<Vec<rawg::RawgGame>, String> {
+pub async fn fetch_game_details(app_handle: AppHandle, query: String) -> Result<rawg::GameDetails, String> {
+    let api_key = get_api_key(&app_handle)?;
+
+    if api_key.is_empty() {
+        return Err("API Key da RAWG não configurada.".to_string());
+    }
+
+    rawg::fetch_game_details(&api_key, query).await
+}
+
+#[tauri::command]
+pub async fn get_trending_games(app_handle: AppHandle) -> Result<Vec<rawg::RawgGame>, String> {
+    let api_key = get_api_key(&app_handle)?;
     rawg::fetch_trending_games(&api_key).await
 }

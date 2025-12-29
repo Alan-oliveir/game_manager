@@ -56,6 +56,7 @@ pub fn run() {
             commands::integrations::import_steam_library,
             commands::integrations::enrich_library,
             commands::integrations::get_trending_games,
+            commands::integrations::fetch_game_details,
             // Comandos de Configuração (Secrets)
             commands::settings::set_secret,
             commands::settings::get_secret,

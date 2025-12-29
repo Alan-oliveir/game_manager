@@ -41,3 +41,22 @@ export interface KeysBatch {
   steam_api_key: string;
   rawg_api_key: string;
 }
+
+// Adicione ao final do arquivo existente
+export interface GameDetails {
+  description_raw: string; // Descrição em texto puro
+  metacritic: number | null;
+  website: string;
+  tags: { id: number; name: string }[];
+  developers: { name: string }[];
+  publishers: { name: string }[];
+}
+
+// Interface auxiliar para lidar com múltiplas plataformas do mesmo jogo
+export interface GamePlatformLink {
+  id: string;
+  platform: string;
+}
+
+// Duvidas:
+// Poderia usar a interface RawgGame 

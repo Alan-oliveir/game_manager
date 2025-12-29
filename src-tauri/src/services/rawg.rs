@@ -1,6 +1,42 @@
 use chrono::Datelike;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RawgTag {
+    pub id: i32,
+    pub name: String,
+    pub slug: String,
+    pub language: String,
+    pub games_count: i32,
+    pub image_background: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RawgDeveloper {
+    pub id: i32,
+    pub name: String,
+    pub slug: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RawgPublisher {
+    pub id: i32,
+    pub name: String,
+    pub slug: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GameDetails {
+    pub id: i32,
+    pub name: String,
+    pub description_raw: String,
+    pub metacritic: Option<i32>,
+    pub website: String,
+    pub tags: Vec<RawgTag>,
+    pub developers: Vec<RawgDeveloper>,
+    pub publishers: Vec<RawgPublisher>,
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RawgGame {
     pub id: u32,
@@ -42,4 +78,31 @@ pub async fn fetch_trending_games(api_key: &str) -> Result<Vec<RawgGame>, String
     let data: RawgResponse = res.json().await.map_err(|e| e.to_string())?;
 
     Ok(data.results)
+}
+
+pub async fn fetch_game_details(api_key: &str, query: String) -> Result<GameDetails, String> {
+    // Transforma o nome em slug (Lógica de negócio)
+    let slug = query.to_lowercase()
+        .replace(" ", "-")
+        .replace(":", "")
+        .replace("'", "")
+        .replace("&", "")
+        .replace(".", "");
+
+    let client = reqwest::Client::new();
+    let url = format!("https://api.rawg.io/api/games/{}?key={}", slug, api_key);
+
+    let res = client.get(&url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if res.status().is_success() {
+        let details: GameDetails = res.json().await.map_err(|e| e.to_string())?;
+        Ok(details)
+    } else if res.status().as_u16() == 404 {
+        Err("Jogo não encontrado na RAWG".into())
+    } else {
+        Err(format!("Erro na API RAWG: Status {}", res.status()))
+    }
 }
