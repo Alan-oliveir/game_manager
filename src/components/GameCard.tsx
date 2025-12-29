@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Game } from "../types";
+import { Game, GameActions } from "../types";
 import {
   Clock,
   Edit,
@@ -16,20 +16,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface GameCardProps {
+interface GameCardProps extends GameActions {
   game: Game;
-  onToggleFavorite: (id: string) => void;
-  onClick: (game: Game) => void;
-  onDelete: (id: string) => void;
-  onEdit: (game: Game) => void;
 }
 
 export default function GameCard({
   game,
   onToggleFavorite,
-  onClick,
-  onDelete,
-  onEdit,
+  onGameClick,
+  onDeleteGame,
+  onEditGame,
 }: GameCardProps) {
   // Estado para gerenciar erro de carregamento da imagem
   const [imageError, setImageError] = useState(false);
@@ -37,7 +33,7 @@ export default function GameCard({
     <div
       className="group relative bg-card rounded-xl overflow-hidden border border-border
                  hover:scale-[1.02] hover:shadow-2xl transition-all duration-300 cursor-pointer flex flex-col h-full"
-      onClick={() => onClick(game)}
+      onClick={() => onGameClick(game)}
     >
       {/* Imagem da Capa */}
       <div className="relative aspect-[2/3] overflow-hidden bg-muted">
@@ -60,7 +56,7 @@ export default function GameCard({
           </div>
         )}
 
-        {/* --- Menu de opções --- */}
+        {/* Menu de opções */}
         <div className="absolute top-3 left-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -75,7 +71,7 @@ export default function GameCard({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEdit(game);
+                  onEditGame(game);
                 }}
               >
                 <Edit className="mr-2 h-4 w-4" />
@@ -85,7 +81,7 @@ export default function GameCard({
                 className="text-red-600 focus:text-red-600 focus:bg-red-100/10"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete(game.id);
+                  onDeleteGame(game.id);
                 }}
               >
                 <Trash2 className="mr-2 h-4 w-4" />

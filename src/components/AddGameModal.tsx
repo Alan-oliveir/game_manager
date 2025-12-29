@@ -26,53 +26,52 @@ interface AddGameModalProps {
   gameToEdit?: Game | null;
 }
 
+const INITIAL_STATE = {
+  name: "",
+  cover_url: "",
+  genre: "",
+  platform: "Manual",
+  playtime: "0",
+  rating: 0,
+};
+
 export default function AddGameModal({
   isOpen,
   onClose,
   onSave,
   gameToEdit,
 }: AddGameModalProps) {
-  // Estados do Formulário
-  const [name, setName] = useState("");
-  const [coverUrl, setCoverUrl] = useState("");
-  const [genre, setGenre] = useState("");
-  const [platform, setPlatform] = useState("Manual");
-  const [playtime, setPlaytime] = useState("0");
-  const [rating, setRating] = useState(0);
+  const [formData, setFormData] = useState(INITIAL_STATE);
 
-  // Carrega dados ao abrir (Edição vs Criação)
   useEffect(() => {
     if (isOpen) {
       if (gameToEdit) {
-        setName(gameToEdit.name);
-        setCoverUrl(gameToEdit.cover_url || "");
-        setGenre(gameToEdit.genre || "");
-        setPlatform(gameToEdit.platform || "Manual");
-        setPlaytime(gameToEdit.playtime?.toString() || "0");
-        setRating(gameToEdit.rating || 0);
+        setFormData({
+          name: gameToEdit.name,
+          cover_url: gameToEdit.cover_url || "",
+          genre: gameToEdit.genre || "",
+          platform: gameToEdit.platform || "Manual",
+          playtime: gameToEdit.playtime?.toString() || "0",
+          rating: gameToEdit.rating || 0,
+        });
       } else {
-        setName("");
-        setCoverUrl("");
-        setGenre("");
-        setPlatform("Manual");
-        setPlaytime("0");
-        setRating(0);
+        setFormData(INITIAL_STATE);
       }
     }
   }, [isOpen, gameToEdit]);
 
+  const handleChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleSave = () => {
-    if (!name.trim()) return;
+    if (!formData.name.trim()) return;
 
     onSave({
-      name,
-      cover_url: coverUrl,
-      genre,
-      platform,
-      playtime: parseInt(playtime) || 0,
-      rating: rating > 0 ? rating : undefined,
+      ...formData,
+      playtime: parseInt(formData.playtime) || 0,
+      rating: formData.rating > 0 ? formData.rating : undefined,
     });
-
     onClose();
   };
 
@@ -86,31 +85,32 @@ export default function AddGameModal({
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {/* Linha 1: Nome */}
           <div className="grid gap-2">
             <Label htmlFor="name">Nome do Jogo *</Label>
             <Input
               id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
               placeholder="Ex: Elden Ring"
             />
           </div>
 
-          {/* Linha 2: Gênero e Plataforma */}
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="genre">Gênero</Label>
               <Input
                 id="genre"
-                value={genre}
-                onChange={(e) => setGenre(e.target.value)}
+                value={formData.genre}
+                onChange={(e) => handleChange("genre", e.target.value)}
                 placeholder="RPG, Ação..."
               />
             </div>
             <div className="grid gap-2">
               <Label>Plataforma</Label>
-              <Select value={platform} onValueChange={setPlatform}>
+              <Select
+                value={formData.platform}
+                onValueChange={(val) => handleChange("platform", val)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
@@ -125,18 +125,16 @@ export default function AddGameModal({
             </div>
           </div>
 
-          {/* Linha 3: URL da Capa */}
           <div className="grid gap-2">
             <Label htmlFor="cover">Capa (URL)</Label>
             <Input
               id="cover"
-              value={coverUrl}
-              onChange={(e) => setCoverUrl(e.target.value)}
+              value={formData.cover_url}
+              onChange={(e) => handleChange("cover_url", e.target.value)}
               placeholder="https://..."
             />
           </div>
 
-          {/* Linha 4: Tempo e Avaliação */}
           <div className="grid grid-cols-2 gap-4 items-end">
             <div className="grid gap-2">
               <Label htmlFor="playtime">Tempo Jogado (horas)</Label>
@@ -144,8 +142,8 @@ export default function AddGameModal({
                 id="playtime"
                 type="number"
                 min="0"
-                value={playtime}
-                onChange={(e) => setPlaytime(e.target.value)}
+                value={formData.playtime}
+                onChange={(e) => handleChange("playtime", e.target.value)}
               />
             </div>
 
@@ -155,17 +153,17 @@ export default function AddGameModal({
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
-                    onClick={() => setRating(star)}
+                    type="button"
+                    onClick={() => handleChange("rating", star)}
                     className={`transition-all hover:scale-110 focus:outline-none ${
-                      star <= rating
+                      star <= formData.rating
                         ? "text-yellow-400"
                         : "text-muted-foreground/30"
                     }`}
-                    type="button"
                   >
                     <Star
                       size={24}
-                      fill={star <= rating ? "currentColor" : "none"}
+                      fill={star <= formData.rating ? "currentColor" : "none"}
                     />
                   </button>
                 ))}

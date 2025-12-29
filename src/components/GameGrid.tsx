@@ -1,25 +1,18 @@
-import { Game } from "../types";
+import { Game, GameActions } from "../types";
 import { Library } from "lucide-react";
 import GameCard from "./GameCard";
 
-interface GameGridProps {
+interface GameGridProps extends GameActions {
   games: Game[];
   title?: string;
   subtitle?: string;
-  onToggleFavorite: (id: string) => void;
-  onGameClick: (game: Game) => void;
-  onDeleteGame: (id: string) => void;
-  onEditGame: (game: Game) => void;
 }
 
 export default function GameGrid({
   games,
   title = "Minha Biblioteca",
   subtitle,
-  onToggleFavorite,
-  onGameClick,
-  onDeleteGame,
-  onEditGame,
+  ...actions
 }: GameGridProps) {
   return (
     <div className="flex-1 overflow-y-auto p-6">
@@ -36,14 +29,7 @@ export default function GameGrid({
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
         {games.map((game) => (
-          <GameCard
-            key={game.id}
-            game={game}
-            onToggleFavorite={onToggleFavorite}
-            onClick={onGameClick}
-            onDelete={onDeleteGame}
-            onEdit={onEditGame}
-          />
+          <GameCard key={game.id} game={game} {...actions} />
         ))}
       </div>
 

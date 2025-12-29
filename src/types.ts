@@ -9,6 +9,13 @@ export interface Game {
   favorite: boolean;
 }
 
+export interface GameActions {
+  onToggleFavorite: (id: string) => void;
+  onGameClick: (game: Game) => void;
+  onDeleteGame: (id: string) => void;
+  onEditGame: (game: Game) => void;
+}
+
 export interface RawgGame {
   id: number;
   name: string;
@@ -27,4 +34,10 @@ export interface WishlistGame {
   lowest_price: number | null;
   on_sale: boolean;
   added_at: string;
+}
+
+export interface KeysBatch {
+  steam_id: string;
+  steam_api_key: string;
+  rawg_api_key: string;
 }

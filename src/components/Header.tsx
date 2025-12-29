@@ -1,6 +1,6 @@
 import { Moon, Plus, Search, Sun } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "../hooks/useTheme";
 
 interface HeaderProps {
   onAddGame: () => void;
@@ -13,12 +13,7 @@ export default function Header({
   searchTerm,
   onSearchChange,
 }: HeaderProps) {
-  const [isDark, setIsDark] = useState(true);
-
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle("dark");
-  };
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <header className="h-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border flex items-center justify-between px-6 gap-4 sticky top-0 z-50">

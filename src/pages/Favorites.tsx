@@ -1,15 +1,11 @@
 import GameGrid from "../components/GameGrid";
-import { Game } from "../types";
+import { Game, GameActions } from "../types";
 import { Heart } from "lucide-react";
 import { useMemo } from "react";
 
-interface FavoritesProps {
+interface FavoritesProps extends GameActions {
   games: Game[];
   searchTerm: string;
-  onToggleFavorite: (id: string) => void;
-  onGameClick: (game: Game) => void;
-  onDeleteGame: (id: string) => void;
-  onEditGame: (game: Game) => void;
 }
 
 export default function Favorites({

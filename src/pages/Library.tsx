@@ -1,14 +1,10 @@
 import GameGrid from "../components/GameGrid";
-import { Game } from "../types";
+import { Game, GameActions } from "../types";
 import { useMemo } from "react";
 
-interface LibraryProps {
+interface LibraryProps extends GameActions {
   games: Game[];
   searchTerm: string;
-  onToggleFavorite: (id: string) => void;
-  onGameClick: (game: Game) => void;
-  onDeleteGame: (id: string) => void;
-  onEditGame: (game: Game) => void;
 }
 
 export default function Library({

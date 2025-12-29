@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-shell";
+import { useState } from "react";
 import {
   AlertCircle,
   ChevronLeft,
@@ -13,8 +11,10 @@ import {
   TrendingUp,
   ExternalLink,
 } from "lucide-react";
-import { Game, RawgGame } from "../types";
 import { Button } from "@/components/ui/button";
+import { RawgGame, Game } from "../types";
+import { useTrending } from "../hooks/useTrending"; // Hook criado
+import { openExternalLink } from "../utils/navigation"; // Util criado
 
 interface TrendingProps {
   userGames: Game[];
@@ -23,163 +23,41 @@ interface TrendingProps {
   setCachedGames: (games: RawgGame[]) => void;
 }
 
-export default function Trending({
-  userGames,
-  onChangeTab,
-  cachedGames,
-  setCachedGames,
-}: TrendingProps) {
-  const [games, setGames] = useState<RawgGame[]>(cachedGames);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedGenre, setSelectedGenre] = useState<string>("all");
-  const [heroIndex, setHeroIndex] = useState<number>(0);
+export default function Trending(props: TrendingProps) {
+  // Usamos o Hook para obter dados e lógica
+  const {
+    games,
+    allGenres,
+    loading,
+    error,
+    selectedGenre,
+    setSelectedGenre,
+    retry,
+    addToWishlist,
+  } = useTrending(props);
 
-  useEffect(() => {
-    const fetchTrending = async () => {
-      if (cachedGames.length > 0 && !error) {
-        console.log("Usando cache para Trending - API não chamada.");
-        setGames(cachedGames);
-        return;
-      }
+  // Estado estritamente visual (Carrossel)
+  const [heroIndex, setHeroIndex] = useState(0);
 
-      setLoading(true);
-      setError(null);
-
-      try {
-        const apiKey = await invoke<string>("get_secret", {
-          keyName: "rawg_api_key",
-        });
-
-        if (!apiKey || apiKey.trim() === "") {
-          setError(
-            "API Key da RAWG não configurada. Verifique nas Configurações."
-          );
-          setLoading(false);
-          return;
-        }
-
-        console.log("Buscando jogos trending com API RAWG...");
-        const result = await invoke<RawgGame[]>("get_trending_games", {
-          apiKey,
-        });
-
-        setGames(result);
-        setCachedGames(result);
-        setError(null);
-      } catch (err) {
-        console.error("Erro ao buscar trending:", err);
-
-        const errorMessage = String(err);
-        if (
-          errorMessage.includes("não configurada") ||
-          errorMessage.includes("not found")
-        ) {
-          setError(
-            "API Key da RAWG não configurada. Vá em Configurações para adicionar."
-          );
-        } else if (errorMessage.includes("Invalid API key")) {
-          setError("API Key da RAWG inválida. Verifique nas Configurações.");
-        } else {
-          setError(`Erro ao buscar jogos em alta: ${errorMessage}`);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTrending();
-  }, []);
-
-  const handleRetry = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const apiKey = await invoke<string>("get_secret", {
-        keyName: "rawg_api_key",
-      });
-
-      if (!apiKey || apiKey.trim() === "") {
-        setError(
-          "API Key da RAWG não configurada. Verifique nas Configurações."
-        );
-        return;
-      }
-
-      console.log("Tentando buscar jogos trending novamente...");
-      const result = await invoke<RawgGame[]>("get_trending_games", { apiKey });
-
-      setGames(result);
-      setCachedGames(result);
-      setError(null);
-    } catch (err) {
-      console.error("Erro ao buscar trending:", err);
-      const errorMessage = String(err);
-
-      if (
-        errorMessage.includes("Invalid API key") ||
-        errorMessage.includes("401")
-      ) {
-        setError("API Key da RAWG inválida. Verifique nas Configurações.");
-      } else {
-        setError(`Erro ao buscar jogos em alta: ${errorMessage}`);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const userGameNames = userGames.map((g) =>
-    g.name.toLowerCase().replace(/[^a-z0-9]/g, "")
-  );
-  const availableGames = games.filter((rawgGame) => {
-    const rawgName = rawgGame.name.toLowerCase().replace(/[^a-z0-9]/g, "");
-    return !userGameNames.includes(rawgName);
-  });
-
-  const filteredGames = availableGames.filter((game) => {
-    if (selectedGenre === "all") return true;
-    return game.genres.some((g) => g.name === selectedGenre);
-  });
-
-  const heroGames = filteredGames.slice(0, 5);
+  // Helpers de UI
+  const heroGames = games.slice(0, 5);
+  const gridGames = games.slice(5);
   const currentHero = heroGames[heroIndex];
-  const gridGames = filteredGames.slice(5);
-
-  const allGenres = Array.from(
-    new Set(games.flatMap((g) => g.genres.map((genre) => genre.name)))
-  ).sort();
 
   const nextHero = () => setHeroIndex((prev) => (prev + 1) % heroGames.length);
   const prevHero = () =>
     setHeroIndex((prev) => (prev - 1 + heroGames.length) % heroGames.length);
 
-  const handleAddToWishlist = async (game: RawgGame) => {
+  const handleWishlistClick = async (game: RawgGame) => {
     try {
-      await invoke("add_to_wishlist", {
-        id: game.id.toString(),
-        name: game.name,
-        coverUrl: game.background_image,
-        storeUrl: null,
-        currentPrice: null,
-      });
-
+      await addToWishlist(game);
       alert(`❤️ ${game.name} adicionado à Lista de Desejos!`);
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
+    } catch {
       alert("Erro ao adicionar à lista.");
     }
   };
 
-  const handleOpenLink = async (url: string) => {
-    try {
-      await open(url);
-    } catch (error) {
-      console.error("Erro ao abrir link:", error);
-      alert("Erro ao abrir o link no navegador.");
-    }
-  };
+  // Renderização de Estados de Carregamento/Erro
 
   if (loading) {
     return (
@@ -201,40 +79,39 @@ export default function Trending({
         <h2 className="text-xl font-bold mb-2">Ops! Algo deu errado.</h2>
         <p className="text-muted-foreground mb-6 max-w-md">{error}</p>
         <div className="flex gap-3">
-          <Button onClick={() => onChangeTab("settings")} variant="outline">
+          <Button
+            onClick={() => props.onChangeTab("settings")}
+            variant="outline"
+          >
             Configurar API Key
           </Button>
-          <Button onClick={handleRetry}>Tentar Novamente</Button>
+          <Button onClick={retry}>Tentar Novamente</Button>
         </div>
-      </div>
-    );
-  }
-
-  if (heroGames.length === 0 && games.length === 0) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-        <p className="text-muted-foreground">Nenhum jogo encontrado.</p>
-        <Button onClick={handleRetry} variant="outline">
-          Buscar Jogos
-        </Button>
       </div>
     );
   }
 
   if (heroGames.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center">
+      <div className="flex-1 flex flex-col items-center justify-center space-y-4">
         <p className="text-muted-foreground">
-          Você já tem todos os jogos em alta! 🎉
+          {games.length === 0 && props.cachedGames.length === 0
+            ? "Nenhum jogo encontrado."
+            : "Você já tem todos os jogos em alta! 🎉"}
         </p>
+        <Button onClick={retry} variant="outline">
+          Atualizar
+        </Button>
       </div>
     );
   }
 
+  // Renderização Principal
+
   return (
     <div className="flex-1 overflow-y-auto">
       {/* Hero Section */}
-      <div className="relative h-125 bg-background">
+      <div className="relative h-125 bg-background group/hero">
         <div
           className="absolute inset-0 bg-cover bg-center transition-all duration-700"
           style={{
@@ -242,7 +119,6 @@ export default function Trending({
             filter: "blur(20px) brightness(0.25)",
           }}
         />
-
         <div className="absolute inset-0 bg-linear-to-t from-background via-transparent to-transparent" />
 
         <div className="relative h-full flex items-center px-8 max-w-7xl mx-auto z-10">
@@ -250,20 +126,23 @@ export default function Trending({
             <>
               <button
                 onClick={prevHero}
-                className="absolute left-4 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-sm transition"
+                className="absolute left-4 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-sm transition z-20"
               >
                 <ChevronLeft size={24} />
               </button>
               <button
                 onClick={nextHero}
-                className="absolute right-4 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-sm transition"
+                className="absolute right-4 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-sm transition z-20"
               >
                 <ChevronRight size={24} />
               </button>
             </>
           )}
 
-          <div className="flex flex-col md:flex-row items-center gap-8 w-full animate-in fade-in duration-500">
+          <div
+            className="flex flex-col md:flex-row items-center gap-8 w-full animate-in fade-in duration-500"
+            key={currentHero.id}
+          >
             <img
               src={currentHero.background_image || ""}
               alt={currentHero.name}
@@ -272,8 +151,7 @@ export default function Trending({
 
             <div className="flex-1 space-y-4 text-center md:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm font-medium border border-orange-500/20">
-                <Flame size={16} />
-                EM ALTA
+                <Flame size={16} /> EM ALTA
               </div>
 
               <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">
@@ -284,7 +162,7 @@ export default function Trending({
                 {currentHero.genres.map((g) => (
                   <span
                     key={g.name}
-                    className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-xs text-white transition cursor-default"
+                    className="px-3 py-1 bg-white/10 rounded-full text-xs text-white"
                   >
                     {g.name}
                   </span>
@@ -301,37 +179,25 @@ export default function Trending({
                     <span className="text-white/50 text-sm ml-1">/ 5.0</span>
                   </div>
                 </div>
-
-                {currentHero.released && (
-                  <div className="text-white/80 text-sm">
-                    Lançamento:
-                    <br />
-                    <span className="font-semibold text-white">
-                      {new Date(currentHero.released).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
               </div>
 
               <div className="flex gap-3 justify-center md:justify-start mt-6">
                 <Button
                   variant="secondary"
                   className="gap-2"
-                  onClick={() => handleAddToWishlist(currentHero)}
+                  onClick={() => handleWishlistClick(currentHero)}
                 >
-                  <Heart size={18} className="text-red-500" />
-                  Lista de Desejos
+                  <Heart size={18} className="text-red-500" /> Lista de Desejos
                 </Button>
 
                 <Button
                   variant="outline"
                   className="gap-2 bg-transparent text-white border-white/20 hover:bg-white/10"
                   onClick={() =>
-                    handleOpenLink(`https://rawg.io/games/${currentHero.id}`)
+                    openExternalLink(`https://rawg.io/games/${currentHero.id}`)
                   }
                 >
-                  <ExternalLink size={18} />
-                  Ver Detalhes
+                  <ExternalLink size={18} /> Ver Detalhes
                 </Button>
               </div>
             </div>
@@ -361,8 +227,7 @@ export default function Trending({
           </select>
 
           <div className="ml-auto text-xs text-muted-foreground hidden sm:block">
-            Mostrando {filteredGames.length} sugestões baseadas no que você não
-            tem.
+            {games.length} sugestões disponíveis
           </div>
         </div>
       </div>
@@ -380,7 +245,7 @@ export default function Trending({
               key={game.id}
               className="group relative bg-card rounded-xl overflow-hidden border border-border hover:shadow-xl transition-all hover:-translate-y-1"
             >
-              <div className="aspect-video overflow-hidden">
+              <div className="aspect-video overflow-hidden relative">
                 {game.background_image ? (
                   <img
                     src={game.background_image}
@@ -398,18 +263,17 @@ export default function Trending({
                     size="sm"
                     variant="secondary"
                     className="h-8 text-xs"
-                    onClick={() => handleAddToWishlist(game)}
+                    onClick={() => handleWishlistClick(game)}
                   >
                     <Heart size={14} className="mr-1" /> Desejos
                   </Button>
-
                   <Button
                     size="sm"
                     variant="secondary"
                     className="h-8 text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleOpenLink(`https://rawg.io/games/${game.id}`);
+                      openExternalLink(`https://rawg.io/games/${game.id}`);
                     }}
                   >
                     <ExternalLink size={14} /> Detalhes
@@ -426,8 +290,7 @@ export default function Trending({
                     {game.name}
                   </h3>
                   <div className="flex items-center gap-1 shrink-0 bg-yellow-500/10 px-1.5 py-0.5 rounded text-[10px] text-yellow-500 font-bold">
-                    <Star size={10} className="fill-yellow-500" />
-                    {game.rating}
+                    <Star size={10} className="fill-yellow-500" /> {game.rating}
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground line-clamp-1">

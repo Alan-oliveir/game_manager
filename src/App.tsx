@@ -1,143 +1,105 @@
-import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { Game, RawgGame } from "./types";
+import { useState } from "react";
+import { RawgGame, Game } from "./types";
+import { useLibrary } from "./hooks/useLibrary";
+
+// Componentes
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import AddGameModal from "./components/AddGameModal";
+
+// Páginas
 import Library from "./pages/Library";
 import Favorites from "./pages/Favorites";
 import Settings from "./pages/Settings";
 import Home from "./pages/Home";
 import Trending from "./pages/Trending";
-import Wishlist from "./pages/Wishlist.tsx";
+import Wishlist from "./pages/Wishlist";
 
 function App() {
-  // Estados principais
-  const [games, setGames] = useState<Game[]>([]);
+  // Hook Principal de Dados
+  const { games, refreshGames, saveGame, removeGame, toggleFavorite } =
+    useLibrary();
+
+  // Estado de UI (Navegação e Modais)
   const [activeSection, setActiveSection] = useState("home");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+
+  // Cache do Trending
   const [trendingCache, setTrendingCache] = useState<RawgGame[]>([]);
-  const [trendingKey, setTrendingKey] = useState(0); // Para forçar re-render do Trending
+  const [trendingKey, setTrendingKey] = useState(0);
 
-  // Consulta os jogos na base de dados
-  const refreshGames = async () => {
-    try {
-      const result = await invoke<Game[]>("get_games");
-      setGames(result);
-    } catch (error) {
-      console.error("Erro ao buscar jogos:", error);
-    }
-  };
+  // Handlers de UI
 
-  useEffect(() => {
-    invoke("init_db")
-      .finally(() => refreshGames())
-      .catch(console.error);
-  }, []);
-
-  // Callback para quando as configurações forem atualizadas
   const handleSettingsUpdate = () => {
-    refreshGames();
-    // Limpa o cache do Trending para forçar nova busca
-    setTrendingCache([]);
-    setTrendingKey((prev) => prev + 1); // Força re-render do componente Trending
-    console.log("Cache do Trending limpo após atualização de configurações");
+    refreshGames(); // Atualiza a lista após importação
+    setTrendingCache([]); // Limpa cache para o usuário ver novidades
+    setTrendingKey((k) => k + 1); // Força refresh da tela Trending
   };
 
-  // Ações de manipulação de jogos
-  const handleSaveGame = async (gameData: Partial<Game>) => {
-    try {
-      if (gameToEdit) {
-        await invoke("update_game", {
-          id: gameToEdit.id,
-          name: gameData.name,
-          genre: gameData.genre,
-          platform: gameData.platform,
-          coverUrl: gameData.cover_url || null,
-          playtime: gameData.playtime || 0,
-          rating: gameData.rating || null,
-        });
-      } else {
-        await invoke("add_game", {
-          id: crypto.randomUUID(),
-          name: gameData.name,
-          genre: gameData.genre || "Desconhecido",
-          platform: gameData.platform || "Manual",
-          coverUrl: gameData.cover_url || null,
-          playtime: gameData.playtime || 0,
-          rating: gameData.rating || null,
-        });
-      }
-      await refreshGames();
-      setIsModalOpen(false);
-      setGameToEdit(null);
-    } catch (e) {
-      console.error(e);
-      alert("Erro ao salvar: " + e);
-    }
-  };
-
-  const handleDeleteGame = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este jogo?")) return;
-    try {
-      await invoke("delete_game", { id });
-      await refreshGames();
-    } catch (e) {
-      console.error(e);
-      alert("Erro ao excluir: " + e);
-    }
-  };
-
-  const handleToggleFavorite = async (id: string) => {
-    try {
-      await invoke("toggle_favorite", { id });
-      await refreshGames();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleGameClick = (game: Game) => {
-    console.log("Clicou no jogo:", game.name);
-  };
-
-  const handleEditClick = (game: Game) => {
-    setGameToEdit(game);
-    setIsModalOpen(true);
-  };
-
-  const handleAddClick = () => {
+  const openAddModal = () => {
     setGameToEdit(null);
     setIsModalOpen(true);
   };
 
-  // Agrupa as ações para passar como props
-  const gameActions = {
-    onToggleFavorite: handleToggleFavorite,
-    onGameClick: handleGameClick,
-    onDeleteGame: handleDeleteGame,
-    onEditGame: handleEditClick,
+  const openEditModal = (game: Game) => {
+    setGameToEdit(game);
+    setIsModalOpen(true);
   };
 
-  // Renderiza o conteúdo baseado na seção ativa
+  const handleSaveGameWrapper = async (data: Partial<Game>) => {
+    try {
+      await saveGame(data, gameToEdit?.id); // Chama o hook
+      setIsModalOpen(false);
+      setGameToEdit(null);
+    } catch (e) {
+      alert("Erro ao salvar: " + e);
+    }
+  };
+
+  const handleDeleteWrapper = async (id: string) => {
+    if (confirm("Tem certeza que deseja excluir?")) {
+      await removeGame(id);
+    }
+  };
+
+  // Props comuns passadas para as listas de jogos
+  const commonGameActions = {
+    onToggleFavorite: toggleFavorite,
+    onGameClick: (g: Game) => console.log("Click:", g.name),
+    onDeleteGame: handleDeleteWrapper,
+    onEditGame: openEditModal,
+  };
+
+  // Roteamento Simples
+
   const renderContent = () => {
     switch (activeSection) {
       case "home":
         return <Home games={games} />;
       case "library":
         return (
-          <Library games={games} searchTerm={searchTerm} {...gameActions} />
+          <Library
+            games={games}
+            searchTerm={searchTerm}
+            {...commonGameActions}
+          />
         );
       case "favorites":
         return (
-          <Favorites games={games} searchTerm={searchTerm} {...gameActions} />
+          <Favorites
+            games={games}
+            searchTerm={searchTerm}
+            {...commonGameActions}
+          />
         );
       case "trending":
         return (
           <Trending
-            key={trendingKey} // Força re-render quando trendingKey muda
+            key={trendingKey}
             userGames={games}
             onChangeTab={setActiveSection}
             cachedGames={trendingCache}
@@ -149,14 +111,7 @@ function App() {
       case "settings":
         return <Settings onLibraryUpdate={handleSettingsUpdate} />;
       default:
-        return (
-          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground opacity-50">
-            <div className="text-6xl mb-4">🚧</div>
-            <p className="text-xl font-medium">
-              Seção "{activeSection}" em desenvolvimento
-            </p>
-          </div>
-        );
+        return <div className="p-10 text-center">Página não encontrada</div>;
     }
   };
 
@@ -170,18 +125,17 @@ function App() {
 
       <main className="flex-1 flex flex-col min-w-0">
         <Header
-          onAddGame={handleAddClick}
+          onAddGame={openAddModal}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
         />
-
         {renderContent()}
       </main>
 
       <AddGameModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveGame}
+        onSave={handleSaveGameWrapper}
         gameToEdit={gameToEdit}
       />
     </div>

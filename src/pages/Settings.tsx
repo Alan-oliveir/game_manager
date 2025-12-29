@@ -1,156 +1,31 @@
-import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   AlertCircle,
   CheckCircle,
   CloudDownload,
   Loader2,
   Save,
-  Sparkles,
   Shield,
+  Sparkles,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useSettings } from "../hooks/useSettings";
 
 interface SettingsProps {
   onLibraryUpdate: () => void;
 }
 
-// Interface para o batch de chaves
-interface KeysBatch {
-  steam_id: string;
-  steam_api_key: string;
-  rawg_api_key: string;
-}
-
 export default function Settings({ onLibraryUpdate }: SettingsProps) {
-  const [steamId, setSteamId] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [rawgApiKey, setRawgApiKey] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingKeys, setIsLoadingKeys] = useState(true); // Novo: loading inicial
-  const [status, setStatus] = useState<{
-    type: "success" | "error" | null;
-    message: string;
-  }>({
-    type: null,
-    message: "",
-  });
-  const [isEnriching, setIsEnriching] = useState(false);
+  const { keys, setKeys, loading, status, actions } =
+    useSettings(onLibraryUpdate);
 
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        setIsLoadingKeys(true);
-
-        const keys = await invoke<KeysBatch>("get_secrets");
-
-        if (keys.steam_id) setSteamId(keys.steam_id);
-        if (keys.steam_api_key) setApiKey(keys.steam_api_key);
-        if (keys.rawg_api_key) setRawgApiKey(keys.rawg_api_key);
-
-        console.log("Chaves carregadas em batch:", {
-          steam_id: keys.steam_id ? "✓" : "✗",
-          steam_api_key: keys.steam_api_key ? "✓" : "✗",
-          rawg_api_key: keys.rawg_api_key ? "✓" : "✗",
-        });
-      } catch (error) {
-        console.error("Erro ao carregar configurações:", error);
-      } finally {
-        setIsLoadingKeys(false);
-      }
-    };
-    loadSettings();
-  }, []);
-
-  const handleSaveAll = async () => {
-    setIsLoading(true);
-    setStatus({ type: null, message: "" });
-    try {
-      await invoke("set_secrets", {
-        steamId: steamId.trim() || null,
-        steamApiKey: apiKey.trim() || null,
-        rawgApiKey: rawgApiKey.trim() || null,
-      });
-
-      setStatus({
-        type: "success",
-        message: "Configurações salvas com segurança (Keychain do sistema)",
-      });
-    } catch (error) {
-      console.error(error);
-      setStatus({
-        type: "error",
-        message: `Erro ao salvar: ${error}`,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Importa a biblioteca da Steam
-  const handleImport = async () => {
-    if (!steamId || !apiKey) {
-      setStatus({
-        type: "error",
-        message: "Preencha e SALVE as chaves antes de importar.",
-      });
-      return;
-    }
-    setIsLoading(true);
-    setStatus({ type: null, message: "Iniciando importação da Steam..." });
-    try {
-      const result = await invoke<string>("import_steam_library", {
-        steamId: steamId.trim(),
-        apiKey: apiKey.trim(),
-      });
-      setStatus({ type: "success", message: result });
-      onLibraryUpdate();
-    } catch (error) {
-      console.error(error);
-      setStatus({ type: "error", message: String(error) });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Busca dados do gênero do jogo na Steam
-  const handleEnrich = async () => {
-    setIsEnriching(true);
-    setStatus({
-      type: null,
-      message: "Buscando gêneros na Steam... Isso pode demorar.",
-    });
-    try {
-      const result = await invoke<string>("enrich_library");
-      setStatus({ type: "success", message: result });
-      onLibraryUpdate();
-    } catch (error) {
-      setStatus({ type: "error", message: String(error) });
-    } finally {
-      setIsEnriching(false);
-    }
-  };
-
-  if (isLoadingKeys) {
+  if (loading.initial) {
     return (
-      <div className="flex-1 p-8 overflow-y-auto pb-20">
+      <div className="flex-1 p-8">
         <h2 className="text-3xl font-bold mb-6">Configurações</h2>
-        <div className="space-y-6">
-          <div className="grid gap-6 border border-border rounded-xl bg-card p-6">
-            <div className="flex items-center gap-2">
-              <Shield className="text-green-500 animate-pulse" size={20} />
-              <h3 className="text-lg font-semibold">
-                Carregando credenciais...
-              </h3>
-            </div>
-            <div className="space-y-4">
-              <div className="h-10 bg-muted animate-pulse rounded"></div>
-              <div className="h-10 bg-muted animate-pulse rounded"></div>
-              <div className="h-10 bg-muted animate-pulse rounded"></div>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="animate-spin" /> Carregando chaves...
         </div>
       </div>
     );
@@ -160,7 +35,7 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
     <div className="flex-1 p-8 overflow-y-auto pb-20">
       <h2 className="text-3xl font-bold mb-6">Configurações</h2>
 
-      {/* Feedback Global */}
+      {/* Feedback Visual */}
       {status.type && (
         <div
           className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
@@ -179,53 +54,48 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
       )}
 
       <div className="space-y-6">
-        {/* Inputs para inserir KEYs */}
+        {/* Formulário de Chaves */}
         <div className="grid gap-6 border border-border rounded-xl bg-card p-6">
           <div className="flex items-center gap-2">
             <Shield className="text-green-500" size={20} />
-            <h3 className="text-lg font-semibold">
-              Credenciais de API
-            </h3>
+            <h3 className="text-lg font-semibold">Credenciais de API</h3>
           </div>
 
           <div className="grid gap-2">
             <Label>Steam ID</Label>
             <Input
-              value={steamId}
-              onChange={(e) => setSteamId(e.target.value)}
+              value={keys.steamId}
+              onChange={(e) => setKeys({ ...keys, steamId: e.target.value })}
               placeholder="765..."
-              disabled={isLoadingKeys}
             />
           </div>
-
           <div className="grid gap-2">
             <Label>Steam API Key</Label>
             <Input
               type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              value={keys.steamApiKey}
+              onChange={(e) =>
+                setKeys({ ...keys, steamApiKey: e.target.value })
+              }
               placeholder="••••••••••••••••"
-              disabled={isLoadingKeys}
             />
           </div>
-
           <div className="grid gap-2">
             <Label>RAWG API Key</Label>
             <Input
               type="password"
-              value={rawgApiKey}
-              onChange={(e) => setRawgApiKey(e.target.value)}
+              value={keys.rawgApiKey}
+              onChange={(e) => setKeys({ ...keys, rawgApiKey: e.target.value })}
               placeholder="••••••••••••••••"
-              disabled={isLoadingKeys}
             />
           </div>
 
           <Button
-            onClick={handleSaveAll}
+            onClick={actions.saveKeys}
             className="w-full mt-2"
-            disabled={isLoading || isLoadingKeys}
+            disabled={loading.saving}
           >
-            {isLoading ? (
+            {loading.saving ? (
               <Loader2 className="animate-spin mr-2" />
             ) : (
               <Save className="mr-2 h-4 w-4" />
@@ -234,7 +104,7 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
           </Button>
         </div>
 
-        {/* Botões de Execução */}
+        {/* Ações de Biblioteca */}
         <div className="grid md:grid-cols-2 gap-6">
           <div className="border border-border rounded-xl bg-card p-6">
             <div className="flex items-center gap-2 mb-4 text-blue-500">
@@ -247,12 +117,16 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
               Importa jogos básicos da sua conta.
             </p>
             <Button
-              onClick={handleImport}
+              onClick={actions.importLibrary}
               variant="outline"
               className="w-full"
-              disabled={isLoading}
+              disabled={loading.importing}
             >
-              Iniciar Importação
+              {loading.importing ? (
+                <Loader2 className="animate-spin mr-2" />
+              ) : (
+                "Iniciar Importação"
+              )}
             </Button>
           </div>
 
@@ -265,12 +139,12 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
               Busca gêneros e tags detalhados.
             </p>
             <Button
-              onClick={handleEnrich}
+              onClick={actions.enrichLibrary}
               variant="outline"
               className="w-full"
-              disabled={isEnriching}
+              disabled={loading.enriching}
             >
-              {isEnriching ? "Processando..." : "Buscar Metadados"}
+              {loading.enriching ? "Processando..." : "Buscar Metadados"}
             </Button>
           </div>
         </div>

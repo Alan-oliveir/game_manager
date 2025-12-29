@@ -1,7 +1,3 @@
-import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-shell";
-import { WishlistGame } from "../types";
 import {
   RefreshCw,
   DollarSign,
@@ -11,60 +7,32 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useWishlist } from "../hooks/useWishlist";
+import { openExternalLink } from "../utils/navigation";
 
 export default function Wishlist() {
-  const [games, setGames] = useState<WishlistGame[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { games, isLoading, isRefreshing, removeGame, refreshPrices } =
+    useWishlist();
 
-  const fetchWishlist = async () => {
-    try {
-      const result = await invoke<WishlistGame[]>("get_wishlist");
-      setGames(result);
-    } catch (error) {
-      console.error("Erro ao buscar wishlist:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRemove = async (id: string, name: string) => {
+  // Handlers de UI simples para interações do usuário (Confirmações/Alertas)
+  const handleRemoveClick = async (id: string, name: string) => {
     if (!confirm(`Remover ${name} da lista de desejos?`)) return;
-
     try {
-      await invoke("remove_from_wishlist", { id });
-      setGames((prev) => prev.filter((g) => g.id !== id));
-    } catch (error) {
-      console.error(error);
+      await removeGame(id);
+    } catch {
       alert("Erro ao remover jogo.");
     }
   };
 
-  const handleRefreshPrices = async () => {
-    setIsRefreshing(true);
+  const handleRefreshClick = async () => {
     try {
-      await invoke("refresh_prices");
-      await fetchWishlist();
-    } catch (error) {
-      console.error(error);
+      await refreshPrices();
+    } catch {
       alert("Erro ao atualizar preços.");
-    } finally {
-      setIsRefreshing(false);
     }
   };
 
-  const handleOpenLink = async (url: string) => {
-    try {
-      await open(url);
-    } catch (error) {
-      console.error("Erro ao abrir link:", error);
-      alert("Erro ao abrir o link no navegador.");
-    }
-  };
-
-  useEffect(() => {
-    fetchWishlist();
-  }, []);
+  // Renderização
 
   if (isLoading) {
     return (
@@ -103,7 +71,7 @@ export default function Wishlist() {
           </div>
         </div>
         <Button
-          onClick={handleRefreshPrices}
+          onClick={handleRefreshClick}
           disabled={isRefreshing || games.length === 0}
           variant="outline"
         >
@@ -134,7 +102,7 @@ export default function Wishlist() {
               )}
 
               <button
-                onClick={() => handleRemove(game.id, game.name)}
+                onClick={() => handleRemoveClick(game.id, game.name)}
                 className="absolute top-2 right-2 p-2 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                 title="Remover da lista"
               >
@@ -182,9 +150,7 @@ export default function Wishlist() {
                   className="h-8 gap-2"
                   disabled={!game.store_url}
                   onClick={() => {
-                    if (game.store_url) {
-                      handleOpenLink(game.store_url);
-                    }
+                    if (game.store_url) openExternalLink(game.store_url);
                   }}
                 >
                   <ExternalLink size={14} />
