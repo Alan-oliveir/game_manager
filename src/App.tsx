@@ -96,7 +96,7 @@ function App() {
   const renderContent = () => {
     switch (activeSection) {
       case "home":
-        return <Home games={games} />;
+        return <Home onChangeTab={setActiveSection} />;
       case "library":
         return (
           <Library
