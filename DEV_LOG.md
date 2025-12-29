@@ -324,6 +324,52 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 
 ---
 
+### 📅 28/12/2025 - Modularização, Lista de Desejos e Integração de Preços
+
+**Tempo investido:** ~8h
+**Objetivo:** Refatorar o código backend para facilitar manutenção e implementar o sistema completo de Lista de Desejos com monitoramento automático de preços via API.
+
+#### ✨ Implementações
+- **Refatoração do Backend (Rust):**
+  - Divisão do arquivo monolítico `lib.rs` em módulos organizados: `database/`, `commands/`, `services/`, `models/` e `constants/`.
+- **Feature: Lista de Desejos (Wishlist):**
+  - Criação da tabela `wishlist` no SQLite.
+  - Implementação de comandos CRUD (`add`, `remove`, `get`) no Rust.
+  - Criação da página `Wishlist.tsx` no Frontend e atualização da Sidebar.
+  - Integração visual: Botões de "Adicionar à Lista" na página "Em Alta" (Trending).
+- **Integração de Preços (CheapShark API):**
+  - Novo serviço Rust (`cheapshark.rs`) para buscar ofertas em diversas lojas.
+  - Comando `refresh_prices` que atualiza valores e links de compra em lote.
+  - Exibição de preços (USD) e indicação visual de "OFERTA!" quando há descontos.
+- **UX/Navegação:**
+  - Implementação de botões funcionais para abrir links externos ("Ver na Loja", "Ver Detalhes") usando o navegador padrão do sistema.
+
+#### 🐛 Problemas Encontrados
+**1. Performance na Criptografia de Chaves**
+- **Problema:** A implementação de criptografia com algoritmo Argon2 aumentou o tempo de inicialização do app para ~3 segundos.
+- **Causa:** O custo computacional do Argon2 é intencionalmente alto para evitar força-bruta, o que impacta a UX em desktops.
+- **Solução:** Revertido temporariamente para armazenamento simples (`.settings.dat`) via `tauri-plugin-store` para manter o app ágil durante o desenvolvimento, com planos de usar OS Keychain no futuro.
+
+**2. Erro de Decodificação JSON (CheapShark)**
+- **Problema:** O comando de atualizar preços falhava com `error decoding response body`.
+- **Causa:** A struct Rust esperava campos `price` e `retail_price`, mas a API retornava `salePrice` e `normalPrice`.
+- **Solução:** Uso do atributo `#[serde(rename = "...")]` nas structs para mapear corretamente os campos JSON da API para os campos do Rust.
+
+#### 💡 Decisões Técnicas
+- **Separação de Módulos Rust:** Decidi quebrar o `lib.rs` pois o arquivo estava ficando muito extenso e difícil de navegar. A nova estrutura separa claramente *Comandos* (API p/ Frontend) de *Serviços* (Lógica de Negócios/HTTP) e *Database* (SQL).
+
+#### 📚 Recursos Úteis
+- [CheapShark API Documentation](https://apidocs.cheapshark.com/)
+- [Serde JSON Field Renaming](https://serde.rs/field-attrs.html)
+- [Rust Reqwest Crate](https://docs.rs/reqwest/latest/reqwest/)
+
+#### ⏭️ Próxima Sessão
+- [ ] Implementar Algoritmo de Recomendação V1 (Pontuação baseada em Gêneros).
+- [ ] Criar Playlist Sugerida na Home baseada nesses scores.
+- [ ] Conversão de moedas (USD -> BRL) para exibição de preços.
+
+---
+
 ## 🎯 Roadmap Futuro
 
 ### Fase 2: Features Avançadas (Desktop)
@@ -376,4 +422,4 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 ---
 
 *Autor: Alan de Oliveira Gonçalves*  
-*Última atualização: 27/12/2025*
+*Última atualização: 28/12/2025*

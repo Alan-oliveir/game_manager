@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-shell";
 import { WishlistGame } from "../types";
 import {
+  RefreshCw,
   DollarSign,
   ExternalLink,
   Loader2,
@@ -13,6 +15,7 @@ import { Button } from "@/components/ui/button";
 export default function Wishlist() {
   const [games, setGames] = useState<WishlistGame[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchWishlist = async () => {
     try {
@@ -30,11 +33,32 @@ export default function Wishlist() {
 
     try {
       await invoke("remove_from_wishlist", { id });
-      // Atualiza a lista localmente sem precisar chamar o backend de novo
       setGames((prev) => prev.filter((g) => g.id !== id));
     } catch (error) {
       console.error(error);
       alert("Erro ao remover jogo.");
+    }
+  };
+
+  const handleRefreshPrices = async () => {
+    setIsRefreshing(true);
+    try {
+      await invoke("refresh_prices");
+      await fetchWishlist();
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao atualizar preços.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleOpenLink = async (url: string) => {
+    try {
+      await open(url);
+    } catch (error) {
+      console.error("Erro ao abrir link:", error);
+      alert("Erro ao abrir o link no navegador.");
     }
   };
 
@@ -66,16 +90,28 @@ export default function Wishlist() {
 
   return (
     <div className="flex-1 overflow-y-auto p-8">
-      <div className="mb-8 flex items-center gap-3">
-        <div className="p-2 bg-red-500/10 rounded-lg text-red-500">
-          <ShoppingCart size={24} />
+      <div className="mb-8 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-red-500/10 rounded-lg text-red-500">
+            <ShoppingCart size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Lista de Desejos</h1>
+            <p className="text-muted-foreground text-sm">
+              Monitorando {games.length} {games.length === 1 ? "jogo" : "jogos"}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold">Lista de Desejos</h1>
-          <p className="text-muted-foreground text-sm">
-            Monitorando {games.length} {games.length === 1 ? "jogo" : "jogos"}
-          </p>
-        </div>
+        <Button
+          onClick={handleRefreshPrices}
+          disabled={isRefreshing || games.length === 0}
+          variant="outline"
+        >
+          <RefreshCw
+            className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+          />
+          {isRefreshing ? "Buscando Ofertas..." : "Atualizar Preços"}
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -97,7 +133,6 @@ export default function Wishlist() {
                 </div>
               )}
 
-              {/* Botão de Remover Flutuante */}
               <button
                 onClick={() => handleRemove(game.id, game.name)}
                 className="absolute top-2 right-2 p-2 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
@@ -116,15 +151,27 @@ export default function Wishlist() {
               </p>
 
               <div className="mt-auto flex items-center justify-between gap-2">
-                {/* Preço (Placeholder para a próxima fase) */}
                 <div className="text-sm font-medium">
-                  {game.current_price ? (
-                    <span className="text-green-500">
-                      R$ {game.current_price.toFixed(2)}
-                    </span>
+                  {game.current_price !== null ? (
+                    <div className="flex flex-col">
+                      <span
+                        className={
+                          game.on_sale
+                            ? "text-green-500 font-bold"
+                            : "text-foreground"
+                        }
+                      >
+                        US$ {game.current_price.toFixed(2)}
+                      </span>
+                      {game.on_sale && (
+                        <span className="text-xs text-green-500/80">
+                          OFERTA!
+                        </span>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-muted-foreground text-xs flex items-center gap-1">
-                      <DollarSign size={12} /> Aguardando preço...
+                      <DollarSign size={12} /> Aguardando...
                     </span>
                   )}
                 </div>
@@ -134,6 +181,11 @@ export default function Wishlist() {
                   variant="outline"
                   className="h-8 gap-2"
                   disabled={!game.store_url}
+                  onClick={() => {
+                    if (game.store_url) {
+                      handleOpenLink(game.store_url);
+                    }
+                  }}
                 >
                   <ExternalLink size={14} />
                   Loja

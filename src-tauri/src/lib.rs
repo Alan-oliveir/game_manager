@@ -8,10 +8,12 @@ mod storage;
 use rusqlite::Connection;
 use std::sync::Mutex;
 use tauri::Manager;
+use tauri_plugin_shell;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .setup(|app| {
@@ -49,6 +51,7 @@ pub fn run() {
             commands::wishlist::remove_from_wishlist,
             commands::wishlist::get_wishlist,
             commands::wishlist::check_wishlist_status,
+            commands::wishlist::refresh_prices,
             // Comandos de Integração (Steam/RAWG)
             commands::integrations::import_steam_library,
             commands::integrations::enrich_library,

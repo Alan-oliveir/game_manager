@@ -1,7 +1,10 @@
 use crate::database::AppState;
 use crate::models::WishlistGame;
+use crate::services::cheapshark;
 use rusqlite::params;
+use std::time::Duration;
 use tauri::State;
+use tokio::time::sleep;
 
 #[tauri::command]
 pub fn add_to_wishlist(
@@ -78,4 +81,53 @@ pub fn check_wishlist_status(state: State<AppState>, id: String) -> Result<bool,
         .unwrap_or(0);
 
     Ok(count > 0)
+}
+
+#[tauri::command]
+pub async fn refresh_prices(state: State<'_, AppState>) -> Result<String, String> {
+    // Buscar todos os jogos da wishlist
+    let games: Vec<(String, String)> = {
+        let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
+        let mut stmt = conn
+            .prepare("SELECT id, name FROM wishlist")
+            .map_err(|e| e.to_string())?;
+
+        let rows = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .map_err(|e| e.to_string())?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| e.to_string())?;
+        rows
+    };
+
+    let total = games.len();
+    let mut updated_count = 0;
+
+    // Para cada jogo, buscar preço na API
+    for (id, name) in games {
+        match cheapshark::find_best_price(&name).await {
+            Ok(Some(deal)) => {
+                let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
+
+                // Atualiza no banco
+                let _ = conn.execute(
+                    "UPDATE wishlist
+                     SET current_price = ?1, store_url = ?2, on_sale = ?3, lowest_price = MIN(IFNULL(lowest_price, 9999), ?1)
+                     WHERE id = ?4",
+                    params![deal.price, deal.url, deal.on_sale, id],
+                );
+                updated_count += 1;
+            }
+            Ok(None) => println!("Preço não encontrado para: {}", name),
+            Err(e) => println!("Erro ao buscar {}: {}", name, e),
+        }
+
+        // Pausa para evitar rate limiting
+        sleep(Duration::from_millis(500)).await;
+    }
+
+    Ok(format!(
+        "Preços atualizados para {} de {} jogos.",
+        updated_count, total
+    ))
 }

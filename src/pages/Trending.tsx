@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-shell";
 import {
   AlertCircle,
   ChevronLeft,
@@ -34,17 +35,14 @@ export default function Trending({
   const [selectedGenre, setSelectedGenre] = useState<string>("all");
   const [heroIndex, setHeroIndex] = useState<number>(0);
 
-  // Buscar dados ao carregar a página
   useEffect(() => {
     const fetchTrending = async () => {
-      // Se já tem cache E não teve erro anterior, usa o cache
       if (cachedGames.length > 0 && !error) {
         console.log("Usando cache para Trending - API não chamada.");
         setGames(cachedGames);
         return;
       }
 
-      // Caso contrário, busca novamente
       setLoading(true);
       setError(null);
 
@@ -91,9 +89,8 @@ export default function Trending({
     };
 
     fetchTrending();
-  }, []); // Remove dependências para executar apenas no mount
+  }, []);
 
-  // Função para tentar buscar dados novamente
   const handleRetry = async () => {
     setLoading(true);
     setError(null);
@@ -133,7 +130,6 @@ export default function Trending({
     }
   };
 
-  // Remove jogos que o usuário já tem (comparando nomes normalizados)
   const userGameNames = userGames.map((g) =>
     g.name.toLowerCase().replace(/[^a-z0-9]/g, "")
   );
@@ -147,19 +143,14 @@ export default function Trending({
     return game.genres.some((g) => g.name === selectedGenre);
   });
 
-  // Seção de destaque - Os 5 primeiros no Hero (Carrossel)
   const heroGames = filteredGames.slice(0, 5);
   const currentHero = heroGames[heroIndex];
-
-  // Restante da lista para o Grid
   const gridGames = filteredGames.slice(5);
 
-  // Lista de gêneros dinâmicos baseados nos resultados
   const allGenres = Array.from(
     new Set(games.flatMap((g) => g.genres.map((genre) => genre.name)))
   ).sort();
 
-  // Handlers do Carrossel
   const nextHero = () => setHeroIndex((prev) => (prev + 1) % heroGames.length);
   const prevHero = () =>
     setHeroIndex((prev) => (prev - 1 + heroGames.length) % heroGames.length);
@@ -167,14 +158,13 @@ export default function Trending({
   const handleAddToWishlist = async (game: RawgGame) => {
     try {
       await invoke("add_to_wishlist", {
-        id: game.id.toString(), // Convertendo ID numérico da RAWG para String
+        id: game.id.toString(),
         name: game.name,
         coverUrl: game.background_image,
-        storeUrl: null, // Ainda não temos link da loja
-        currentPrice: null, // Ainda não temos preço (próxima fase)
+        storeUrl: null,
+        currentPrice: null,
       });
 
-      // Feedback visual simples (depois podemos usar um Toast/Notificação melhor)
       alert(`❤️ ${game.name} adicionado à Lista de Desejos!`);
     } catch (error) {
       console.error("Erro ao salvar:", error);
@@ -182,7 +172,15 @@ export default function Trending({
     }
   };
 
-  // Renderização condicional
+  const handleOpenLink = async (url: string) => {
+    try {
+      await open(url);
+    } catch (error) {
+      console.error("Erro ao abrir link:", error);
+      alert("Erro ao abrir o link no navegador.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center space-y-4">
@@ -265,7 +263,6 @@ export default function Trending({
             </>
           )}
 
-          {/* Conteúdo do Hero */}
           <div className="flex flex-col md:flex-row items-center gap-8 w-full animate-in fade-in duration-500">
             <img
               src={currentHero.background_image || ""}
@@ -330,10 +327,7 @@ export default function Trending({
                   variant="outline"
                   className="gap-2 bg-transparent text-white border-white/20 hover:bg-white/10"
                   onClick={() =>
-                    window.open(
-                      `https://rawg.io/games/${currentHero.id}`,
-                      "_blank"
-                    )
+                    handleOpenLink(`https://rawg.io/games/${currentHero.id}`)
                   }
                 >
                   <ExternalLink size={18} />
@@ -407,6 +401,18 @@ export default function Trending({
                     onClick={() => handleAddToWishlist(game)}
                   >
                     <Heart size={14} className="mr-1" /> Desejos
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-8 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenLink(`https://rawg.io/games/${game.id}`);
+                    }}
+                  >
+                    <ExternalLink size={14} /> Detalhes
                   </Button>
                 </div>
               </div>
