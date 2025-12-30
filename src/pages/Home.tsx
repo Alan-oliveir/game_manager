@@ -9,8 +9,6 @@ import {
   Play,
   Trophy,
   Dna,
-  ChevronLeft,
-  ChevronRight,
   ExternalLink,
   ChartBar,
 } from "lucide-react";
@@ -21,6 +19,7 @@ import { launchGame } from "../utils/launcher";
 import { Game, RawgGame, UserProfile } from "../types";
 import StandardGameCard from "@/components/StandardGameCard";
 import {Separator} from "@/components/ui/separator.tsx";
+import Hero from "@/components/Hero";
 
 interface HomeProps {
   onChangeTab: (tab: string) => void;
@@ -84,142 +83,81 @@ export default function Home({
   const prevHero = () =>
     setHeroIndex((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
 
-  // Helpers do Hero
-  const getHeroImage = (game: any) =>
-    game.cover_url || game.background_image || "";
-  const getHeroName = (game: any) => game.name;
+// Helper para normalizar gêneros (Home mistura tipos Game e RawgGame)
+  const getGenresList = (game: any): string[] => {
+    if (game.genres && Array.isArray(game.genres)) {
+      return game.genres.map((g: any) => g.name); // RAWG
+    }
+    if (game.genre && typeof game.genre === "string") {
+      return game.genre.split(",").map((g: string) => g.trim()); // Local
+    }
+    return [];
+  };
+
+  // Helper para imagens e nomes
+  const getHeroImage = (game: any) => game.cover_url || game.background_image || "";
+
+  // Verifica se é um jogo local (possui playtime)
   const isLocalGame = (game: any) => "playtime" in game;
 
   return (
     <div className="flex-1 overflow-y-auto bg-background pb-10">
       {/* Hero Section */}
       {currentHero && (
-        <div className="relative h-[450px] bg-background group/hero overflow-hidden">
-          <div
-            className="absolute inset-0 bg-cover bg-center transition-all duration-700"
-            style={{
-              backgroundImage: `url(${getHeroImage(currentHero)})`,
-              filter: "blur(20px) brightness(0.3)",
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          <Hero
+              title={currentHero.name}
+              backgroundUrl={getHeroImage(currentHero)}
+              coverUrl={getHeroImage(currentHero)}
+              genres={getGenresList(currentHero)}
+              // Home geralmente não mostra rating no Hero, mas pode passar se quiser
+              rating={currentHero.rating} // Opcional
 
-          {heroSlides.length > 1 && (
-            <>
-              <button
-                onClick={prevHero}
-                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-sm transition z-20"
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <button
-                onClick={nextHero}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-sm transition z-20"
-              >
-                <ChevronRight size={24} />
-              </button>
-            </>
-          )}
+              showNavigation={heroSlides.length > 1}
+              onNext={nextHero}
+              onPrev={prevHero}
 
-          <div className="relative h-full flex items-center px-8 max-w-7xl mx-auto z-10">
-            <div
-              key={getHeroName(currentHero)}
-              className="flex flex-col md:flex-row items-center gap-8 w-full animate-in fade-in slide-in-from-bottom-4 duration-700"
-            >
-              <img
-                src={getHeroImage(currentHero)}
-                alt={getHeroName(currentHero)}
-                className="w-48 md:w-64 aspect-[3/4] object-cover rounded-lg shadow-2xl border border-white/10"
-              />
-
-              <div className="flex-1 space-y-4 text-center md:text-left">
+              // Badge Dinâmica da Home
+              badges={
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 text-primary-foreground rounded-full text-sm font-medium border border-primary/30">
-                  {backlogRecommendations.some(
-                    (g) => g.id === currentHero.id
-                  ) && (
-                    <>
-                      <Sparkles size={14} /> SUGESTÃO
-                    </>
+                  {backlogRecommendations.some((g) => g.id === currentHero.id) && (
+                      <><Sparkles size={14} /> SUGESTÃO</>
                   )}
                   {trending?.some((g) => g.id === currentHero.id) && (
-                    <>
-                      <TrendingUp size={14} /> TENDÊNCIA GLOBAL
-                    </>
+                      <><TrendingUp size={14} /> TENDÊNCIA GLOBAL</>
                   )}
                   {mostPlayed.some((g) => g.id === currentHero.id) && (
-                    <>
-                      <Trophy size={14} /> SEU CAMPEÃO
-                    </>
+                      <><Trophy size={14} /> SEU CAMPEÃO</>
                   )}
                 </div>
+              }
 
-                <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">
-                  {getHeroName(currentHero)}
-                </h1>
-
-                <div className="flex flex-wrap justify-center md:justify-start gap-2 text-white/80">
-                  {(() => {
-                    if (
-                      "genre" in currentHero &&
-                      typeof currentHero.genre === "string"
-                    ) {
-                      return currentHero.genre
-                        .split(",")
-                        .slice(0, 3)
-                        .map((g: string) => (
-                          <span
-                            key={g}
-                            className="px-2 py-0.5 bg-white/10 rounded text-xs"
-                          >
-                            {g}
-                          </span>
-                        ));
-                    }
-                    if (
-                      "genres" in currentHero &&
-                      Array.isArray(currentHero.genres)
-                    ) {
-                      return currentHero.genres.slice(0, 3).map((g: any) => (
-                        <span
-                          key={g.name}
-                          className="px-2 py-0.5 bg-white/10 rounded text-xs"
-                        >
-                          {g.name}
-                        </span>
-                      ));
-                    }
-                    return null;
-                  })()}
-                </div>
-
-                <div className="flex justify-center md:justify-start gap-4 pt-4">
-                  {isLocalGame(currentHero) ? (
+              // Ação Dinâmica (Local vs Remoto)
+              actions={
+                isLocalGame(currentHero) ? (
                     <Button
-                      className="px-8 h-12 text-md"
-                      onClick={() => launchGame(currentHero)}
+                        className="px-8 h-12 text-md"
+                        onClick={() => launchGame(currentHero)}
                     >
                       <Play size={20} className="mr-2" /> Jogar Agora
                     </Button>
-                  ) : (
+                ) : (
                     <Button
-                      className="px-8 h-12 text-md"
-                      variant="secondary"
-                      onClick={() =>
-                        openExternalLink(
-                          `https://rawg.io/games/${currentHero.id}`
-                        )
-                      }
+                        className="px-8 h-12 text-md"
+                        variant="secondary"
+                        onClick={() =>
+                            openExternalLink(`https://rawg.io/games/${currentHero.id}`)
+                        }
                     >
                       <ExternalLink size={20} className="mr-2" /> Ver Detalhes
                     </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+                )
+              }
+          />
       )}
+
       <Separator className={"mb-3"} />
+
+      {/* Conteúdo Principal da Home */}
       <div className="p-8 max-w-7xl mx-auto space-y-10 relative z-20">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -384,7 +322,7 @@ export default function Home({
                       {game.name}
                     </h4>
                     <div className="flex justify-between items-center mt-1">
-                      <span className="text-xs text-muted-foreground truncate max-w-[100px]">
+                      <span className="text-xs text-muted-foreground truncate max-w-25">
                         {game.genre?.split(",")[0]}
                       </span>
                       <span className="text-xs font-mono bg-secondary px-1.5 py-0.5 rounded">
