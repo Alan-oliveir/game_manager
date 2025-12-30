@@ -73,7 +73,7 @@ export default function Trending(props: TrendingProps) {
     setHeroIndex((prev) => (prev - 1 + heroGames.length) % heroGames.length);
 
   // Jogos para o grid (Trending), ordenados por afinidade se houver perfil
-  let gridGames = games.slice(5);
+  let gridGames = games.slice(5, 15);
   if (profile) {
     gridGames = [...gridGames].sort((a, b) => {
       const scoreA = calculateAffinity(a.genres);
@@ -167,7 +167,7 @@ export default function Trending(props: TrendingProps) {
             <img
               src={currentHero.background_image || ""}
               alt={currentHero.name}
-              className="w-64 md:w-80 aspect-[3/4] object-cover rounded-lg shadow-2xl border border-white/10"
+              className="w-64 md:w-80 aspect-3/4 object-cover rounded-lg shadow-2xl border border-white/10"
             />
 
             <div className="flex-1 space-y-4 text-center md:text-left">
