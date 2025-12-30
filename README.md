@@ -76,8 +76,8 @@ npm run tauri dev
 - [x] CRUD local de jogos
 - [x] UI desktop base
 - [x] Integração com Steam
+- [x] Sistema de recomendação (ML clássico)
 - [ ] Sync opcional em nuvem
-- [ ] Sistema de recomendação (ML clássico)
 
 ## 🤝 Contribuição
 
