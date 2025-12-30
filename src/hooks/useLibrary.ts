@@ -62,7 +62,6 @@ export function useLibrary() {
       prev.map((g) => (g.id === id ? { ...g, favorite: !g.favorite } : g))
     );
     await libraryService.toggleFavorite(id);
-    // Não precisa de refreshGames aqui se confiar no otimista, ou chame se quiser garantir
   };
 
   return {

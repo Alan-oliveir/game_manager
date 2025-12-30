@@ -1,6 +1,13 @@
-import GameGrid from "../components/GameGrid";
+import StandardGameCard from "../components/StandardGameCard";
 import { Game, GameActions } from "../types";
 import { useMemo } from "react";
+import { Heart, MoreVertical, Edit, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LibraryProps extends GameActions {
   games: Game[];
@@ -23,5 +30,94 @@ export default function Library({
     );
   }, [games, searchTerm]);
 
-  return <GameGrid games={displayedGames} {...actions} />;
+  if (displayedGames.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        {searchTerm
+          ? "Nenhum jogo encontrado com os critérios de busca."
+          : "Nenhum jogo na biblioteca. Adicione seu primeiro jogo!"}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto p-6">
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold">Minha Biblioteca</h2>
+          <p className="text-sm text-muted-foreground">
+            {displayedGames.length} jogo{displayedGames.length === 1 ? "" : "s"}{" "}
+            encontrado{displayedGames.length === 1 ? "" : "s"}
+          </p>
+        </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        {displayedGames.map((game) => (
+          <div key={game.id} className="relative group">
+            <StandardGameCard
+              title={game.name}
+              coverUrl={game.cover_url}
+              subtitle={game.genre || "Sem gênero"}
+              rating={game.rating || undefined}
+              onClick={() => actions.onGameClick(game)}
+              actions={
+                <>
+                  {/* Botão de Favorito */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      actions.onToggleFavorite(game.id);
+                    }}
+                    className="p-2 bg-black/60 backdrop-blur-sm rounded-full hover:bg-black/80 transition-colors z-10"
+                  >
+                    <Heart
+                      size={18}
+                      className={
+                        game.favorite
+                          ? "fill-red-500 text-red-500"
+                          : "text-white"
+                      }
+                    />
+                  </button>
+
+                  {/* Menu de Opções */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-md"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical size={18} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          actions.onEditGame(game);
+                        }}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        <span>Editar</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600 focus:text-red-600 focus:bg-red-100/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          actions.onDeleteGame(game.id);
+                        }}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Excluir</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              }
+            />
+          </div>
+        ))}
+      </div>
+      </div>
+    </div>
+  );
 }
