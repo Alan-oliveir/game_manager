@@ -1,6 +1,6 @@
 import StandardGameCard from "../components/StandardGameCard";
 import { Game, GameActions } from "../types";
-import {Heart, MoreVertical, Edit, Trash2} from "lucide-react";
+import { Heart, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { useMemo } from "react";
 import {
   DropdownMenu,
@@ -56,8 +56,9 @@ export default function Favorites({
           <div>
             <h1 className="text-2xl font-bold">Meus Favoritos</h1>
             <p className="text-muted-foreground text-sm">
-              {displayedGames.length} jogo{displayedGames.length === 1 ? "" : "s"}{" "}
-              amado{displayedGames.length === 1 ? "" : "s"}
+              {displayedGames.length} jogo
+              {displayedGames.length === 1 ? "" : "s"} amado
+              {displayedGames.length === 1 ? "" : "s"}
             </p>
           </div>
         </div>

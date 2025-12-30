@@ -16,7 +16,7 @@ import { useRecommendation } from "../hooks/useRecommendation";
 import { openExternalLink } from "../utils/navigation";
 import StandardGameCard from "@/components/StandardGameCard.tsx";
 import { trendingService } from "../services/trendingService";
-import {toast} from "sonner";
+import { toast } from "sonner";
 import Hero from "@/components/Hero";
 
 interface TrendingProps {
@@ -136,44 +136,42 @@ export default function Trending(props: TrendingProps) {
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-background pb-10">
       {/* 1. HERO REUTILIZÁVEL */}
       <Hero
-          title={currentHero.name}
-          backgroundUrl={currentHero.background_image}
-          coverUrl={currentHero.background_image}
-          genres={currentHero.genres.map((g) => g.name)} // Normaliza gêneros
-          rating={currentHero.rating}
-          showNavigation={heroGames.length > 1}
-          onNext={nextHero}
-          onPrev={prevHero}
+        title={currentHero.name}
+        backgroundUrl={currentHero.background_image}
+        coverUrl={currentHero.background_image}
+        genres={currentHero.genres.map((g) => g.name)} // Normaliza gêneros
+        rating={currentHero.rating}
+        showNavigation={heroGames.length > 1}
+        onNext={nextHero}
+        onPrev={prevHero}
+        // Composição: Badge específica de Trending
+        badges={
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm font-medium border border-orange-500/20">
+            <Flame size={16} /> EM ALTA
+          </div>
+        }
+        // Composição: Botões específicos de Trending
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              className="gap-2"
+              onClick={() => handleWishlistClick(currentHero)}
+            >
+              <Heart size={18} className="text-red-500" /> Lista de Desejos
+            </Button>
 
-          // Composição: Badge específica de Trending
-          badges={
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm font-medium border border-orange-500/20">
-              <Flame size={16} /> EM ALTA
-            </div>
-          }
-
-          // Composição: Botões específicos de Trending
-          actions={
-            <>
-              <Button
-                  variant="secondary"
-                  className="gap-2"
-                  onClick={() => handleWishlistClick(currentHero)}
-              >
-                <Heart size={18} className="text-red-500" /> Lista de Desejos
-              </Button>
-
-              <Button
-                  variant="outline"
-                  className="gap-2 bg-transparent text-white border-white/20 hover:bg-white/10"
-                  onClick={() =>
-                      openExternalLink(`https://rawg.io/games/${currentHero.id}`)
-                  }
-              >
-                <ExternalLink size={18} /> Ver Detalhes
-              </Button>
-            </>
-          }
+            <Button
+              variant="outline"
+              className="gap-2 bg-transparent text-white border-white/20 hover:bg-white/10"
+              onClick={() =>
+                openExternalLink(`https://rawg.io/games/${currentHero.id}`)
+              }
+            >
+              <ExternalLink size={18} /> Ver Detalhes
+            </Button>
+          </>
+        }
       />
 
       {/* 2. BARRA DE FILTROS */}
@@ -207,7 +205,7 @@ export default function Trending(props: TrendingProps) {
       <div className="p-8 max-w-7xl mx-auto">
         <div className="flex items-center gap-2 mb-6">
           <div className="p-2 bg-green-500/10 rounded-lg text-green-400">
-            < TrendingUp size={20} />
+            <TrendingUp size={20} />
           </div>
           <h2 className="text-2xl font-bold">Mais Sugestões</h2>
         </div>
@@ -229,7 +227,6 @@ export default function Trending(props: TrendingProps) {
                   .slice(0, 2)
                   .join(", ")}
                 badge={isRecommended ? "TOP PICK" : undefined}
-
                 // Ações Personalizadas do Trending (Wishlist + Details)
                 actions={
                   <>
@@ -251,7 +248,7 @@ export default function Trending(props: TrendingProps) {
                         e.stopPropagation();
                         openExternalLink(`https://rawg.io/games/${game.id}`);
                       }}
-                        title={"Ver Detalhes"}
+                      title={"Ver Detalhes"}
                     >
                       <ExternalLink size={16} />
                     </Button>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { RawgGame, Game, UserProfile } from "./types";
 import { useLibraries } from "./hooks/useLibraries.ts";
-import {toast, Toaster} from "sonner";
+import { toast, Toaster } from "sonner";
 
 // Componentes
 import Sidebar from "./components/Sidebar";
@@ -129,11 +129,11 @@ function App() {
         );
       case "playlist":
         return (
-            <Playlist
-                allGames={games}
-                onGameClick={handleGameClick} // Reutiliza a função que abre o modal
-                profileCache={profileCache}
-            />
+          <Playlist
+            allGames={games}
+            onGameClick={handleGameClick} // Reutiliza a função que abre o modal
+            profileCache={profileCache}
+          />
         );
       case "trending":
         return (

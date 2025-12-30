@@ -1,5 +1,5 @@
 import { open } from "@tauri-apps/plugin-shell";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 /**
  * Abre uma URL no navegador padrão do sistema operacional.

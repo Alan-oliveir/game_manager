@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useWishlist } from "../hooks/useWishlist";
 import { openExternalLink } from "../utils/navigation";
 import StandardGameCard from "@/components/StandardGameCard";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 export default function Wishlist() {
   const { games, isLoading, isRefreshing, removeGame, refreshPrices } =

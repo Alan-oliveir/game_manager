@@ -1,5 +1,5 @@
 import { Game, RawgGame } from "../types";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 /**
  * Tenta iniciar o jogo baseado na plataforma.

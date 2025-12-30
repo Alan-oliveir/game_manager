@@ -1,7 +1,7 @@
 import StandardGameCard from "../components/StandardGameCard";
 import { Game, GameActions } from "../types";
 import { useMemo } from "react";
-import {Heart, MoreVertical, Edit, Trash2, Library} from "lucide-react";
+import { Heart, MoreVertical, Edit, Trash2, Library } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,81 +51,86 @@ export default function Libraries({
           <div>
             <h1 className="text-2xl font-bold">Minha Biblioteca</h1>
             <p className="text-muted-foreground text-sm">
-              {displayedGames.length} jogo{displayedGames.length === 1 ? "" : "s"}{" "}
-              encontrado{displayedGames.length === 1 ? "" : "s"}
+              {displayedGames.length} jogo
+              {displayedGames.length === 1 ? "" : "s"} encontrado
+              {displayedGames.length === 1 ? "" : "s"}
             </p>
           </div>
         </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        {displayedGames.map((game) => (
-          <div key={game.id} className="relative group">
-            <StandardGameCard
-              title={game.name}
-              coverUrl={game.cover_url}
-              subtitle={game.genre || "Sem gênero"}
-              rating={game.rating || undefined}
-              onClick={() => actions.onGameClick(game)}
-              onPlay={() => launchGame(game)}
-              actions={
-                <>
-                  {/* Botão de Favorito */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      actions.onToggleFavorite(game.id);
-                    }}
-                    className="p-2 bg-black/60 backdrop-blur-sm rounded-full hover:bg-black/80 transition-colors z-10"
-                    title={game.favorite ? "Remover dos Favoritos" : "Adicionar aos Favoritos"}
-                  >
-                    <Heart
-                      size={18}
-                      className={
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {displayedGames.map((game) => (
+            <div key={game.id} className="relative group">
+              <StandardGameCard
+                title={game.name}
+                coverUrl={game.cover_url}
+                subtitle={game.genre || "Sem gênero"}
+                rating={game.rating || undefined}
+                onClick={() => actions.onGameClick(game)}
+                onPlay={() => launchGame(game)}
+                actions={
+                  <>
+                    {/* Botão de Favorito */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        actions.onToggleFavorite(game.id);
+                      }}
+                      className="p-2 bg-black/60 backdrop-blur-sm rounded-full hover:bg-black/80 transition-colors z-10"
+                      title={
                         game.favorite
-                          ? "fill-red-500 text-red-500"
-                          : "text-white"
+                          ? "Remover dos Favoritos"
+                          : "Adicionar aos Favoritos"
                       }
-                    />
-                  </button>
+                    >
+                      <Heart
+                        size={18}
+                        className={
+                          game.favorite
+                            ? "fill-red-500 text-red-500"
+                            : "text-white"
+                        }
+                      />
+                    </button>
 
-                  {/* Menu de Opções */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-md"
-                        onClick={(e) => e.stopPropagation()}
-                        title="Mais Opções"
-                      >
-                        <MoreVertical size={18} />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          actions.onEditGame(game);
-                        }}
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        <span>Editar</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-600 focus:text-red-600 focus:bg-red-100/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          actions.onDeleteGame(game.id);
-                        }}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Excluir</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
-              }
-            />
-          </div>
-        ))}
-      </div>
+                    {/* Menu de Opções */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-md"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Mais Opções"
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            actions.onEditGame(game);
+                          }}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          <span>Editar</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600 focus:text-red-600 focus:bg-red-100/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            actions.onDeleteGame(game.id);
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Excluir</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                }
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

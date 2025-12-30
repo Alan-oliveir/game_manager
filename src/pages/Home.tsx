@@ -18,7 +18,7 @@ import { openExternalLink } from "../utils/navigation";
 import { launchGame } from "../utils/launcher";
 import { Game, RawgGame, UserProfile } from "../types";
 import StandardGameCard from "@/components/StandardGameCard";
-import {Separator} from "@/components/ui/separator.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
 import Hero from "@/components/Hero";
 
 interface HomeProps {
@@ -83,7 +83,7 @@ export default function Home({
   const prevHero = () =>
     setHeroIndex((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
 
-// Helper para normalizar gêneros (Home mistura tipos Game e RawgGame)
+  // Helper para normalizar gêneros (Home mistura tipos Game e RawgGame)
   const getGenresList = (game: any): string[] => {
     if (game.genres && Array.isArray(game.genres)) {
       return game.genres.map((g: any) => g.name); // RAWG
@@ -95,7 +95,8 @@ export default function Home({
   };
 
   // Helper para imagens e nomes
-  const getHeroImage = (game: any) => game.cover_url || game.background_image || "";
+  const getHeroImage = (game: any) =>
+    game.cover_url || game.background_image || "";
 
   // Verifica se é um jogo local (possui playtime)
   const isLocalGame = (game: any) => "playtime" in game;
@@ -104,54 +105,57 @@ export default function Home({
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-background pb-10">
       {/* Hero Section */}
       {currentHero && (
-          <Hero
-              title={currentHero.name}
-              backgroundUrl={getHeroImage(currentHero)}
-              coverUrl={getHeroImage(currentHero)}
-              genres={getGenresList(currentHero)}
-              rating={currentHero.rating}
-
-              showNavigation={heroSlides.length > 1}
-              onNext={nextHero}
-              onPrev={prevHero}
-
-              // Badge Dinâmica da Home
-              badges={
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 text-primary-foreground rounded-full text-sm font-medium border border-primary/30">
-                  {backlogRecommendations.some((g) => g.id === currentHero.id) && (
-                      <><Sparkles size={14} /> SUGESTÃO</>
-                  )}
-                  {trending?.some((g) => g.id === currentHero.id) && (
-                      <><TrendingUp size={14} /> TENDÊNCIA GLOBAL</>
-                  )}
-                  {mostPlayed.some((g) => g.id === currentHero.id) && (
-                      <><Trophy size={14} /> SEU CAMPEÃO</>
-                  )}
-                </div>
-              }
-
-              // Ação Dinâmica (Local vs Remoto)
-              actions={
-                isLocalGame(currentHero) ? (
-                    <Button
-                        className="px-8 h-12 text-md"
-                        onClick={() => launchGame(currentHero)}
-                    >
-                      <Play size={20} className="mr-2" /> Jogar Agora
-                    </Button>
-                ) : (
-                    <Button
-                        className="px-8 h-12 text-md"
-                        variant="secondary"
-                        onClick={() =>
-                            openExternalLink(`https://rawg.io/games/${currentHero.id}`)
-                        }
-                    >
-                      <ExternalLink size={20} className="mr-2" /> Ver Detalhes
-                    </Button>
-                )
-              }
-          />
+        <Hero
+          title={currentHero.name}
+          backgroundUrl={getHeroImage(currentHero)}
+          coverUrl={getHeroImage(currentHero)}
+          genres={getGenresList(currentHero)}
+          rating={currentHero.rating}
+          showNavigation={heroSlides.length > 1}
+          onNext={nextHero}
+          onPrev={prevHero}
+          // Badge Dinâmica da Home
+          badges={
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 text-primary-foreground rounded-full text-sm font-medium border border-primary/30">
+              {backlogRecommendations.some((g) => g.id === currentHero.id) && (
+                <>
+                  <Sparkles size={14} /> SUGESTÃO
+                </>
+              )}
+              {trending?.some((g) => g.id === currentHero.id) && (
+                <>
+                  <TrendingUp size={14} /> TENDÊNCIA GLOBAL
+                </>
+              )}
+              {mostPlayed.some((g) => g.id === currentHero.id) && (
+                <>
+                  <Trophy size={14} /> SEU CAMPEÃO
+                </>
+              )}
+            </div>
+          }
+          // Ação Dinâmica (Local vs Remoto)
+          actions={
+            isLocalGame(currentHero) ? (
+              <Button
+                className="px-8 h-12 text-md"
+                onClick={() => launchGame(currentHero)}
+              >
+                <Play size={20} className="mr-2" /> Jogar Agora
+              </Button>
+            ) : (
+              <Button
+                className="px-8 h-12 text-md"
+                variant="secondary"
+                onClick={() =>
+                  openExternalLink(`https://rawg.io/games/${currentHero.id}`)
+                }
+              >
+                <ExternalLink size={20} className="mr-2" /> Ver Detalhes
+              </Button>
+            )
+          }
+        />
       )}
 
       <Separator className={"mb-3"} />
@@ -200,7 +204,6 @@ export default function Home({
                 </div>
                 <h2 className="text-2xl font-bold">Continue Jogando</h2>
               </div>
-
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {continuePlaying.map((game) => (
@@ -233,7 +236,7 @@ export default function Home({
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
-                  < Dna size={24} />
+                  <Dna size={24} />
                 </div>
                 <h2 className="text-2xl font-bold">Recomendados</h2>
               </div>

@@ -143,12 +143,20 @@
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
     /* Usa a cor do seu tema com 70% de transparência */
-    background-color: color-mix(in srgb, var(--muted-foreground), transparent 70%);
+    background-color: color-mix(
+      in srgb,
+      var(--muted-foreground),
+      transparent 70%
+    );
     border-radius: 10px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     /* Fica mais escuro/visível ao passar o mouse */
-    background-color: color-mix(in srgb, var(--muted-foreground), transparent 40%);
+    background-color: color-mix(
+      in srgb,
+      var(--muted-foreground),
+      transparent 40%
+    );
   }
 }

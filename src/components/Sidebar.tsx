@@ -4,7 +4,8 @@ import {
   Library,
   Settings,
   TrendingUp,
-  ShoppingCart, PlayIcon,
+  ShoppingCart,
+  PlayIcon,
 } from "lucide-react";
 import { Game } from "../types";
 
@@ -33,9 +34,7 @@ export default function Sidebar({
     <aside className="w-64 bg-sidebar border-r border-sidebar-border h-screen flex flex-col">
       {/* Logo/Header */}
       <div className="p-6 border-b border-sidebar-border">
-        <h1 className="text-2xl font-bold text-sidebar-foreground">
-          Playlite
-        </h1>
+        <h1 className="text-2xl font-bold text-sidebar-foreground">Playlite</h1>
       </div>
 
       {/* Menu Items */}
