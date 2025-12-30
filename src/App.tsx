@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import Home from "./pages/Home";
 import Trending from "./pages/Trending";
 import Wishlist from "./pages/Wishlist";
+import Playlist from "./pages/Playlist";
 
 function App() {
   // Hook Principal de Dados
@@ -125,6 +126,14 @@ function App() {
             searchTerm={searchTerm}
             {...commonGameActions}
           />
+        );
+      case "playlist":
+        return (
+            <Playlist
+                allGames={games}
+                onGameClick={handleGameClick} // Reutiliza a função que abre o modal
+                profileCache={profileCache}
+            />
         );
       case "trending":
         return (
