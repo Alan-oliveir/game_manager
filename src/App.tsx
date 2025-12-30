@@ -33,7 +33,7 @@ function App() {
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
   // Jogo selecionado para o modal de detalhes
-  const selectedGame = games.find(g => g.id === selectedGameId) || null;
+  const selectedGame = games.find((g) => g.id === selectedGameId) || null;
 
   // Cache do Trending
   const [trendingCache, setTrendingCache] = useState<RawgGame[]>([]);
@@ -100,14 +100,14 @@ function App() {
     switch (activeSection) {
       case "home":
         return (
-            <Home
-                onChangeTab={setActiveSection}
-                games={games}
-                trendingCache={trendingCache}
-                setTrendingCache={setTrendingCache}
-                profileCache={profileCache}
-                setProfileCache={setProfileCache}
-            />
+          <Home
+            onChangeTab={setActiveSection}
+            games={games}
+            trendingCache={trendingCache}
+            setTrendingCache={setTrendingCache}
+            profileCache={profileCache}
+            setProfileCache={setProfileCache}
+          />
         );
       case "library":
         return (

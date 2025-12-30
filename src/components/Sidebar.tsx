@@ -18,7 +18,7 @@ const menuItems = [
   { id: "home", label: "Início", icon: Home },
   { id: "library", label: "Biblioteca", icon: Library },
   { id: "favorites", label: "Favoritos", icon: Heart },
-  { id: "trending", label: "Em alta", icon: TrendingUp },
+  { id: "trending", label: "Em Alta", icon: TrendingUp },
   { id: "wishlist", label: "Lista de Desejos", icon: ShoppingCart },
   { id: "settings", label: "Configurações", icon: Settings },
 ];

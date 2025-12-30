@@ -82,7 +82,8 @@ pub async fn fetch_trending_games(api_key: &str) -> Result<Vec<RawgGame>, String
 
 pub async fn fetch_game_details(api_key: &str, query: String) -> Result<GameDetails, String> {
     // Transforma o nome em slug (Lógica de negócio)
-    let slug = query.to_lowercase()
+    let slug = query
+        .to_lowercase()
         .replace(" ", "-")
         .replace(":", "")
         .replace("'", "")
@@ -92,10 +93,7 @@ pub async fn fetch_game_details(api_key: &str, query: String) -> Result<GameDeta
     let client = reqwest::Client::new();
     let url = format!("https://api.rawg.io/api/games/{}?key={}", slug, api_key);
 
-    let res = client.get(&url)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
+    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
 
     if res.status().is_success() {
         let details: GameDetails = res.json().await.map_err(|e| e.to_string())?;
@@ -105,4 +103,30 @@ pub async fn fetch_game_details(api_key: &str, query: String) -> Result<GameDeta
     } else {
         Err(format!("Erro na API RAWG: Status {}", res.status()))
     }
+}
+
+pub async fn fetch_upcoming_games(api_key: &str) -> Result<Vec<RawgGame>, String> {
+    let current_date = chrono::Utc::now();
+    let next_year = current_date.year() + 1;
+
+    // Formata datas: YYYY-MM-DD
+    let date_start = current_date.format("%Y-%m-%d").to_string();
+    let date_end = format!("{}-12-31", next_year);
+
+    // ordering=-added -> Ordena por popularidade (quantas pessoas adicionaram à biblioteca/wishlist na RAWG)
+    // dates=HOJE,ANO_QUE_VEM -> Pega apenas futuros
+    let url = format!(
+        "https://api.rawg.io/api/games?key={}&dates={},{}&ordering=-added&page_size=10",
+        api_key, date_start, date_end
+    );
+
+    let client = reqwest::Client::new();
+    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
+
+    if !res.status().is_success() {
+        return Err(format!("Erro RAWG Upcoming: {}", res.status()));
+    }
+
+    let data: RawgResponse = res.json().await.map_err(|e| e.to_string())?;
+    Ok(data.results)
 }

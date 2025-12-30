@@ -5,7 +5,7 @@ use crate::storage;
 
 use rusqlite::params;
 use std::time::Duration;
-use tauri::{State, AppHandle};
+use tauri::{AppHandle, State};
 use tokio::time::sleep;
 
 #[tauri::command]
@@ -191,7 +191,10 @@ fn get_api_key(app_handle: &tauri::AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn fetch_game_details(app_handle: AppHandle, query: String) -> Result<rawg::GameDetails, String> {
+pub async fn fetch_game_details(
+    app_handle: AppHandle,
+    query: String,
+) -> Result<rawg::GameDetails, String> {
     let api_key = get_api_key(&app_handle)?;
 
     if api_key.is_empty() {
@@ -205,4 +208,9 @@ pub async fn fetch_game_details(app_handle: AppHandle, query: String) -> Result<
 pub async fn get_trending_games(app_handle: AppHandle) -> Result<Vec<rawg::RawgGame>, String> {
     let api_key = get_api_key(&app_handle)?;
     rawg::fetch_trending_games(&api_key).await
+}
+
+#[tauri::command]
+pub async fn get_upcoming_games(api_key: String) -> Result<Vec<rawg::RawgGame>, String> {
+    rawg::fetch_upcoming_games(&api_key).await
 }
