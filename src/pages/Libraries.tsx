@@ -42,7 +42,7 @@ export default function Libraries({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-8">
+    <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">

@@ -133,7 +133,7 @@ export default function Trending(props: TrendingProps) {
 
   // Renderização Principal
   return (
-    <div className="flex-1 overflow-y-auto bg-background pb-10">
+    <div className="flex-1 overflow-y-auto custom-scrollbar bg-background pb-10">
       {/* 1. HERO REUTILIZÁVEL */}
       <Hero
           title={currentHero.name}

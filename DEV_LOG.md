@@ -389,11 +389,87 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 - **Algoritmo Deterministico:** Optei por não usar ML complexo ou vetores multidimensionais agora. Um sistema de pesos simples (`Playtime * 1.0 + Favorites * 50.0`) é mais fácil de debugar, extremamente rápido e funciona offline.
 - **Cálculo no Frontend:** O Backend entrega o perfil (`{"RPG": 1000, "FPS": 0}`), mas é o Frontend que calcula a nota de cada jogo da lista "Em Alta". Isso poupa o Backend de ter que processar listas que vêm de APIs externas (RAWG).
 
+---
+
+### Padronização de UI
+
+**Tempo investido:** ~5h
+**Objetivo:** Otimizar o carregamento da Home e padronizar os cards de jogos em todas as telas.
+
+#### ✨ Implementações
+- **Recomendação:**
+  - Integração: Badges "TOP PICK" e "PARA VOCÊ" visíveis na Home e Trending.
+- **Home Dashboard 2.0:**
+  - **State Lifting:** Cache de `trending` e `profile` movido para o `App.tsx`, eliminando carregamentos desnecessários ao navegar entre abas.
+  - **Lógica de Backlog:** Seção "O Melhor do seu Backlog" sugerindo jogos não jogados com alta afinidade.
+- **Nova Seção "Trending":**
+  - Implementação de busca de lançamentos de novos jogos para a nova seção "Lançamentos Aguardados" (Upcoming).
+  - Filtro automático de lançamentos baseado no gosto do usuário.
+- **Refatoração de UI (DRY):**
+  - Criação do componente `StandardGameCard.tsx`.
+  - Migração das páginas **Home**, **Trending** e **Wishlist** para usar este componente único.
+- **Feature Launcher:**
+  - Utilitário centralizado `launcher.ts` para iniciar jogos via protocolo `steam://`.
+
+#### 🐛 Problemas Encontrados
+**1. Reloading constante da Home**
+- **Problema:** Ao sair e voltar para a Home, a API da RAWG era chamada novamente.
+- **Solução:** Implementação de cache no componente pai (`App.tsx`) injetando os dados e funções de *set* via props para a Home.
+
+**2. Redundância de Código nos Cards**
+- **Problema:** Cada página (Wishlist, Trending, Home) tinha sua própria implementação HTML/CSS dos cards.
+- **Solução:** Abstração completa para `StandardGameCard`, recebendo ações (botões) via prop `ReactNode`.
+
 #### ⏭️ Próxima Sessão
-- [ ] **Playlist Sugerida (Home):** Usar este mesmo motor para sugerir jogos da *própria biblioteca* que estão parados (Backlog Inteligente).
-- [ ] **Importação de Plataformas:** Trazer jogos da Epic/GOG para enriquecer os dados do perfil.
+- [ ] **Refatoração Final:** Aplicar `StandardGameCard` e o `launcher` nas páginas **Library** e **Favorites**.
+- [ ] **Nova Página "Playlist":** Criar uma lista de reprodução manual/sugerida onde o usuário pode reordenar a fila de próximos jogos ("Up Next").
+- [ ] **Polimento Visual:** Ajustes finos de espaçamento e consistência de design.
 
 ---
+
+### 📅 30/12/2025 - Refatoração Visual, Playlist e Lançamento v1.0 (Playlite)
+
+**Tempo investido:** ~6h
+**Objetivo:** Implementar a funcionalidade de Playlist, unificar a identidade visual (Hero/Cards), resolver problemas de layout/scroll e finalizar a estrutura base do aplicativo.
+
+#### ✨ Implementações
+- **Feature Playlist:**
+  - Criação do hook `usePlaylist` com persistência local (`.settings.dat`).
+  - Interface de "Fila" (Queue) com reordenação manual e sugestões laterais inteligentes baseadas no backlog.
+- **Componentização (DRY):**
+  - Criação do componente `Hero.tsx` reutilizável, limpando o código da `Home` e `Trending`.
+  - Refatoração final do `StandardGameCard` para suportar ações customizadas e botão "Play" contextual.
+- **UX & UI:**
+  - Implementação de **Scrollbar Customizada** via CSS puro (tema dark).
+  - Substituição de `alert()` por notificações elegantes usando **Sonner** (Toasts).
+  - Responsividade aprimorada no Modal de Detalhes e na página de Playlist (Full width).
+- **Branding:**
+  - Renomeação do projeto na interface para **Playlite**.
+
+#### 🐛 Problemas Encontrados
+**Problema 1:** Layout da Playlist vazio em telas grandes (1080p+)
+- **Causa:** O container da lista estava limitado a `max-w-3xl`, deixando muito espaço em branco.
+- **Solução:** Removi a limitação de largura da coluna principal e ajustei a sidebar de sugestões para ter tamanho fixo, ocupando 100% da tela disponível.
+- **Aprendizado:** Em aplicações desktop (ao contrário da web), devemos aproveitar melhor a largura total da janela ("screen real estate").
+
+**Problema 2:** Erro de Tipagem `isLocalGame` na Home
+- **Causa:** Ao misturar jogos locais (`Game`) e da nuvem (`RawgGame`) no Hero, o TypeScript perdeu a referência de quais propriedades existiam.
+- **Solução:** Criação de Type Guards e funções helpers explícitas para normalizar os dados antes de passar para o componente.
+
+#### 💡 Decisões Técnicas
+- **Decisão:** Uso do padrão de **Composição** nos Cards e Hero.
+  - **Justificativa:** Em vez de passar dezenas de props booleanas (`showHeart`, `showPlay`), passamos os próprios componentes (`actions={<Button>...}`) para dentro do container. Isso desacoplou a lógica visual da lógica de negócio de cada página.
+- **Decisão:** Manter a ordenação da Playlist sem bibliotecas de Drag-and-Drop (por enquanto).
+  - **Justificativa:** Botões de "Subir/Descer" são mais fáceis de implementar de forma robusta e acessível nesta fase inicial, evitando peso extra no bundle.
+
+#### 📚 Recursos Úteis
+- [Shadcn UI - Sonner](https://ui.shadcn.com/docs/components/sonner)
+
+#### ⏭️ Próxima Fase (Roadmap v2.0)
+- [ ] **IA:** Melhorar recomendação com explicações via LLM local ou API.
+- [ ] **Integrações:** Implementar importação de bibliotecas (Epic, GOG, Amazon).
+- [ ] **Cloud:** Sincronização de saves e playlist entre dispositivos (Supabase).
+- [ ] **Mobile:** Iniciar estudos para portar a interface para React Native.
 
 ## 🎯 Roadmap Futuro
 
@@ -447,4 +523,4 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 ---
 
 *Autor: Alan de Oliveira Gonçalves*  
-*Última atualização: 28/12/2025*
+*Última atualização: 30/12/2025*

@@ -101,7 +101,7 @@ export default function Home({
   const isLocalGame = (game: any) => "playtime" in game;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background pb-10">
+    <div className="flex-1 overflow-y-auto custom-scrollbar bg-background pb-10">
       {/* Hero Section */}
       {currentHero && (
           <Hero
@@ -109,8 +109,7 @@ export default function Home({
               backgroundUrl={getHeroImage(currentHero)}
               coverUrl={getHeroImage(currentHero)}
               genres={getGenresList(currentHero)}
-              // Home geralmente não mostra rating no Hero, mas pode passar se quiser
-              rating={currentHero.rating} // Opcional
+              rating={currentHero.rating}
 
               showNavigation={heroSlides.length > 1}
               onNext={nextHero}

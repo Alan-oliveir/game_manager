@@ -34,7 +34,7 @@ export default function Sidebar({
       {/* Logo/Header */}
       <div className="p-6 border-b border-sidebar-border">
         <h1 className="text-2xl font-bold text-sidebar-foreground">
-          Game Manager
+          Playlite
         </h1>
       </div>
 

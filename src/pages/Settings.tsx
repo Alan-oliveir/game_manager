@@ -32,7 +32,7 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
   }
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto pb-20">
+    <div className="flex-1 p-8 overflow-y-auto custom-scrollbar pb-20">
       <h2 className="text-3xl font-bold mb-6">Configurações</h2>
 
       {/* Feedback Visual */}

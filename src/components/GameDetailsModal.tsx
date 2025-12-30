@@ -6,7 +6,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Clock,
   Gamepad2,
@@ -115,7 +114,7 @@ export default function GameDetailsModal({
                 Mobile: Altura 45% da área restante, borda inferior.
                 Desktop: Altura total, col-span-4, borda direita.
             */}
-            <ScrollArea className="h-[45%] lg:h-full lg:col-span-4 border-b lg:border-b-0 lg:border-r border-border bg-muted/5 w-full custom-scrollbar">
+            <div className="h-[45%] lg:h-full lg:col-span-4 border-b lg:border-b-0 lg:border-r border-border bg-muted/5 w-full overflow-y-auto custom-scrollbar">
               <div className="p-6 md:p-8 pt-6 md:pt-16 space-y-6 md:space-y-8">
 
                 {/* Seção 1: Dados */}
@@ -222,13 +221,13 @@ export default function GameDetailsModal({
                   )}
                 </div>
               </div>
-            </ScrollArea>
+            </div>
 
             {/* COLUNA 2: Descrição
                 Mobile: Flex-1 (Ocupa o resto da altura).
                 Desktop: Altura total, col-span-8.
             */}
-            <ScrollArea className="flex-1 lg:h-full lg:col-span-8 bg-background p-6 md:p-10 w-full custom-scrollbar">
+            <div className="flex-1 lg:h-full lg:col-span-8 bg-background p-6 md:p-10 w-full overflow-y-auto custom-scrollbar">
               <div className="max-w-3xl mx-auto space-y-4 md:space-y-6 pb-8">
                 <h3 className="text-xl md:text-2xl font-bold border-b pb-4 mb-4 md:mb-6">Sobre o Jogo</h3>
 
@@ -253,7 +252,7 @@ export default function GameDetailsModal({
                     </div>
                 )}
               </div>
-            </ScrollArea>
+            </div>
 
           </div>
         </DialogContent>

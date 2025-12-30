@@ -55,7 +55,7 @@ export default function Wishlist() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-8">
+    <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-red-500/10 rounded-lg text-red-500">
