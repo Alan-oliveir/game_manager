@@ -1,20 +1,21 @@
 import StandardGameCard from "../components/StandardGameCard";
 import { Game, GameActions } from "../types";
 import { useMemo } from "react";
-import { Heart, MoreVertical, Edit, Trash2 } from "lucide-react";
+import {Heart, MoreVertical, Edit, Trash2, Library} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { launchGame } from "../utils/launcher";
 
 interface LibraryProps extends GameActions {
   games: Game[];
   searchTerm: string;
 }
 
-export default function Library({
+export default function Libraries({
   games,
   searchTerm,
   ...actions
@@ -41,14 +42,19 @@ export default function Library({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="flex-1 overflow-y-auto p-8">
       <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold">Minha Biblioteca</h2>
-          <p className="text-sm text-muted-foreground">
-            {displayedGames.length} jogo{displayedGames.length === 1 ? "" : "s"}{" "}
-            encontrado{displayedGames.length === 1 ? "" : "s"}
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+            <Library size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Minha Biblioteca</h1>
+            <p className="text-muted-foreground text-sm">
+              {displayedGames.length} jogo{displayedGames.length === 1 ? "" : "s"}{" "}
+              encontrado{displayedGames.length === 1 ? "" : "s"}
+            </p>
+          </div>
         </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {displayedGames.map((game) => (
@@ -59,6 +65,7 @@ export default function Library({
               subtitle={game.genre || "Sem gênero"}
               rating={game.rating || undefined}
               onClick={() => actions.onGameClick(game)}
+              onPlay={() => launchGame(game)}
               actions={
                 <>
                   {/* Botão de Favorito */}
@@ -68,6 +75,7 @@ export default function Library({
                       actions.onToggleFavorite(game.id);
                     }}
                     className="p-2 bg-black/60 backdrop-blur-sm rounded-full hover:bg-black/80 transition-colors z-10"
+                    title={game.favorite ? "Remover dos Favoritos" : "Adicionar aos Favoritos"}
                   >
                     <Heart
                       size={18}
@@ -85,6 +93,7 @@ export default function Library({
                       <button
                         className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-md"
                         onClick={(e) => e.stopPropagation()}
+                        title="Mais Opções"
                       >
                         <MoreVertical size={18} />
                       </button>

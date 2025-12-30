@@ -213,7 +213,7 @@ O uso de LLM é totalmente **opt-in**:
 | Componente | Tecnologia | Justificativa |
 |------------|------------|---------------|
 | Core Engine | Rust | Performance, segurança de tipos |
-| ML Library | ndarray, smartcore | Álgebra linear eficiente |
+| ML Libraries | ndarray, smartcore | Álgebra linear eficiente |
 | UI | React + TypeScript | Interface reativa |
 | Bridge | Tauri | IPC seguro e eficiente |
 | LLM (opcional) | Ollama / Grok | Flexibilidade de deployment |

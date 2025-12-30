@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Game } from "../types";
 import { libraryService } from "../services/libraryService";
 
-export function useLibrary() {
+export function useLibraries() {
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

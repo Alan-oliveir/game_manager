@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { RawgGame, Game, UserProfile } from "./types";
-import { useLibrary } from "./hooks/useLibrary";
+import { useLibraries } from "./hooks/useLibraries.ts";
 
 // Componentes
 import Sidebar from "./components/Sidebar";
@@ -9,7 +9,7 @@ import AddGameModal from "./components/AddGameModal";
 import GameDetailsModal from "./components/GameDetailsModal.tsx";
 
 // Páginas
-import Library from "./pages/Library";
+import Libraries from "./pages/Libraries.tsx";
 import Favorites from "./pages/Favorites";
 import Settings from "./pages/Settings";
 import Home from "./pages/Home";
@@ -19,7 +19,7 @@ import Wishlist from "./pages/Wishlist";
 function App() {
   // Hook Principal de Dados
   const { games, refreshGames, saveGame, removeGame, toggleFavorite } =
-    useLibrary();
+    useLibraries();
 
   // Estado de UI (Navegação e Modais)
   const [activeSection, setActiveSection] = useState("home");
@@ -109,9 +109,9 @@ function App() {
             setProfileCache={setProfileCache}
           />
         );
-      case "library":
+      case "libraries":
         return (
-          <Library
+          <Libraries
             games={games}
             searchTerm={searchTerm}
             {...commonGameActions}

@@ -56,7 +56,7 @@ flowchart TB
 
 - `src/main.tsx`: bootstrap do React
 - `src/App.tsx`: root component e **estado global local** (lista de jogos, seção ativa, busca, modal)
-- `src/pages/`: páginas (Home, Library, Favorites, Settings)
+- `src/pages/`: páginas (Home, Libraries, Favorites, Settings)
 - `src/components/`: componentes de layout e domínio (GameCard, GameGrid, AddGameModal)
 - `src/components/ui/`: componentes base (shadcn/ui + Radix)
 - `src/types.ts`: contrato principal `Game` (espelha `models::Game` no Rust)
@@ -65,7 +65,7 @@ flowchart TB
 
 A navegação é controlada por estado local (`activeSection`) no `App.tsx` e renderiza páginas via `switch`.
 
-As páginas `Library` e `Favorites` filtram localmente (via `useMemo`) usando `searchTerm`.
+As páginas `Libraries` e `Favorites` filtram localmente (via `useMemo`) usando `searchTerm`.
 
 ### Estado e fluxo de dados (UI)
 

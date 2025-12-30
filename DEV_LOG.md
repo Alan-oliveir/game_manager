@@ -225,14 +225,14 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
   - Criado módulo Rust (`steam_service`) usando `reqwest` para buscar jogos do usuário.
   - Implementada lógica de "Upsert" (Inserir ou Ignorar) para não duplicar jogos existentes no banco.
 - **Refatoração Arquitetural (Frontend):**
-  - Quebra do `App.tsx` em rotas manuais e criação da estrutura de pastas `/pages` (`Home`, `Library`, `Favorites`, `Settings`).
+  - Quebra do `App.tsx` em rotas manuais e criação da estrutura de pastas `/pages` (`Home`, `Libraries`, `Favorites`, `Settings`).
   - Centralização das ações (`gameActions`) para limpar a passagem de props.
 - **Segurança (Security Hardening):**
   - Substituição do `localStorage` pelo `tauri-plugin-store` para armazenamento seguro/criptografado da API Key e Steam ID.
 - **Dashboard (Home):**
   - Criação da tela inicial com KPIs (Tempo Total, Total de Jogos), lista de "Mais Jogados" e componente de "Sugestão Aleatória".
 - **Infraestrutura:**
-  - Configuração do banco SQLite para ser criado no diretório `app_data_dir` (AppData/Library), corrigindo conflitos de watcher do Tauri.
+  - Configuração do banco SQLite para ser criado no diretório `app_data_dir` (AppData/Libraries), corrigindo conflitos de watcher do Tauri.
 
 #### 🐛 Problemas Encontrados
 **1. Loop de Reinício Infinito**

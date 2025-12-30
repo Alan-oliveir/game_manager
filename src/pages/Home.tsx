@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  ChartBar,
 } from "lucide-react";
 import { useHome } from "../hooks/useHome";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import { openExternalLink } from "../utils/navigation";
 import { launchGame } from "../utils/launcher";
 import { Game, RawgGame, UserProfile } from "../types";
 import StandardGameCard from "@/components/StandardGameCard";
+import {Separator} from "@/components/ui/separator.tsx";
 
 interface HomeProps {
   onChangeTab: (tab: string) => void;
@@ -217,7 +219,7 @@ export default function Home({
           </div>
         </div>
       )}
-
+      <Separator className={"mb-3"} />
       <div className="p-8 max-w-7xl mx-auto space-y-10 relative z-20">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -254,9 +256,14 @@ export default function Home({
         {/* Continue Jogando */}
         {continuePlaying.length > 0 && (
           <section>
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="text-primary" size={24} />
-              <h2 className="text-2xl font-bold">Continue Jogando</h2>
+            <div className="flex items-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                  <Clock size={24} />
+                </div>
+                <h2 className="text-2xl font-bold">Continue Jogando</h2>
+              </div>
+
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {continuePlaying.map((game) => (
@@ -272,6 +279,7 @@ export default function Home({
                       size="icon"
                       className="bg-transparent border border-transparent hover:border-white hover:bg-muted-foreground text-white p-3 rounded-full shadow-xl transform scale-90 group-hover:scale-100 transition-all"
                       onClick={() => launchGame(game)}
+                      title="Jogar Agora"
                     >
                       <Play className="text-white fill-white" />
                     </Button>
@@ -284,15 +292,19 @@ export default function Home({
 
         {/* Recomendações */}
         <section>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <Dna className="text-purple-400" size={24} />
-              <h2 className="text-2xl font-bold">Recomendados</h2>
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
+                  < Dna size={24} />
+                </div>
+                <h2 className="text-2xl font-bold">Recomendados</h2>
+              </div>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onChangeTab("library")}
+              onClick={() => onChangeTab("libraries")}
             >
               Ver Tudo
             </Button>
@@ -313,6 +325,7 @@ export default function Home({
                       size="icon"
                       className="bg-transparent border border-transparent hover:border-white hover:bg-muted-foreground text-white p-3 rounded-full shadow-xl transform scale-90 group-hover:scale-100 transition-all"
                       onClick={() => launchGame(game)}
+                      title="Jogar Agora"
                     >
                       <Play className="text-white fill-white" />
                     </Button>
@@ -329,13 +342,22 @@ export default function Home({
           )}
         </section>
 
-        {/* Grid Inferior (Mais Jogados + Gêneros) */}
+        {/* Grid Inferior (Mais Jogados + Gêneros) - Estatísticas */}
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-400">
+            <ChartBar size={24} />
+          </div>
+          <h2 className="text-2xl font-bold">Estatísticas</h2>
+        </div>
+
+        {/* Cards de Estatísticas */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 bg-card border border-border rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-3">
               <TrendingUp size={20} className="text-primary" />
               <h2 className="text-lg font-semibold">Mais Jogados</h2>
             </div>
+            <Separator className={"mb-3"} />
             <div className="grid grid-cols-1 gap-4">
               {mostPlayed.map((game, index) => (
                 <div
@@ -376,10 +398,11 @@ export default function Home({
           </div>
 
           <div className="lg:col-span-1 bg-card border border-border rounded-xl p-6 h-full">
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-3">
               <Gamepad2 size={20} className="text-primary" />
               <h2 className="text-lg font-semibold">Gêneros + Jogados</h2>
             </div>
+            <Separator className={"mb-3"} />
             <div className="space-y-4">
               {topGenres.map(([genre, count]) => {
                 const percent = Math.round((count / stats.totalGames) * 100);

@@ -64,7 +64,7 @@ export function useHome({
 
   // 2. Continue Jogando
   const continuePlaying = library
-    .filter((g) => g.playtime > 0 && g.playtime < 300)
+    .filter((g) => g.playtime > 0 && g.playtime < 50)
     .sort((a, b) => b.playtime - a.playtime)
     .slice(0, 5);
 

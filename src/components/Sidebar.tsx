@@ -16,7 +16,7 @@ interface SidebarProps {
 
 const menuItems = [
   { id: "home", label: "Início", icon: Home },
-  { id: "library", label: "Biblioteca", icon: Library },
+  { id: "libraries", label: "Biblioteca", icon: Library },
   { id: "favorites", label: "Favoritos", icon: Heart },
   { id: "trending", label: "Em Alta", icon: TrendingUp },
   { id: "wishlist", label: "Lista de Desejos", icon: ShoppingCart },

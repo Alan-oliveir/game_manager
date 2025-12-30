@@ -256,7 +256,9 @@ export default function Trending(props: TrendingProps) {
       {/* 3. GRID DE SUGESTÕES (TRENDING) */}
       <div className="p-8 max-w-7xl mx-auto">
         <div className="flex items-center gap-2 mb-6">
-          <TrendingUp className="text-primary" />
+          <div className="p-2 bg-green-500/10 rounded-lg text-green-400">
+            < TrendingUp size={20} />
+          </div>
           <h2 className="text-2xl font-bold">Mais Sugestões</h2>
         </div>
 
@@ -277,53 +279,31 @@ export default function Trending(props: TrendingProps) {
                   .slice(0, 2)
                   .join(", ")}
                 badge={isRecommended ? "TOP PICK" : undefined}
-                className={
-                  isRecommended
-                    ? "border-purple-500/50 shadow-purple-500/10"
-                    : ""
-                }
+
                 // Ações Personalizadas do Trending (Wishlist + Details)
                 actions={
                   <>
-                    {/*
-                          <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-8 w-8 p-0"
-                              onClick={() => handleWishlistClick(game)}
-                          >
-                            <Heart size={14} />
-                          </Button>
-                          <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-8 w-8 p-0"
-                              onClick={() =>
-                                  openExternalLink(`https://rawg.io/games/${game.id}`)
-                              }
-                          >
-                            <ExternalLink size={14} />
-                          </Button>
-                          */}
                     {/* Botões Wishlist e Detalhes */}
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="h-8 text-xs"
+                      className="rounded-full h-10 w-10 shadow-lg"
                       onClick={() => handleWishlistClick(game)}
+                      title={"Lista de Desejos"}
                     >
-                      <Heart size={14} className="mr-1" /> Desejos
+                      <Heart size={16} />
                     </Button>
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="h-8 text-xs"
+                      className="rounded-full h-10 w-10 shadow-lg"
                       onClick={(e) => {
                         e.stopPropagation();
                         openExternalLink(`https://rawg.io/games/${game.id}`);
                       }}
+                        title={"Ver Detalhes"}
                     >
-                      <ExternalLink size={14} /> Detalhes
+                      <ExternalLink size={16} />
                     </Button>
                   </>
                 }
