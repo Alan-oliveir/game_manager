@@ -1,4 +1,5 @@
 import { open } from "@tauri-apps/plugin-shell";
+import {toast} from "sonner";
 
 /**
  * Abre uma URL no navegador padrão do sistema operacional.
@@ -9,7 +10,6 @@ export const openExternalLink = async (url: string): Promise<void> => {
     await open(url);
   } catch (error) {
     console.error("Erro ao abrir link:", error);
-    // Aqui você poderia usar um toast/alert customizado se quisesse
-    alert("Não foi possível abrir o link no navegador.");
+    toast.error("Não foi possível abrir o link no navegador.");
   }
 };

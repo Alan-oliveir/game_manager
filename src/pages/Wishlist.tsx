@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useWishlist } from "../hooks/useWishlist";
 import { openExternalLink } from "../utils/navigation";
 import StandardGameCard from "@/components/StandardGameCard";
+import {toast} from "sonner";
 
 export default function Wishlist() {
   const { games, isLoading, isRefreshing, removeGame, refreshPrices } =
@@ -19,7 +20,7 @@ export default function Wishlist() {
     try {
       await removeGame(id);
     } catch {
-      alert("Erro ao remover jogo.");
+      toast.error("Erro ao remover jogo.");
     }
   };
 
@@ -27,7 +28,7 @@ export default function Wishlist() {
     try {
       await refreshPrices();
     } catch {
-      alert("Erro ao atualizar preços.");
+      toast.error("Erro ao atualizar preços.");
     }
   };
 

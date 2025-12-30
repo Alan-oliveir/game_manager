@@ -1,4 +1,5 @@
 import { Game, RawgGame } from "../types";
+import {toast} from "sonner";
 
 /**
  * Tenta iniciar o jogo baseado na plataforma.
@@ -9,7 +10,7 @@ export const launchGame = (game: Game | RawgGame | any) => {
   if (!game.platform || game.platform === "Steam") {
     window.open(`steam://rungameid/${game.id}`, "_self");
   } else {
-    alert(
+    toast.info(
       `O lançamento para ${
         game.platform || "esta plataforma"
       } será implementado em breve!`

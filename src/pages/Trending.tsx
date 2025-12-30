@@ -19,6 +19,7 @@ import { useRecommendation } from "../hooks/useRecommendation";
 import { openExternalLink } from "../utils/navigation";
 import StandardGameCard from "@/components/StandardGameCard.tsx";
 import { trendingService } from "../services/trendingService";
+import {toast} from "sonner";
 
 interface TrendingProps {
   userGames: Game[];
@@ -85,9 +86,13 @@ export default function Trending(props: TrendingProps) {
   const handleWishlistClick = async (game: RawgGame) => {
     try {
       await addToWishlist(game);
-      alert(`❤️ ${game.name} adicionado à Lista de Desejos!`);
+      toast.success(`${game.name} adicionado!`, {
+        description: "O jogo já está na sua lista de desejos.",
+      });
     } catch {
-      alert("Erro ao adicionar à lista.");
+      toast.error("Erro ao adicionar à lista", {
+        description: "Verifique sua conexão e tente novamente.",
+      });
     }
   };
 

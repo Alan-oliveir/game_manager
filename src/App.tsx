@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { RawgGame, Game, UserProfile } from "./types";
 import { useLibraries } from "./hooks/useLibraries.ts";
+import {toast, Toaster} from "sonner";
 
 // Componentes
 import Sidebar from "./components/Sidebar";
@@ -66,7 +67,7 @@ function App() {
       setIsModalOpen(false);
       setGameToEdit(null);
     } catch (e) {
-      alert("Erro ao salvar: " + e);
+      toast.error("Erro ao salvar: " + e);
     }
   };
 
@@ -175,6 +176,8 @@ function App() {
         allGames={games}
         onSwitchGame={handleSwitchGame}
       />
+
+      <Toaster />
     </div>
   );
 }
