@@ -16,6 +16,17 @@ import {
 import { useHome } from "../hooks/useHome";
 import { Button } from "@/components/ui/button";
 import { openExternalLink } from "../utils/navigation";
+import { launchGame } from "../utils/launcher";
+import { Game, RawgGame, UserProfile } from "../types";
+
+interface HomeProps {
+    onChangeTab: (tab: string) => void;
+    games: Game[];
+    trendingCache: RawgGame[];
+    setTrendingCache: (games: RawgGame[]) => void;
+    profileCache: UserProfile | null;
+    setProfileCache: (profile: UserProfile) => void;
+}
 
 // Utilitário para formatar tempo
 const formatTime = (minutes: number) => {
@@ -24,7 +35,15 @@ const formatTime = (minutes: number) => {
     return `${h}h`;
 };
 
-export default function Home({ onChangeTab }: { onChangeTab: (tab: string) => void }) {
+export default function Home({
+                                 onChangeTab,
+                                 games,
+                                 trendingCache,
+                                 setTrendingCache,
+                                 profileCache,
+                                 setProfileCache
+                             }: HomeProps) {
+
     const {
         stats,
         continuePlaying,
@@ -32,49 +51,39 @@ export default function Home({ onChangeTab }: { onChangeTab: (tab: string) => vo
         mostPlayed,
         topGenres,
         loading,
-        trending // Recebendo os jogos em alta da RAWG
-    } = useHome();
+        trending
+    } = useHome({
+        games,
+        trendingCache,
+        setTrendingCache,
+        profileCache,
+        setProfileCache
+    });
 
-    // Estado do Carrossel Hero
     const [heroIndex, setHeroIndex] = useState(0);
 
     if (loading) {
         return <div className="flex-1 flex items-center justify-center text-muted-foreground">Carregando sua central...</div>;
     }
 
-    // --- Lógica do Hero Rotativo ---
-    // Criamos um "Mix" interessante para o Banner:
-    // 1. A melhor recomendação do Backlog (se houver)
-    // 2. O Top 1 Trending Global
-    // 3. O Jogo Mais Jogado (Favorito pessoal)
-    // 4. Outros Trendings...
+    /* --- Lógica do Hero Rotativo ---
+     * "Mix" para o Banner:
+     * 1. A melhor recomendação do Backlog (se houver)
+     * 2. O Top 1 Trending Global
+     * 3. O Jogo Mais Jogado (Favorito pessoal)
+     * 4. Outros Trendings...
+     */
     const heroSlides = [
         backlogRecommendations[0],
         ...(trending || []).slice(0, 2),
         mostPlayed[0]
     ].filter(Boolean); // Remove undefined se alguma lista estiver vazia
-
     const currentHero = heroSlides[heroIndex] || mostPlayed[0];
-
     const nextHero = () => setHeroIndex((prev) => (prev + 1) % heroSlides.length);
     const prevHero = () => setHeroIndex((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
-
-    // Helpers para renderizar dados do Hero dependendo se é local (Game) ou nuvem (RawgGame)
     const getHeroImage = (game: any) => game.cover_url || game.background_image || "";
     const getHeroName = (game: any) => game.name;
     const isLocalGame = (game: any) => "playtime" in game; // Verifica se é da biblioteca
-
-    // Função para iniciar o jogo
-    const handlePlay = (game: any) => {
-        if (game.platform === "Steam") {
-            // Abre o protocolo da Steam (o Windows/Linux reconhece e abre o app)
-            // _self garante que não abra uma aba branca no navegador
-            window.open(`steam://rungameid/${game.id}`, '_self');
-        } else {
-            // Futuramente implementaremos o lançamento de executáveis locais (.exe)
-            alert(`Lançamento de jogos ${game.platform || "Manuais"} será implementado em breve!`);
-        }
-    };
 
     return (
         <div className="flex-1 overflow-y-auto bg-background pb-10">
@@ -141,7 +150,7 @@ export default function Home({ onChangeTab }: { onChangeTab: (tab: string) => vo
 
                                 <div className="flex justify-center md:justify-start gap-4 pt-4">
                                     {isLocalGame(currentHero) ? (
-                                        <Button className="px-8 h-12 text-md" onClick={() => handlePlay(currentHero)}>
+                                        <Button className="px-8 h-12 text-md" onClick={() => launchGame(currentHero)}> {/* ✅ Usa util */}
                                             <Play size={20} className="mr-2" /> Jogar Agora
                                         </Button>
                                     ) : (
@@ -189,7 +198,6 @@ export default function Home({ onChangeTab }: { onChangeTab: (tab: string) => vo
                     </div>
 
                     {backlogRecommendations.length > 0 ? (
-                        // Grid de 5 colunas para ficar em uma linha
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                             {backlogRecommendations.slice(0, 5).map((game) => (
                                 <GameCardSimple key={game.id} game={game} showBadge="Recomendado" />
@@ -289,7 +297,15 @@ function GameCardSimple({ game, showBadge }: any) {
 
                 {/* Overlay Play */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Play className="text-white fill-white" size={32} />
+                    <button
+                        className="bg-transparent border border-transparent hover:border-white hover:bg-muted-foreground text-white p-3 rounded-full shadow-xl transform scale-90 group-hover:scale-100 transition-all"
+                        onClick={(e) => {
+                            e.stopPropagation(); // Não propaga para o card (se o card tiver clique)
+                            launchGame(game);
+                        }}
+                    >
+                        <Play className="text-white fill-white" size={32} />
+                    </button>
                 </div>
 
                 {showBadge && (

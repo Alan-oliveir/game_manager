@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RawgGame, Game } from "./types";
+import { RawgGame, Game, UserProfile } from "./types";
 import { useLibrary } from "./hooks/useLibrary";
 
 // Componentes
@@ -38,6 +38,9 @@ function App() {
   // Cache do Trending
   const [trendingCache, setTrendingCache] = useState<RawgGame[]>([]);
   const [trendingKey, setTrendingKey] = useState(0);
+
+  // Cache do Perfil do Usuário para recomendações
+  const [profileCache, setProfileCache] = useState<UserProfile | null>(null);
 
   // Handlers de UI
 
@@ -96,7 +99,16 @@ function App() {
   const renderContent = () => {
     switch (activeSection) {
       case "home":
-        return <Home onChangeTab={setActiveSection} />;
+        return (
+            <Home
+                onChangeTab={setActiveSection}
+                games={games}
+                trendingCache={trendingCache}
+                setTrendingCache={setTrendingCache}
+                profileCache={profileCache}
+                setProfileCache={setProfileCache}
+            />
+        );
       case "library":
         return (
           <Library

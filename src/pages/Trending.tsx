@@ -26,7 +26,6 @@ interface TrendingProps {
 }
 
 export default function Trending(props: TrendingProps) {
-  // Usamos o Hook para obter dados e lógica
   const {
     games,
     allGenres,

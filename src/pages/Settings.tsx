@@ -53,14 +53,15 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
         </div>
       )}
 
+      {/* Formulário de Chaves */}
       <div className="space-y-6">
-        {/* Formulário de Chaves */}
         <div className="grid gap-6 border border-border rounded-xl bg-card p-6">
           <div className="flex items-center gap-2">
             <Shield className="text-green-500" size={20} />
             <h3 className="text-lg font-semibold">Credenciais de API</h3>
           </div>
 
+          {/* Steam ID */}
           <div className="grid gap-2">
             <Label>Steam ID</Label>
             <Input
@@ -69,6 +70,8 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
               placeholder="765..."
             />
           </div>
+
+          {/* Steam API Key */}
           <div className="grid gap-2">
             <Label>Steam API Key</Label>
             <Input
@@ -80,6 +83,8 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
               placeholder="••••••••••••••••"
             />
           </div>
+
+          {/* RAWG API Key */}
           <div className="grid gap-2">
             <Label>RAWG API Key</Label>
             <Input
@@ -90,6 +95,7 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
             />
           </div>
 
+          {/* Botão Salvar */}
           <Button
             onClick={actions.saveKeys}
             className="w-full mt-2"

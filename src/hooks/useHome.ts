@@ -1,72 +1,73 @@
 import { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { Game, RawgGame } from "../types";
+import { RawgGame, Game, UserProfile } from "../types";
 import { useRecommendation } from "./useRecommendation";
 import { trendingService } from "../services/trendingService";
 
-export function useHome() {
-    const [library, setLibrary] = useState<Game[]>([]);
-    const [trending, setTrending] = useState<RawgGame[]>([]);
-    const [loading, setLoading] = useState(true);
+interface UseHomeProps {
+    games: Game[];
+    trendingCache: RawgGame[];
+    setTrendingCache: (games: RawgGame[]) => void;
+    profileCache: UserProfile | null;
+    setProfileCache: (profile: UserProfile) => void;
+}
 
-    const { profile, calculateAffinity, loading: profileLoading } = useRecommendation();
+export function useHome({ games: library, trendingCache, setTrendingCache,
+                            profileCache,
+                            setProfileCache }: UseHomeProps) {
+    const [trending, setTrending] = useState<RawgGame[]>(trendingCache);
+    const [loadingTrending, setLoadingTrending] = useState(false);
+    const { profile, calculateAffinity, loading: profileLoading } = useRecommendation({
+        profileCache,
+        setProfileCache
+    });
 
+    // Busca Trending se o cache estiver vazio
     useEffect(() => {
-        async function fetchData() {
+        async function fetchTrendingIfNeeded() {
+            if (trendingCache.length > 0) {
+                setTrending(trendingCache);
+                setLoadingTrending(false);
+                return;
+            }
+
+            setLoadingTrending(true);
             try {
-                // Busca Biblioteca Local
-                const games = await invoke<Game[]>("get_games");
-                setLibrary(games);
-
-                // Busca API Key e Trending usando o serviço/backend
-                try {
-                    // Usa o comando do backend 'get_secret' (via service) em vez de ler o arquivo direto
-                    const apiKey = await trendingService.getApiKey();
-
-                    if (apiKey && apiKey.trim() !== "") {
-                        // Reutiliza o serviço de Trending
-                        const trendingResult = await trendingService.getTrending(apiKey);
-                        setTrending(trendingResult);
-                    } else {
-                        console.warn("API Key da RAWG não encontrada ou vazia.");
-                    }
-                } catch (e) {
-                    console.warn("Não foi possível carregar o Trending para a Home:", e);
+                const apiKey = await trendingService.getApiKey();
+                if (apiKey && apiKey.trim() !== "") {
+                    const result = await trendingService.getTrending(apiKey);
+                    setTrending(result);
+                    setTrendingCache(result);
                 }
-
-            } catch (error) {
-                console.error("Erro ao carregar Home:", error);
+            } catch (e) {
+                console.warn("Home: Falha ao buscar trending", e);
             } finally {
-                setLoading(false);
+                setLoadingTrending(false);
             }
         }
-        fetchData();
-    }, []);
+        fetchTrendingIfNeeded();
+    }, [trendingCache]); // Roda se o cache mudar ou montar
 
-    // Lógica de negócio para a Home
+    // Lógica de Negócios (Síncrona - Instantânea)
 
     // 1. Stats
     const totalGames = library.length;
     const totalPlaytime = library.reduce((acc, g) => acc + g.playtime, 0);
     const totalFavorites = library.filter(g => g.favorite).length;
 
-    // 2. Continue Jogando (Entre 1 minuto e 5 horas de jogo)
+    // 2. Continue Jogando
     const continuePlaying = library
         .filter(g => g.playtime > 0 && g.playtime < 300)
         .sort((a, b) => b.playtime - a.playtime)
         .slice(0, 5);
 
-    // 3. Recomendado para Você
+    // 3. Recomendado (Backlog)
     let backlogRecommendations: Game[] = [];
-
     if (profile) {
         backlogRecommendations = library
-            .filter(g => g.playtime === 0) // Nunca jogados
+            .filter(g => g.playtime === 0)
             .sort((a, b) => {
-                // Converte string de generos para array antes de calcular
-                const genresA = a.genre ? a.genre.split(',').map(name => ({ name: name.trim() })) : [];
-                const genresB = b.genre ? b.genre.split(',').map(name => ({ name: name.trim() })) : [];
-
+                const genresA = a.genre ? a.genre.split(',').map(n => ({ name: n.trim() })) : [];
+                const genresB = b.genre ? b.genre.split(',').map(n => ({ name: n.trim() })) : [];
                 return calculateAffinity(genresB) - calculateAffinity(genresA);
             })
             .slice(0, 8);
@@ -77,14 +78,12 @@ export function useHome() {
         .sort((a, b) => b.playtime - a.playtime)
         .slice(0, 3);
 
-    // 5. Distribuição de Gêneros
+    // 5. Gêneros
     const genreStats = library.reduce((acc, game) => {
         if (game.genre) {
-            const genres = game.genre.split(',').map(s => s.trim());
-            genres.forEach(g => {
-                if (g !== "Desconhecido") {
-                    acc[g] = (acc[g] || 0) + 1;
-                }
+            game.genre.split(',').forEach(g => {
+                const clean = g.trim();
+                if (clean !== "Desconhecido") acc[clean] = (acc[clean] || 0) + 1;
             });
         }
         return acc;
@@ -95,14 +94,14 @@ export function useHome() {
         .slice(0, 5);
 
     return {
-        library,
-        trending,
-        loading: loading || profileLoading,
         stats: { totalGames, totalPlaytime, totalFavorites },
         continuePlaying,
         backlogRecommendations,
         mostPlayed,
         topGenres,
-        profile
+        trending,
+        profile,
+        // Mostra loading se estiver carregando perfil ou trending crítico
+        loading: profileLoading || (loadingTrending && trending.length === 0)
     };
 }
