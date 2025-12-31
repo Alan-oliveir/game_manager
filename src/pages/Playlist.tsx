@@ -1,4 +1,4 @@
-import { ListMusic, Sparkles, PlusCircle, Gamepad2 } from "lucide-react";
+import { Sparkles, PlusCircle, Gamepad2 } from "lucide-react";
 import { Game, UserProfile } from "../types";
 import { usePlaylist } from "../hooks/usePlaylist";
 import { useRecommendation } from "../hooks/useRecommendation";
@@ -52,7 +52,7 @@ export default function Playlist({
         <div className="px-8 pt-6 pb-4 shrink-0 border-b border-border/40">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-primary/10 rounded-lg text-primary">
-              <ListMusic size={24} />
+              <Gamepad2 size={24} />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Sua Playlist</h1>
@@ -98,7 +98,7 @@ export default function Playlist({
       </div>
 
       {/* COLUNA DIREITA: SUGESTÕES (Barra Lateral) */}
-      <div className="w-full lg:w-[450px] shrink-0 bg-muted/10 flex flex-col border-l border-border backdrop-blur-sm">
+      <div className="w-full lg:w-112.5 shrink-0 bg-muted/10 flex flex-col border-l border-border backdrop-blur-sm">
         <div className="p-6 shrink-0 border-b border-border/40 bg-muted/20">
           <div className="flex items-center gap-2 mb-1 text-purple-500">
             <Sparkles size={20} className="fill-purple-500/20" />
