@@ -10,7 +10,7 @@ Criar uma aplicação desktop para gerenciamento de biblioteca de jogos, com foc
 
 - uso pessoal real
 - aprendizado de tecnologias modernas
-- demonstração de habilidades full-stack em um projeto de portfólio
+- demonstração de habilidades full-stack num projeto de portfólio
 
 ---
 
@@ -67,9 +67,54 @@ Criar uma aplicação desktop para gerenciamento de biblioteca de jogos, com foc
 
 ---
 
-## 6. Estratégia de Recomendação de Jogos
+## 6. Segurança de Credenciais e Dados Sensíveis
 
-### 6.1 Abordagem Inicial (MVP)
+**Decisão:** Armazenar credenciais de APIs (ex.: Steam API Key, Steam ID) em arquivo local **em texto plano**, de forma consciente, durante o estágio atual do projeto (MVP).
+
+**Contexto:**
+O projeto precisa persistir credenciais de acesso a APIs externas para funcionar corretamente. Durante o desenvolvimento, alternativas mais seguras foram avaliadas.
+
+**Alternativas avaliadas:**
+
+1. **Criptografia simétrica (AES-256) com derivação de chave (Argon2)**
+
+   - Implementada experimentalmente.
+   - Utilizou derivação deliberadamente lenta para mitigar força bruta.
+
+2. **Keyring/credential store do sistema operacional**
+
+   - Avaliado como solução mais adequada para aplicações desktop comerciais.
+   - No ambiente atual, falhou por falta de assinatura de código e/ou reputação do app, levando o sistema a recusar o armazenamento.
+
+**Motivação:**
+
+- A derivação de chave (Argon2) introduziu latência perceptível (~3s) na leitura das credenciais, impactando negativamente a UX.
+- O keyring do SO não funcionou de forma confiável no contexto atual de desenvolvimento (MVP sem assinatura).
+- O aplicativo é:
+  - *local-first*
+  - de uso individual
+  - sem dados sensíveis de terceiros
+  - não exposto à internet como serviço
+
+Dado esse contexto, o risco foi considerado aceitável para um **MVP de portfólio e aprendizado**.
+
+**Consequências:**
+
+- As credenciais ficam armazenadas em texto plano no ambiente local do usuário.
+- O risco é parcialmente mitigado por:
+  - execução local
+  - ausência de sincronização automática
+  - escopo limitado da aplicação
+
+**Plano futuro:**
+
+- Em uma versão comercial ou distribuída amplamente, tornar obrigatório o uso de keyring nativo do sistema operacional, preferencialmente com o aplicativo assinado.
+
+Esta decisão é consciente, documentada e reversível, alinhada ao estágio atual do projeto.
+
+## 7. Estratégia de Recomendação de Jogos
+
+### 7.1 Abordagem Inicial (MVP)
 
 **Decisão:** Regras simples e filtros baseados em metadados.
 
@@ -88,7 +133,7 @@ Exemplos:
 
 ---
 
-### 6.2 Abordagem com Machine Learning Clássico
+### 7.2 Abordagem com Machine Learning Clássico (Futuro)
 
 **Decisão:** Modelos de ML supervisionados ou não supervisionados treinados localmente.
 
@@ -111,7 +156,7 @@ Exemplos:
 
 ---
 
-### 6.3 Uso de LLMs (Opcional / Experimental)
+### 7.3 Uso de LLM Opcional (Futuro)
 
 **Decisão:** Uso opcional de LLMs locais (ex: Ollama) ou APIs gratuitas apenas para explicação das recomendações.
 
@@ -129,7 +174,7 @@ Exemplos:
 
 ---
 
-## 7. Infraestrutura e DevOps
+## 8. Infraestrutura e DevOps
 
 **Decisão:** Projeto local, sem dependência obrigatória de cloud.
 
@@ -146,9 +191,35 @@ Experimentos futuros podem incluir serviços em cloud para:
 - backup
 - recomendações avançadas
 
+### 8.1 Uso de Ferramentas de IA e Análises Automatizadas
+
+**Decisão:** Utilizar ferramentas de IA (ex.: GitHub Copilot) como suporte para análise de código e identificação de melhorias, sem adoção automática das recomendações.
+
+**Motivação:**
+
+- Acelerar a identificação de possíveis problemas de segurança, performance e arquitetura.
+- Expor o projeto a padrões utilizados na indústria.
+- Exercitar análise crítica e tomada de decisão técnica.
+
+**Abordagem adotada:**
+
+As recomendações são classificadas em:
+
+- **Aplicáveis imediatamente**
+- **Relevantes apenas para versões comerciais ou em escala**
+- **Conscientemente ignoradas** por não se adequarem ao contexto do projeto
+
+Decisões de não implementação são consideradas tão importantes quanto as implementadas.
+
+**Consequências:**
+
+- Evita *overengineering* em um projeto de escopo reduzido.
+- Mantém a base de código simples, legível e adequada ao uso real.
+- Demonstra capacidade de avaliar *trade-offs* técnicos, em vez de seguir checklists genéricos.
+
 ---
 
-## 8. Documentação e Open Source
+## 9. Documentação e Open Source
 
 **Decisão:** Documentação enxuta no GitHub (README, CONTRIBUTING, ADR).
 
@@ -160,6 +231,6 @@ Experimentos futuros podem incluir serviços em cloud para:
 
 ---
 
-## 9. Status
+## 10. Status
 
 Este ADR representa o estado atual das decisões arquiteturais e pode evoluir conforme o projeto crescer.
