@@ -17,6 +17,7 @@ import { useHome } from "../hooks/useHome";
 import { Button } from "@/components/ui/button";
 import { openExternalLink } from "../utils/navigation";
 import { launchGame } from "../utils/launcher";
+import { formatTime } from "../utils/formatTime";
 import { Game, RawgGame, UserProfile } from "../types";
 import StandardGameCard from "@/components/StandardGameCard";
 import { Separator } from "@/components/ui/separator.tsx";
@@ -30,13 +31,6 @@ interface HomeProps {
   profileCache: UserProfile | null;
   setProfileCache: (profile: UserProfile) => void;
 }
-
-// Utilitário para formatar tempo
-const formatTime = (minutes: number) => {
-  const h = Math.floor(minutes / 60);
-  if (h < 1) return `${minutes}m`;
-  return `${h}h`;
-};
 
 export default function Home({
   onChangeTab,
