@@ -11,6 +11,7 @@ import {
   Dna,
   ExternalLink,
   ChartBar,
+  ImageOff,
 } from "lucide-react";
 import { useHome } from "../hooks/useHome";
 import { Button } from "@/components/ui/button";
@@ -316,7 +317,7 @@ export default function Home({
                     />
                   ) : (
                     <div className="w-12 h-16 bg-muted rounded flex items-center justify-center text-[10px]">
-                      Sem Capa
+                      <ImageOff />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">

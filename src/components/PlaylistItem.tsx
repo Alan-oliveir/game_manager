@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Play, Trash2 } from "lucide-react";
+import {ArrowDown, ArrowUp, ImageOff, Play, Trash2} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Game } from "../types";
 import { launchGame } from "@/utils/launcher.ts";
@@ -70,7 +70,7 @@ export default function PlaylistItem({
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center text-[8px]">
-            Sem Capa
+            <ImageOff/>
           </div>
         )}
         {/* Overlay Play Mini */}
