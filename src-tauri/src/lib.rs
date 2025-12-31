@@ -4,6 +4,7 @@ mod database;
 mod models;
 mod services;
 mod storage;
+mod utils;
 
 use rusqlite::Connection;
 use std::sync::Mutex;

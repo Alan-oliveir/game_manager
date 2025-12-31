@@ -1,3 +1,4 @@
+use crate::utils::http_client::HTTP_CLIENT;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -28,8 +29,7 @@ pub async fn find_best_price(game_name: &str) -> Result<Option<DealResult>, Stri
         urlencoding::encode(game_name)
     );
 
-    let client = reqwest::Client::new();
-    let res = client
+    let res = HTTP_CLIENT
         .get(&url)
         .send()
         .await
@@ -40,14 +40,20 @@ pub async fn find_best_price(game_name: &str) -> Result<Option<DealResult>, Stri
     }
 
     // Tenta decodificar. Se falhar, retorna o erro original para debug.
-    let deals: Vec<CheapSharkDeal> = res.json().await.map_err(|e| format!("Erro ao decodificar JSON: {}", e))?;
+    let deals: Vec<CheapSharkDeal> = res
+        .json()
+        .await
+        .map_err(|e| format!("Erro ao decodificar JSON: {}", e))?;
 
     if let Some(deal) = deals.first() {
         let current_price = deal.price.parse::<f64>().unwrap_or(0.0);
         let retail_price = deal.retail_price.parse::<f64>().unwrap_or(0.0);
 
         // Link direto para o deal na CheapShark
-        let deal_url = format!("https://www.cheapshark.com/redirect?dealID={}", deal.deal_id);
+        let deal_url = format!(
+            "https://www.cheapshark.com/redirect?dealID={}",
+            deal.deal_id
+        );
 
         Ok(Some(DealResult {
             price: current_price,

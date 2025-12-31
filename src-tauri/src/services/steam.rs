@@ -1,3 +1,4 @@
+use crate::utils::http_client::HTTP_CLIENT;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -55,9 +56,8 @@ pub async fn fetch_game_metadata(app_id: u32) -> Result<ProcessedGameData, Strin
         "https://store.steampowered.com/api/appdetails?appids={}&l=brazilian",
         app_id
     );
-    let client = reqwest::Client::new();
 
-    let res: HashMap<String, StoreAppResponse> = client
+    let res: HashMap<String, StoreAppResponse> = HTTP_CLIENT
         .get(&url)
         .send()
         .await
@@ -98,15 +98,13 @@ pub async fn fetch_game_metadata(app_id: u32) -> Result<ProcessedGameData, Strin
 
 pub async fn list_steam_games(api_key: &str, steam_id: &str) -> Result<Vec<SteamGame>, String> {
     let url = format!(
-        "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={}&steamid={}&format=json&include_appinfo=true&include_played_free_games=true",
+        "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={}&steamid={}&format=json&include_appinfo=true&include_played_free_games=true",
         api_key, steam_id
     );
 
     println!("Buscando jogos na Steam..."); // Log para debug
 
-    let client = reqwest::Client::new();
-
-    let res = client
+    let res = HTTP_CLIENT
         .get(&url)
         .send()
         .await

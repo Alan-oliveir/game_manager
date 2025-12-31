@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { RawgGame, Game, UserProfile } from "./types";
+import { useMemo, useState } from "react";
+import { Game, RawgGame, UserProfile } from "./types";
 import { useLibraries } from "./hooks/useLibraries.ts";
 import { toast, Toaster } from "sonner";
+import { useDebounce } from "./hooks/useDebounce";
 
 // Componentes
 import Sidebar from "./components/Sidebar";
@@ -23,11 +24,16 @@ function App() {
   const { games, refreshGames, saveGame, removeGame, toggleFavorite } =
     useLibraries();
 
-  // Estado de UI (Navegação e Modais)
-  const [activeSection, setActiveSection] = useState("home");
+  // Estado de Busca com Debounce
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  // Modal State
+  // Estado de UI (Navegação e Modais)
+
+  // Navegação Simples
+  const [activeSection, setActiveSection] = useState("home");
+
+  // Modal Add Game State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
 
@@ -35,7 +41,10 @@ function App() {
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
   // Jogo selecionado para o modal de detalhes
-  const selectedGame = games.find((g) => g.id === selectedGameId) || null;
+  const selectedGame = useMemo(
+    () => games.find((g) => g.id === selectedGameId) || null,
+    [games, selectedGameId]
+  );
 
   // Cache do Trending
   const [trendingCache, setTrendingCache] = useState<RawgGame[]>([]);
@@ -44,12 +53,12 @@ function App() {
   // Cache do Perfil do Usuário para recomendações
   const [profileCache, setProfileCache] = useState<UserProfile | null>(null);
 
-  // Handlers de UI
+  // Handlers de UI e Ações
 
   const handleSettingsUpdate = () => {
-    refreshGames(); // Atualiza a lista após importação
-    setTrendingCache([]); // Limpa cache para o usuário ver novidades
-    setTrendingKey((k) => k + 1); // Força refresh da tela Trending
+    refreshGames();
+    setTrendingCache([]);
+    setTrendingKey((k) => k + 1);
   };
 
   const openAddModal = () => {
@@ -64,7 +73,7 @@ function App() {
 
   const handleSaveGameWrapper = async (data: Partial<Game>) => {
     try {
-      await saveGame(data, gameToEdit?.id); // Chama o hook
+      await saveGame(data, gameToEdit?.id);
       setIsModalOpen(false);
       setGameToEdit(null);
     } catch (e) {
@@ -79,14 +88,16 @@ function App() {
   };
 
   const handleGameClick = (game: Game) => {
-    setSelectedGameId(game.id); // Abre o modal de detalhes
+    setSelectedGameId(game.id);
   };
 
   const handleSwitchGame = (id: string) => {
-    setSelectedGameId(id); // Troca o jogo visualizado dentro do modal
+    setSelectedGameId(id);
   };
 
-  const closeDetails = () => setSelectedGameId(null);
+  const closeDetails = () => {
+    setSelectedGameId(null);
+  };
 
   // Props comuns passadas para as listas de jogos
   const commonGameActions = {
@@ -115,7 +126,7 @@ function App() {
         return (
           <Libraries
             games={games}
-            searchTerm={searchTerm}
+            searchTerm={debouncedSearchTerm}
             {...commonGameActions}
           />
         );
@@ -123,7 +134,7 @@ function App() {
         return (
           <Favorites
             games={games}
-            searchTerm={searchTerm}
+            searchTerm={debouncedSearchTerm}
             {...commonGameActions}
           />
         );
@@ -131,7 +142,7 @@ function App() {
         return (
           <Playlist
             allGames={games}
-            onGameClick={handleGameClick} // Reutiliza a função que abre o modal
+            onGameClick={handleGameClick}
             profileCache={profileCache}
           />
         );

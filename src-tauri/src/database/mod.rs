@@ -12,6 +12,9 @@ pub struct AppState {
 pub fn init_db(state: State<AppState>) -> Result<String, String> {
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
 
+    // === TABELAS BÁSICAS ===
+
+    // Tabela da Biblioteca de Jogos
     conn.execute(
         "CREATE TABLE IF NOT EXISTS games (
             id TEXT PRIMARY KEY,
@@ -43,25 +46,30 @@ pub fn init_db(state: State<AppState>) -> Result<String, String> {
     )
     .map_err(|e| e.to_string())?;
 
+    // === ÍNDICES OTIMIZADOS ===
+
+    // Índice para filtro de favoritos
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_favorite ON games(favorite)",
         [],
     )
     .map_err(|e| e.to_string())?;
 
+    // Índice para busca case-insensitive por nome
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_name ON games(name COLLATE NOCASE)",
         [],
     )
     .map_err(|e| e.to_string())?;
 
+    // Índice para filtro por plataforma
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_platform ON games(platform)",
         [],
     )
     .map_err(|e| e.to_string())?;
 
-    // Índice para ordenar por data de adição rapidamente na wishlist
+    // Índice para ordenação por data de adição na wishlist
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_wishlist_added ON wishlist(added_at)",
         [],

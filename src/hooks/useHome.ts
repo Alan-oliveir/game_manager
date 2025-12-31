@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { RawgGame, Game, UserProfile } from "../types";
+import { useEffect, useMemo, useState } from "react";
+import { Game, RawgGame, UserProfile } from "../types";
 import { useRecommendation } from "./useRecommendation";
 import { trendingService } from "../services/trendingService";
 
@@ -52,6 +52,7 @@ export function useHome({
         setLoadingTrending(false);
       }
     }
+
     fetchTrendingIfNeeded();
   }, [trendingCache]); // Roda se o cache mudar ou montar
 
@@ -68,10 +69,11 @@ export function useHome({
     .sort((a, b) => b.playtime - a.playtime)
     .slice(0, 5);
 
-  // 3. Recomendado (Backlog)
-  let backlogRecommendations: Game[] = [];
-  if (profile) {
-    backlogRecommendations = library
+  // 3. Recomendações
+  const backlogRecommendations = useMemo(() => {
+    if (!profile) return [];
+
+    return library
       .filter((g) => g.playtime === 0)
       .sort((a, b) => {
         const genresA = a.genre
@@ -83,27 +85,37 @@ export function useHome({
         return calculateAffinity(genresB) - calculateAffinity(genresA);
       })
       .slice(0, 5);
-  }
+  }, [library, profile, calculateAffinity]);
 
   // 4. Mais Jogados
   const mostPlayed = [...library]
     .sort((a, b) => b.playtime - a.playtime)
     .slice(0, 3);
 
-  // 5. Gêneros
-  const genreStats = library.reduce((acc, game) => {
-    if (game.genre) {
-      game.genre.split(",").forEach((g) => {
-        const clean = g.trim();
-        if (clean !== "Desconhecido") acc[clean] = (acc[clean] || 0) + 1;
-      });
-    }
-    return acc;
-  }, {} as Record<string, number>);
+  // 5. Gêneros Mais Comuns
+  const genreStats = useMemo(
+    () =>
+      library.reduce((acc, game) => {
+        if (game.genre) {
+          game.genre.split(",").forEach((g) => {
+            const clean = g.trim();
+            if (clean !== "Desconhecido") {
+              acc[clean] = (acc[clean] || 0) + 1;
+            }
+          });
+        }
+        return acc;
+      }, {} as Record<string, number>),
+    [library]
+  );
 
-  const topGenres = Object.entries(genreStats)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 6);
+  const topGenres = useMemo(
+    () =>
+      Object.entries(genreStats)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 6),
+    [genreStats]
+  );
 
   return {
     stats: { totalGames, totalPlaytime, totalFavorites },
