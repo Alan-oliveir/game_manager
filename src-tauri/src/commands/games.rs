@@ -3,6 +3,7 @@ use crate::database::AppState;
 use crate::models;
 use rusqlite::params;
 use tauri::State;
+use url::Url;
 
 #[tauri::command]
 pub fn add_game(
@@ -26,15 +27,16 @@ pub fn add_game(
         ));
     }
 
-    if let Some(ref url) = cover_url {
-        if url.len() > constants::MAX_URL_LENGTH {
+    if let Some(ref url_str) = cover_url {
+        if url_str.len() > constants::MAX_URL_LENGTH {
             return Err(format!(
                 "URL da capa muito longa (máximo {} caracteres)",
                 constants::MAX_URL_LENGTH
             ));
         }
-        if !url.is_empty() && !url.starts_with("http://") && !url.starts_with("https://") {
-            return Err("URL da capa deve começar com http:// ou https://".to_string());
+        let url = Url::parse(url_str).map_err(|_| "URL inválida ou mal formatada.")?;
+        if url.scheme() != "http" && url.scheme() != "https" {
+            return Err("A URL deve ser HTTP ou HTTPS.".to_string());
         }
     }
 
@@ -93,10 +95,10 @@ pub fn add_game(
     }
 
     conn.execute(
-        "INSERT INTO games (id, name, genre, platform, cover_url, playtime, rating) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        params![id, name, genre, platform, cover_url, playtime, rating],
-    )
-        .map_err(|e| e.to_string())?;
+            "INSERT INTO games (id, name, genre, platform, cover_url, playtime, rating) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![id, name, genre, platform, cover_url, playtime, rating],
+        )
+            .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -201,10 +203,10 @@ pub fn update_game(
     let conn = state.db.lock().map_err(|_| "Falha ao bloquear mutex")?;
 
     conn.execute(
-        "UPDATE games SET name = ?1, genre = ?2, platform = ?3, cover_url = ?4, playtime = ?5, rating = ?6 WHERE id = ?7",
-        params![name, genre, platform, cover_url, playtime, rating, id],
-    )
-        .map_err(|e| e.to_string())?;
+            "UPDATE games SET name = ?1, genre = ?2, platform = ?3, cover_url = ?4, playtime = ?5, rating = ?6 WHERE id = ?7",
+            params![name, genre, platform, cover_url, playtime, rating, id],
+        )
+            .map_err(|e| e.to_string())?;
 
     Ok(())
 }

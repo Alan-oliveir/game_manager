@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Store } from "@tauri-apps/plugin-store";
 import { Game } from "../types";
 
+const STORE_FILENAME = "playlist.store";
 const STORE_KEY = "user_playlist_queue";
 
 export function usePlaylist(allGames: Game[]) {
@@ -11,7 +12,7 @@ export function usePlaylist(allGames: Game[]) {
   useEffect(() => {
     async function loadQueue() {
       try {
-        const store = await Store.load(".settings.dat");
+        const store = await Store.load(STORE_FILENAME);
         const saved = await store.get<string[]>(STORE_KEY);
         if (saved) {
           setQueueIds(saved);
@@ -29,7 +30,7 @@ export function usePlaylist(allGames: Game[]) {
   const saveQueue = async (newQueue: string[]) => {
     setQueueIds(newQueue);
     try {
-      const store = await Store.load(".settings.dat");
+      const store = await Store.load(STORE_FILENAME);
       await store.set(STORE_KEY, newQueue);
       await store.save();
     } catch (e) {

@@ -120,7 +120,7 @@ export default function Settings({ onLibraryUpdate }: SettingsProps) {
               </h3>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Importa jogos básicos da sua conta.
+              Importa os jogos da sua conta.
             </p>
             <Button
               onClick={actions.importLibrary}
