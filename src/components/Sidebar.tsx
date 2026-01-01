@@ -6,6 +6,7 @@ import {
   Settings,
   ShoppingCart,
   TrendingUp,
+  Menu,
 } from "lucide-react";
 import { Game } from "../types";
 
@@ -31,14 +32,21 @@ export default function Sidebar({
   games,
 }: SidebarProps) {
   return (
-    <aside className="w-64 bg-sidebar border-r border-sidebar-border h-screen flex flex-col">
+    <aside className="w-20 md:w-64 bg-sidebar border-r border-sidebar-border h-screen flex flex-col transition-all duration-300 ease-in-out shrink-0">
       {/* Logo/Header */}
-      <div className="p-6 border-b border-sidebar-border">
-        <h1 className="text-2xl font-bold text-sidebar-foreground">Playlite</h1>
+      <div className="h-16 flex items-center justify-center md:justify-start md:px-6 border-b border-sidebar-border">
+        {/* Mostra Texto em telas grandes */}
+        <h1 className="hidden md:block text-2xl font-bold text-sidebar-foreground truncate">
+          Playlite
+        </h1>
+        {/* Mostra Ícone em telas pequenas */}
+        <div className="md:hidden text-sidebar-foreground">
+          <Menu size={24} />
+        </div>
       </div>
 
       {/* Menu Items */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-3 md:p-4 space-y-2 overflow-y-auto custom-scrollbar">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
@@ -47,8 +55,9 @@ export default function Sidebar({
             <button
               key={item.id}
               onClick={() => onSectionChange(item.id)}
+              title={item.label} // Tooltip nativo para quando estiver colapsado
               className={`
-                w-full flex items-center gap-3 px-4 py-3 rounded-lg
+                w-full flex items-center justify-center md:justify-start gap-3 px-3 py-3 rounded-lg
                 transition-all duration-200
                 ${
                   isActive
@@ -57,25 +66,31 @@ export default function Sidebar({
                 }
               `}
             >
-              <Icon size={20} />
-              <span>{item.label}</span>
+              {/* Ícone fixo */}
+              <Icon size={22} className="shrink-0" />
+              {/* Texto escondido no mobile, visível no desktop */}
+              <span className="hidden md:block truncate text-lg">
+                {item.label}
+              </span>
             </button>
           );
         })}
       </nav>
 
       {/* User Info */}
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+      <div className="p-3 md:p-4 border-t border-sidebar-border">
+        <div className="flex items-center justify-center md:justify-start gap-3 px-1 md:px-4 py-2">
+          <div className="w-8 h-8 md:w-10 md:h-10 shrink-0 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm md:text-base">
             U
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-sidebar-foreground">
+
+          {/* Info escondida no mobile */}
+          <div className="hidden md:block flex-1 overflow-hidden">
+            <p className="text-base text-sidebar-foreground truncate">
               Usuário
             </p>
-            <p className="text-xs text-muted-foreground">
-              Biblioteca: {games.length} {games.length === 1 ? "jogo" : "jogos"}
+            <p className="text-sm text-muted-foreground truncate">
+              {games.length} {games.length === 1 ? "jogo" : "jogos"}
             </p>
           </div>
         </div>

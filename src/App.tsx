@@ -184,6 +184,7 @@ function App() {
           onAddGame={openAddModal}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
+          activeSection={activeSection}
         />
         {renderContent()}
       </main>
