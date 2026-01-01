@@ -202,7 +202,7 @@ export default function Trending(props: TrendingProps) {
       </div>
 
       {/* 3. GRID DE SUGESTÕES (TRENDING) */}
-      <div className="p-8 max-w-7xl mx-auto">
+      <div className="px-6 py-8 max-w-7xl mx-auto">
         <div className="flex items-center gap-2 mb-6">
           <div className="p-2 bg-green-500/10 rounded-lg text-green-400">
             <TrendingUp size={20} />
@@ -262,7 +262,7 @@ export default function Trending(props: TrendingProps) {
 
       {/* 4. LANÇAMENTOS AGUARDADOS */}
       {upcomingGames.length > 0 && (
-        <div className="p-8 max-w-7xl mx-auto pt-0">
+        <div className="px-6 max-w-7xl mx-auto">
           <div className="flex items-center gap-2 mb-6">
             <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
               <Clock size={20} />
