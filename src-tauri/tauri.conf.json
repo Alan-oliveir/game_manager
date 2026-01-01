@@ -35,6 +35,9 @@
       }
     ],
     "security": {
+      "capabilities": [
+        "default"
+      ],
       "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://cdn.cloudflare.steamstatic.com https://media.rawg.io; connect-src 'self' https://api.steampowered.com https://store.steampowered.com https://api.rawg.io https://www.cheapshark.com"
     }
   },

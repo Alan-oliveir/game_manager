@@ -1,0 +1,1340 @@
+{
+  "version": 1,
+  "date": "2026-01-01T18:48:39.850014700-03:00",
+  "games": [
+    {
+      "id": "70",
+      "name": "Half-Life",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/70/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "21690",
+      "name": "Resident Evil 5",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/21690/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "29900",
+      "name": "Dark Sector",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/29900/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "40990",
+      "name": "Mafia",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/40990/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "43110",
+      "name": "Metro 2033",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/43110/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "43160",
+      "name": "Metro: Last Light Complete Edition",
+      "genre": "Desconhecido",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/43160/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "46500",
+      "name": "Syberia",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/46500/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "46510",
+      "name": "Syberia 2",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/46510/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "49520",
+      "name": "Borderlands 2",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/49520/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "65790",
+      "name": "Arma: Cold War Assault",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/65790/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "94300",
+      "name": "The Dream Machine",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/94300/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "204450",
+      "name": "Call of Juarez Gunslinger",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/204450/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "208140",
+      "name": "ENDLESS™ Space - Definitive Edition",
+      "genre": "Estratégia",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/208140/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "219950",
+      "name": "NiGHTS into Dreams...",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/219950/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "221040",
+      "name": "Resident Evil 6",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/221040/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "222480",
+      "name": "Resident Evil Revelations",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/222480/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "226620",
+      "name": "Desktop Dungeons",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/226620/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "231430",
+      "name": "Company of Heroes 2",
+      "genre": "Estratégia",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/231430/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "235900",
+      "name": "RPG Maker XP",
+      "genre": "RPG",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/235900/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "241930",
+      "name": "Middle-earth™: Shadow of Mordor™",
+      "genre": "Desconhecido",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/241930/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "246740",
+      "name": "Huntsman - The Orphanage Halloween Edition",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/246740/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "249050",
+      "name": "Dungeon of the ENDLESS™",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/249050/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "254700",
+      "name": "Resident Evil 4 (2005)",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/254700/library_600x900.jpg",
+      "playtime": 2,
+      "rating": 4,
+      "favorite": false
+    },
+    {
+      "id": "257400",
+      "name": "Fuse",
+      "genre": "Animação e modelagem",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/257400/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "261880",
+      "name": "Corporate Lifestyle Simulator",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/261880/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "282800",
+      "name": "100% Orange Juice",
+      "genre": "Indie",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/282800/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "283270",
+      "name": "Jagged Alliance Gold",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/283270/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "287290",
+      "name": "Resident Evil Revelations 2",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/287290/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "289130",
+      "name": "ENDLESS™ Legend",
+      "genre": "RPG",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/289130/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "291390",
+      "name": "Three Dead Zed",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/291390/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "297130",
+      "name": "Titan Souls",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/297130/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "304240",
+      "name": "Resident Evil",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/304240/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "321270",
+      "name": "UNLOVED",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/321270/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "339340",
+      "name": "Resident Evil 0",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/339340/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "341310",
+      "name": "Greyfox",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/341310/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "346110",
+      "name": "ARK: Survival Evolved",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/346110/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "356190",
+      "name": "Middle-earth™: Shadow of War™",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/356190/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "364210",
+      "name": "Sierra Ops",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/364210/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "377160",
+      "name": "Fallout 4",
+      "genre": "RPG",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/377160/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "383180",
+      "name": "Dead Island Riptide Definitive Edition",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/383180/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "383270",
+      "name": "Hue",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/383270/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "384310",
+      "name": "Dead In Bermuda",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/384310/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "390290",
+      "name": "Bulb Boy",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/390290/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "392110",
+      "name": "ENDLESS™ Space 2",
+      "genre": "Estratégia",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/392110/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "396160",
+      "name": "Secret Of Magia",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/396160/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "399790",
+      "name": "Destiny Warriors",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/399790/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "407230",
+      "name": "Legend of Mysteria",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/407230/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "407530",
+      "name": "ARK: Survival Of The Fittest",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/407530/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "410110",
+      "name": "12 is Better Than 6",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/410110/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "418370",
+      "name": "Resident Evil 7 Biohazard",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/418370/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "418670",
+      "name": "Pankapu",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/418670/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "420740",
+      "name": "The Deed",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/420740/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "424840",
+      "name": "Little Nightmares",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/424840/library_600x900.jpg",
+      "playtime": 2,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "435120",
+      "name": "Rusty Lake Hotel",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/435120/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "439250",
+      "name": "Space Pilgrim Episode III: Delta Pavonis",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/439250/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "442070",
+      "name": "Drawful 2",
+      "genre": "Casual",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/442070/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "443910",
+      "name": "TGV Voyages Train Simulator",
+      "genre": "Simulação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/443910/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "460960",
+      "name": "The Deed: Dynasty",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/460960/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "462960",
+      "name": "Caveman World: Mountains of Unga Boonga",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/462960/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "464920",
+      "name": "Surviving Mars",
+      "genre": "Simulação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/464920/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "475150",
+      "name": "Titan Quest Anniversary Edition",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/475150/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "475550",
+      "name": "Beholder",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/475550/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "481870",
+      "name": "Mini Thief",
+      "genre": "Casual",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/481870/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "485450",
+      "name": "Ninja Stealth",
+      "genre": "Casual",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/485450/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "489630",
+      "name": "Warhammer 40,000: Gladius - Relics of War",
+      "genre": "Estratégia",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/489630/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "493540",
+      "name": "Figment",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/493540/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "503560",
+      "name": "911 Operator",
+      "genre": "Casual",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/503560/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "520720",
+      "name": "Dear Esther: Landmark Edition",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/520720/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "537800",
+      "name": "Bomber Crew",
+      "genre": "Simulação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/537800/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "544610",
+      "name": "Battlestar Galactica Deadlock",
+      "genre": "Estratégia",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/544610/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "552990",
+      "name": "World of Warships",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/552990/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "556130",
+      "name": "Drones, The Human Condition",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/556130/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "557180",
+      "name": "League of Maidens",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/557180/library_600x900.jpg",
+      "playtime": 14,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "561770",
+      "name": "Just Ignore Them",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/561770/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "569610",
+      "name": "Distant Space",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/569610/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "571310",
+      "name": "SteamWorld Dig 2",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/571310/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "582660",
+      "name": "Black Desert",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/582660/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "585690",
+      "name": "Minimalism",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/585690/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "616560",
+      "name": "Ultimate Epic Battle Simulator",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/616560/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "640890",
+      "name": "Will Glow the Wisp",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/640890/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "660160",
+      "name": "Field of Glory II",
+      "genre": "Simulação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/660160/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "699920",
+      "name": "Despotism 3k",
+      "genre": "Indie",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/699920/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "706220",
+      "name": "Black Desert SA (Retired)",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/706220/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "729460",
+      "name": "Distant Space 2",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/729460/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "729660",
+      "name": "Blackout Z: Slaughterhouse Edition",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/729660/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "729720",
+      "name": "Zomborg",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/729720/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "740240",
+      "name": "Snake Eyes Dungeon",
+      "genre": "Casual",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/740240/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "862740",
+      "name": "OneShift",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/862740/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "883710",
+      "name": "Resident Evil 2",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/883710/library_600x900.jpg",
+      "playtime": 1,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "897630",
+      "name": "Death Fungeon",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/897630/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "928840",
+      "name": "Cybarian: The Time Travelling Warrior",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/928840/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "952060",
+      "name": "Resident Evil 3",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/952060/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "952070",
+      "name": "RESIDENT EVIL RESISTANCE",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/952070/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1022310",
+      "name": "Warhammer Underworlds - Shadespire Edition",
+      "genre": "Casual",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1022310/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1134700",
+      "name": "Wild Terra 2: New Lands",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1134700/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1140630",
+      "name": "Red Wings",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1140630/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1144770",
+      "name": "SLUDGE LIFE",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1144770/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1180660",
+      "name": "Tell Me Why",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1180660/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1196590",
+      "name": "Resident Evil Village",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1196590/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1200580",
+      "name": "One Gun Guy",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1200580/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1236300",
+      "name": "Resident Evil Re:Verse",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1236300/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1333350",
+      "name": "Angel Legion: LSP Idle RPG",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1333350/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1335200",
+      "name": "Action Taimanin",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1335200/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1455900",
+      "name": "Plunder Panic",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1455900/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1486630",
+      "name": "Intravenous",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1486630/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1507190",
+      "name": "Machinika Museum",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1507190/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1510580",
+      "name": "Toy Tinker Simulator",
+      "genre": "Indie",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1510580/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1515950",
+      "name": "Capcom Arcade Stadium",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1515950/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1703140",
+      "name": "Isle of Jura",
+      "genre": "Casual",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1703140/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1712840",
+      "name": "Tiny Tina's Assault on Dragon Keep: A Wonderlands One-shot Adventure",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1712840/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1911390",
+      "name": "Knightfall: A Daring Journey",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1911390/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "1990740",
+      "name": "Barro GT",
+      "genre": "Casual",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/1990740/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "2139020",
+      "name": "What the Fog",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/2139020/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "2149010",
+      "name": "Little Nightmares Enhanced Edition",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/2149010/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "2308870",
+      "name": "Overlewd",
+      "genre": "Aventura",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/2308870/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "2337860",
+      "name": "Nubs!",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/2337860/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "2747770",
+      "name": "Wednesdays",
+      "genre": "Indie",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/2747770/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "2796010",
+      "name": "Party Club",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/2796010/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "2828500",
+      "name": "The Jackbox Megapicker",
+      "genre": "Gratuitos para Jogar",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/2828500/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "2955840",
+      "name": "Kitchen Wars",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/2955840/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "2963430",
+      "name": "Tunnel Escape Demo",
+      "genre": "Desconhecido",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/2963430/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "3028500",
+      "name": "Cakey's Twisted Bakery",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/3028500/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "3132100",
+      "name": "GIRLDIVERS Demo",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/3132100/library_600x900.jpg",
+      "playtime": 1,
+      "rating": 2,
+      "favorite": false
+    },
+    {
+      "id": "3463050",
+      "name": "Dreams of Aether",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/3463050/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "3690580",
+      "name": "Happy Island Fantasy Demo",
+      "genre": "Desconhecido",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/3690580/library_600x900.jpg",
+      "playtime": 0,
+      "rating": null,
+      "favorite": false
+    },
+    {
+      "id": "ac4a59f2-5b5e-42aa-aa22-372fdd2912db",
+      "name": "Elden Ring",
+      "genre": "Soulslike",
+      "platform": "Manual",
+      "cover_url": "https://www.vgdb.com.br/gf/fotos/games/media_52350/elden-ring-----52350.jpg",
+      "playtime": 100,
+      "rating": 4,
+      "favorite": true
+    },
+    {
+      "id": "de40c386-7de5-4600-852e-c7e25dede1ff",
+      "name": "The Witcher 3",
+      "genre": "RPG",
+      "platform": "Manual",
+      "cover_url": "https://static1.srcdn.com/wordpress/wp-content/uploads/2023/05/the-witcher-wild-hunt-poster.jpg",
+      "playtime": 60,
+      "rating": 5,
+      "favorite": true
+    },
+    {
+      "id": "2050650",
+      "name": "Resident Evil 4",
+      "genre": "Ação",
+      "platform": "Steam",
+      "cover_url": "https://cdn.cloudflare.steamstatic.com/steam/apps/2050650/library_600x900.jpg",
+      "playtime": 25,
+      "rating": 5,
+      "favorite": true
+    }
+  ],
+  "wishlist_game": [
+    {
+      "id": "481913",
+      "name": "Black Myth: Wukong",
+      "cover_url": "https://media.rawg.io/media/games/779/77988e89f7862afeede524420aa251b0.jpg",
+      "store_url": "https://www.cheapshark.com/redirect?dealID=BPftCZ8%2FuIS57MZeefFxPn%2BTFI6e6dlk1e0Z4Ul38Wo%3D",
+      "current_price": 59.99,
+      "lowest_price": 59.99,
+      "on_sale": false,
+      "localized_price": 229.99,
+      "localized_currency": "BRL",
+      "steam_app_id": 2358720,
+      "added_at": "2025-12-28 21:58:57"
+    },
+    {
+      "id": "471025",
+      "name": "Avowed",
+      "cover_url": "https://media.rawg.io/media/games/3d3/3d33abf32d9fb92b9f242917abe276ba.jpg",
+      "store_url": "https://www.cheapshark.com/redirect?dealID=DwEnVlhtor9fUfWgZPePPbhwq4ak5YaWEbHzFxAzKto%3D",
+      "current_price": 4.49,
+      "lowest_price": 4.49,
+      "on_sale": true,
+      "localized_price": 174.5,
+      "localized_currency": "BRL",
+      "steam_app_id": 2457220,
+      "added_at": "2026-01-01 00:59:37"
+    },
+    {
+      "id": "980502",
+      "name": "Kingdom Come: Deliverance II",
+      "cover_url": "https://media.rawg.io/media/games/d84/d842fec4ae7bbd782d330f678c980f7f.jpg",
+      "store_url": "https://www.cheapshark.com/redirect?dealID=6l5wqzx8%2BwB541WDhb57m5nmWepmS2s65BLdHV0Xc2U%3D",
+      "current_price": 27.0,
+      "lowest_price": 27.0,
+      "on_sale": true,
+      "localized_price": 149.5,
+      "localized_currency": "BRL",
+      "steam_app_id": 1771300,
+      "added_at": "2026-01-01 00:59:41"
+    },
+    {
+      "id": "303576",
+      "name": "Vampire: The Masquerade – Bloodlines 2",
+      "cover_url": "https://media.rawg.io/media/games/fb5/fb5e0fdb1f6bb0e8b5da5d08bb83a5fc.jpg",
+      "store_url": "https://www.cheapshark.com/redirect?dealID=RH5GwNUr7VL3JZm2Tf450hbdQ2VCOtICBDHpSWhurhU%3D",
+      "current_price": 43.17,
+      "lowest_price": 43.17,
+      "on_sale": true,
+      "localized_price": 175.99,
+      "localized_currency": "BRL",
+      "steam_app_id": 532790,
+      "added_at": "2026-01-01 01:08:50"
+    }
+  ]
+}

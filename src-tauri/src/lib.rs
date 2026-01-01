@@ -30,6 +30,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let app_data_dir = app
                 .path()
@@ -80,6 +81,9 @@ pub fn run() {
             commands::settings::list_secrets,
             commands::settings::get_secrets,
             commands::settings::set_secrets,
+            // Comandos de Backup e Restauração
+            commands::backup::export_database,
+            commands::backup::import_database,
             // Comandos de Recomendação
             commands::recommendations::get_user_profile,
             // Comandos de Janela
