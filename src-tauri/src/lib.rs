@@ -9,8 +9,20 @@ mod security;
 
 use rusqlite::Connection;
 use std::sync::Mutex;
-use tauri::Manager;
+use tauri::{Manager, Window};
 use tauri_plugin_shell;
+
+#[tauri::command]
+async fn close_splash(window: Window) {
+    if let Some(splash) = window.get_webview_window("splashscreen") {
+        splash.close().unwrap();
+    }
+
+    if let Some(main) = window.get_webview_window("main") {
+        main.show().unwrap();
+        main.set_focus().unwrap();
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -69,7 +81,9 @@ pub fn run() {
             commands::settings::get_secrets,
             commands::settings::set_secrets,
             // Comandos de Recomendação
-            commands::recommendations::get_user_profile
+            commands::recommendations::get_user_profile,
+            // Comandos de Janela
+            close_splash,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

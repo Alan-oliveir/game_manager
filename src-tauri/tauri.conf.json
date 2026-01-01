@@ -12,9 +12,26 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Playlite",
-        "width": 800,
+        "url": "index.html",
+        "maximized": true,
+        "visible": false,
+        "fullscreen": false,
+        "width": 900,
         "height": 600
+      },
+      {
+        "label": "splashscreen",
+        "title": "Loading Playlite...",
+        "url": "splash.html",
+        "decorations": false,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "fullscreen": false,
+        "center": true,
+        "width": 400,
+        "height": 300
       }
     ],
     "security": {
