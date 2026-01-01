@@ -38,7 +38,6 @@ export function useWishlist() {
     setIsRefreshing(true);
     try {
       await wishlistService.refreshPrices();
-      // Recarrega a lista para pegar os preços novos
       await fetchWishlist();
     } catch (error) {
       console.error(error);

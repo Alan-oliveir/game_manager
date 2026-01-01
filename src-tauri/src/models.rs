@@ -21,6 +21,9 @@ pub struct WishlistGame {
     pub current_price: Option<f64>, // Usamos Option porque pode ser nulo ou zero
     pub lowest_price: Option<f64>,
     pub on_sale: bool,
+    pub localized_price: Option<f64>,
+    pub localized_currency: Option<String>,
+    pub steam_app_id: Option<i32>,
     pub added_at: Option<String>, // SQLite retorna datas como String
 }
 
@@ -59,7 +62,7 @@ impl From<rusqlite::Error> for AppError {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GenreScore {
     pub name: String,
-    pub score: f32, // Pontuação calculada
+    pub score: f32,      // Pontuação calculada
     pub game_count: i32, // Quantos jogos desse gênero o usuário tem
 }
 

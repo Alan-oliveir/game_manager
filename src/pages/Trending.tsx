@@ -254,9 +254,6 @@ export default function Trending(props: TrendingProps) {
                     </Button>
                   </>
                 }
-                onClick={() =>
-                  openExternalLink(`https://rawg.io/games/${game.id}`)
-                }
               />
             );
           })}
@@ -291,18 +288,30 @@ export default function Trending(props: TrendingProps) {
                   }
                   badge={isMatch ? "PARA VOCÊ" : undefined}
                   actions={
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="rounded-full h-10 w-10 shadow-lg"
-                      onClick={() => handleWishlistClick(game)}
-                      title={"Adicionar à Lista de Desejos"}
-                    >
-                      <Heart size={14} />
-                    </Button>
-                  }
-                  onClick={() =>
-                    openExternalLink(`https://rawg.io/games/${game.id}`)
+                    <>
+                      {/* Botões Wishlist e Detalhes */}
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="rounded-full h-10 w-10 shadow-lg"
+                        onClick={() => handleWishlistClick(game)}
+                        title={"Lista de Desejos"}
+                      >
+                        <Heart size={16} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="rounded-full h-10 w-10 shadow-lg"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openExternalLink(`https://rawg.io/games/${game.id}`);
+                        }}
+                        title={"Ver Detalhes"}
+                      >
+                        <ExternalLink size={16} />
+                      </Button>
+                    </>
                   }
                 />
               );

@@ -77,7 +77,7 @@ export default function AddGameModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-125">
         <DialogHeader>
           <DialogTitle>
             {gameToEdit ? "Editar Jogo" : "Adicionar Jogo"}

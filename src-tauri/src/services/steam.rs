@@ -22,13 +22,6 @@ struct SteamApiResponse {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct StoreGameDetails {
-    pub short_description: Option<String>,
-    pub genres: Option<Vec<StoreGenre>>,
-    pub release_date: Option<StoreReleaseDate>,
-}
-
-#[derive(Debug, Deserialize)]
 pub struct StoreGenre {
     pub description: String,
 }
@@ -36,6 +29,24 @@ pub struct StoreGenre {
 #[derive(Debug, Deserialize)]
 pub struct StoreReleaseDate {
     pub date: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct StorePriceOverview {
+    pub currency: String,
+    pub initial: i64,
+    #[serde(rename = "final")]
+    pub final_price: i64,
+    #[serde(rename = "discount_percent")]
+    pub discount_percent: i32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct StoreGameDetails {
+    pub short_description: Option<String>,
+    pub genres: Option<Vec<StoreGenre>>,
+    pub release_date: Option<StoreReleaseDate>,
+    pub price_overview: Option<StorePriceOverview>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,6 +60,67 @@ pub struct ProcessedGameData {
     pub genre: String,
     pub description: String,
     pub release_date: String,
+}
+
+#[derive(Debug)]
+pub struct SteamPrice {
+    pub currency: String,
+    pub final_price: f64,
+    pub discount_percent: i32,
+}
+
+#[derive(Debug, Deserialize)]
+struct StoreSearchItem {
+    id: u32,
+    name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct StoreSearchResponse {
+    total: u32,
+    items: Option<Vec<StoreSearchItem>>, // Items pode ser null se nada for encontrado
+}
+
+#[derive(Debug, Deserialize)]
+struct SteamSearchItem {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct SteamSearchResult {
+    pub items: Vec<SteamSearchItem>,
+}
+
+pub async fn list_steam_games(api_key: &str, steam_id: &str) -> Result<Vec<SteamGame>, String> {
+    let url = format!(
+        "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={}&steamid={}&format=json&include_appinfo=true&include_played_free_games=true",
+        api_key, steam_id
+    );
+
+    println!("Buscando jogos na Steam..."); // Log para debug
+
+    let res = HTTP_CLIENT
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| format!("Erro na requisição: {}", e))?;
+
+    if !res.status().is_success() {
+        return Err(format!("Erro na API Steam: Código {}", res.status()));
+    }
+
+    let api_data: SteamApiResponse = res
+        .json()
+        .await
+        .map_err(|e| format!("Erro ao ler JSON da Steam: {}", e))?;
+
+    println!(
+        "Sucesso! Encontrados {} jogos.",
+        api_data.response.game_count
+    );
+
+    Ok(api_data.response.games)
 }
 
 pub async fn fetch_game_metadata(app_id: u32) -> Result<ProcessedGameData, String> {
@@ -96,33 +168,65 @@ pub async fn fetch_game_metadata(app_id: u32) -> Result<ProcessedGameData, Strin
     Err("Dados não encontrados".to_string())
 }
 
-pub async fn list_steam_games(api_key: &str, steam_id: &str) -> Result<Vec<SteamGame>, String> {
+pub async fn search_steam_app_id(game_name: &str) -> Result<Option<u32>, String> {
+    // API oficial de busca da loja Steam
     let url = format!(
-        "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={}&steamid={}&format=json&include_appinfo=true&include_played_free_games=true",
-        api_key, steam_id
+        "https://store.steampowered.com/api/storesearch/?term={}&l=english&cc=BR",
+        urlencoding::encode(game_name)
     );
-
-    println!("Buscando jogos na Steam..."); // Log para debug
 
     let res = HTTP_CLIENT
         .get(&url)
         .send()
         .await
-        .map_err(|e| format!("Erro na requisição: {}", e))?;
+        .map_err(|e| e.to_string())?;
 
     if !res.status().is_success() {
-        return Err(format!("Erro na API Steam: Código {}", res.status()));
+        return Ok(None);
     }
 
-    let api_data: SteamApiResponse = res
+    let data: StoreSearchResponse = res
         .json()
         .await
-        .map_err(|e| format!("Erro ao ler JSON da Steam: {}", e))?;
+        .map_err(|e| format!("Erro ao decodificar JSON da busca: {}", e))?;
 
-    println!(
-        "Sucesso! Encontrados {} jogos.",
-        api_data.response.game_count
+    if let Some(items) = data.items {
+        if let Some(first) = items.first() {
+            return Ok(Some(first.id));
+        }
+    }
+
+    Ok(None)
+}
+
+pub async fn fetch_price(app_id: u32) -> Result<Option<SteamPrice>, String> {
+    let url = format!(
+        "https://store.steampowered.com/api/appdetails?appids={}&cc=br&l=brazilian&filters=price_overview",
+        app_id
     );
 
-    Ok(api_data.response.games)
+    let res: HashMap<String, StoreAppResponse> = HTTP_CLIENT
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .json()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if let Some(entry) = res.get(&app_id.to_string()) {
+        if entry.success {
+            if let Some(data) = &entry.data {
+                if let Some(overview) = &data.price_overview {
+                    return Ok(Some(SteamPrice {
+                        currency: overview.currency.clone(),
+                        final_price: overview.final_price as f64 / 100.0,
+                        discount_percent: overview.discount_percent,
+                    }));
+                }
+            }
+        }
+    }
+
+    Ok(None)
 }

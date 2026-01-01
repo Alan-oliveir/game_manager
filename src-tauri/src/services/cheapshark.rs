@@ -13,6 +13,8 @@ pub struct CheapSharkDeal {
     pub retail_price: String,
     #[serde(rename = "savings")]
     pub savings: String,
+    #[serde(rename = "steamAppID")]
+    pub steam_app_id: Option<String>,
 }
 
 #[derive(Debug)]
@@ -20,6 +22,7 @@ pub struct DealResult {
     pub price: f64,
     pub url: String,
     pub on_sale: bool,
+    pub steam_app_id: Option<u32>,
 }
 
 pub async fn find_best_price(game_name: &str) -> Result<Option<DealResult>, String> {
@@ -48,6 +51,10 @@ pub async fn find_best_price(game_name: &str) -> Result<Option<DealResult>, Stri
     if let Some(deal) = deals.first() {
         let current_price = deal.price.parse::<f64>().unwrap_or(0.0);
         let retail_price = deal.retail_price.parse::<f64>().unwrap_or(0.0);
+        let steam_app_id = deal
+            .steam_app_id
+            .as_ref()
+            .and_then(|id| id.parse::<u32>().ok());
 
         // Link direto para o deal na CheapShark
         let deal_url = format!(
@@ -60,6 +67,7 @@ pub async fn find_best_price(game_name: &str) -> Result<Option<DealResult>, Stri
             url: deal_url,
             // Consideramos em oferta se o desconto for maior que 0.1% ou se o preço for menor
             on_sale: current_price < retail_price,
+            steam_app_id,
         }))
     } else {
         Ok(None) // Nenhum preço encontrado

@@ -33,6 +33,9 @@ export interface WishlistGame {
   current_price: number | null;
   lowest_price: number | null;
   on_sale: boolean;
+  localized_price: number | null;
+  localized_currency: string | null;
+  steam_app_id: number | null;
   added_at: string;
 }
 

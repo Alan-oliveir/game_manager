@@ -53,6 +53,7 @@ pub fn run() {
             commands::wishlist::get_wishlist,
             commands::wishlist::check_wishlist_status,
             commands::wishlist::refresh_prices,
+            commands::wishlist::search_steam_app_id,
             // Comandos de Integração (Steam/RAWG)
             commands::integrations::import_steam_library,
             commands::integrations::enrich_library,

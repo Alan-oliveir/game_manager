@@ -82,11 +82,28 @@ export default function Wishlist() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {games.map((game) => {
-          // Formatação do Preço para o subtítulo
-          const priceDisplay =
-            game.current_price !== null
-              ? `US$ ${game.current_price.toFixed(2)}`
-              : "Aguardando preço...";
+          let priceDisplay = "Aguardando preço...";
+
+          if (
+            game.localized_price !== null &&
+            game.localized_price !== undefined
+          ) {
+            const currency =
+              game.localized_currency === "BRL"
+                ? "R$"
+                : game.localized_currency || "R$";
+            priceDisplay = `${currency} ${game.localized_price.toFixed(2)}`;
+          } else if (
+            game.current_price !== null &&
+            game.current_price !== undefined
+          ) {
+            priceDisplay = `US$ ${game.current_price.toFixed(2)}`;
+          }
+
+          // Prioriza o link direto da Steam se tivermos o ID
+          const targetUrl = game.steam_app_id
+            ? `https://store.steampowered.com/app/${game.steam_app_id}/`
+            : game.store_url;
 
           return (
             <StandardGameCard
@@ -95,7 +112,6 @@ export default function Wishlist() {
               coverUrl={game.cover_url}
               subtitle={priceDisplay}
               badge={game.on_sale ? "OFERTA!" : undefined}
-              // Ações no Hover: Remover e Link Loja
               actions={
                 <>
                   <Button
@@ -112,12 +128,16 @@ export default function Wishlist() {
                     size="icon"
                     variant="secondary"
                     className="rounded-full h-10 w-10 shadow-lg"
-                    disabled={!game.store_url}
+                    // Desabilita apenas se não tiver nem ID da Steam nem URL da loja
+                    disabled={!targetUrl}
                     onClick={() => {
-                      if (game.store_url) openExternalLink(game.store_url);
+                      if (targetUrl) openExternalLink(targetUrl);
                     }}
-                    title="Ir para Loja"
+                    title={
+                      game.steam_app_id ? "Abrir na Steam" : "Ir para Loja"
+                    }
                   >
+                    {/* Se for link da Steam, podemos até mudar o ícone futuramente se quiser, mas ExternalLink serve bem */}
                     <ExternalLink size={16} />
                   </Button>
                 </>

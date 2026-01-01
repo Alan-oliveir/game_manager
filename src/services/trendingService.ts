@@ -15,12 +15,23 @@ export const trendingService = {
   },
 
   addToWishlist: async (game: RawgGame): Promise<void> => {
+    // Tenta buscar o steam_app_id antes de adicionar
+    let steamAppId: number | null = null;
+    try {
+      steamAppId = await invoke<number | null>("search_steam_app_id", {
+        gameName: game.name,
+      });
+    } catch (error) {
+      console.warn("Não foi possível buscar steam_app_id:", error);
+    }
+
     await invoke("add_to_wishlist", {
       id: game.id.toString(),
       name: game.name,
       coverUrl: game.background_image,
       storeUrl: null,
       currentPrice: null,
+      steamAppId: steamAppId,
     });
   },
 };

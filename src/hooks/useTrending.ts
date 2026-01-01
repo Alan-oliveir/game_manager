@@ -53,7 +53,6 @@ export function useTrending({
   // Carrega apenas na montagem inicial se não houver cache
   useEffect(() => {
     fetchTrending();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Lógica de Filtragem (Memoized para performance)
