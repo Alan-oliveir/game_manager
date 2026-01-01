@@ -10,8 +10,8 @@ interface HeroProps {
   rating?: number;
 
   // Slots de Conteúdo (Composição)
-  badges?: ReactNode; // Pílulas acima do título (Em Alta, Sugestão, etc)
-  actions?: ReactNode; // Botões principais (Jogar, Wishlist, Detalhes)
+  badges?: ReactNode;
+  actions?: ReactNode;
 
   // Navegação (Opcional)
   onNext?: () => void;
@@ -32,16 +32,15 @@ export default function Hero({
   showNavigation = false,
 }: HeroProps) {
   return (
-    <div className="relative h-125 bg-background group/hero">
+    <div className="relative h-125 bg-background group/hero overflow-hidden">
       {/* 1. BACKGROUND (Blur) */}
       <div
-        className="absolute inset-0 bg-cover bg-center transition-all duration-700"
+        className="absolute inset-0 bg-cover bg-center transition-all duration-700 scale-110 blur-xl brightness-50"
         style={{
           backgroundImage: `url(${backgroundUrl || coverUrl})`,
-          filter: "blur(20px) brightness(0.25)",
         }}
       />
-      <div className="absolute inset-0 bg-linear-to-t from-background via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
 
       {/* 2. NAVEGAÇÃO (Setas) */}
       {showNavigation && onPrev && onNext && (
