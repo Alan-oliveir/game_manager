@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Store } from "@tauri-apps/plugin-store";
 import { Game } from "../types";
 
@@ -8,7 +8,6 @@ export function usePlaylist(allGames: Game[]) {
   const [queueIds, setQueueIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carregar fila salva
   useEffect(() => {
     async function loadQueue() {
       try {
@@ -23,10 +22,10 @@ export function usePlaylist(allGames: Game[]) {
         setIsLoading(false);
       }
     }
+
     loadQueue();
   }, []);
 
-  // Salvar sempre que mudar
   const saveQueue = async (newQueue: string[]) => {
     setQueueIds(newQueue);
     try {
@@ -37,8 +36,6 @@ export function usePlaylist(allGames: Game[]) {
       console.error("Erro ao salvar playlist:", e);
     }
   };
-
-  // Ações da fila
 
   const addToPlaylist = (gameId: string) => {
     if (!queueIds.includes(gameId)) {
@@ -70,11 +67,16 @@ export function usePlaylist(allGames: Game[]) {
     saveQueue(newQueue);
   };
 
-  // Hidrata os IDs transformando em objetos Game completos
-  // Mantém a ordem da fila!
+  const reorderPlaylist = (startIndex: number, endIndex: number) => {
+    const newQueue = Array.from(queueIds);
+    const [removed] = newQueue.splice(startIndex, 1);
+    newQueue.splice(endIndex, 0, removed);
+    saveQueue(newQueue);
+  };
+
   const playlistGames = queueIds
     .map((id) => allGames.find((g) => g.id === id))
-    .filter((g): g is Game => !!g); // Remove undefined se algum jogo foi deletado da biblioteca
+    .filter((g): g is Game => !!g);
 
   return {
     playlistGames,
@@ -83,6 +85,7 @@ export function usePlaylist(allGames: Game[]) {
     removeFromPlaylist,
     moveUp,
     moveDown,
+    reorderPlaylist,
     isInPlaylist: (id: string) => queueIds.includes(id),
   };
 }

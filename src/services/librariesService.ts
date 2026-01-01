@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Game } from "../types";
 
-export const libraryService = {
+export const librariesService = {
   initDb: async (): Promise<void> => {
     await invoke("init_db");
   },

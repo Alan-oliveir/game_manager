@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Game } from "../types";
-import { libraryService } from "../services/libraryService";
+import { librariesService } from "../services/librariesService.ts";
 
 export function useLibraries() {
   const [games, setGames] = useState<Game[]>([]);
@@ -9,7 +9,7 @@ export function useLibraries() {
   // Função centralizada para recarregar jogos
   const refreshGames = useCallback(async () => {
     try {
-      const result = await libraryService.getGames();
+      const result = await librariesService.getGames();
       setGames(result);
     } catch (error) {
       console.error("Erro ao buscar jogos:", error);
@@ -20,7 +20,7 @@ export function useLibraries() {
   useEffect(() => {
     const init = async () => {
       try {
-        await libraryService.initDb();
+        await librariesService.initDb();
         await refreshGames();
       } catch (error) {
         console.error("Erro ao iniciar DB:", error);
@@ -44,15 +44,15 @@ export function useLibraries() {
     };
 
     if (editingId) {
-      await libraryService.updateGame(payload);
+      await librariesService.updateGame(payload);
     } else {
-      await libraryService.addGame(payload);
+      await librariesService.addGame(payload);
     }
     await refreshGames();
   };
 
   const removeGame = async (id: string) => {
-    await libraryService.deleteGame(id);
+    await librariesService.deleteGame(id);
     await refreshGames();
   };
 
@@ -61,7 +61,7 @@ export function useLibraries() {
     setGames((prev) =>
       prev.map((g) => (g.id === id ? { ...g, favorite: !g.favorite } : g))
     );
-    await libraryService.toggleFavorite(id);
+    await librariesService.toggleFavorite(id);
   };
 
   return {
