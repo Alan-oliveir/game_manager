@@ -1,8 +1,10 @@
 {
-  "name": "game_manager",
+  "name": "playlite",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
+  "author": "Alan Goncalves",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

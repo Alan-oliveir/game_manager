@@ -21,6 +21,8 @@ Este projeto nasceu para resolver esse problema real, ao mesmo tempo em que serv
 - Interface desktop inspirada na Microsoft Store
 - Sistema de favoritos, avaliações e tempo de jogo
 - Base para sistema de recomendação inteligente
+- Backup e Restauração de dados (JSON)
+- Segurança de credenciais (AES-256)
 
 ## 🛠️ Stack
 

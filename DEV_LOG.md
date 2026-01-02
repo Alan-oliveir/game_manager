@@ -427,7 +427,7 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 
 ---
 
-### 📅 30/12/2025 - Refatoração Visual, Playlist e Lançamento v1.0 (Playlite)
+### 📅 30/12/2025 - Refatoração Visual e Playlist
 
 **Tempo investido:** ~6h
 **Objetivo:** Implementar a funcionalidade de Playlist, unificar a identidade visual (Hero/Cards), resolver problemas de layout/scroll e finalizar a estrutura base do aplicativo.
@@ -464,6 +464,63 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 
 #### 📚 Recursos Úteis
 - [Shadcn UI - Sonner](https://ui.shadcn.com/docs/components/sonner)
+
+---
+
+# 📅 01/01/2026 - Polimento Final: Segurança, Performance e Resiliência
+
+**Tempo investido:** ~6h  
+**Objetivo:** Elevar o nível técnico do projeto (de "MVP funcional" para "Aplicação Robusta") focando em segurança de dados, otimização de performance e experiência do usuário (UX).
+
+## ✨ Implementações
+
+### Segurança (Criptografia Local)
+- Implementação de criptografia AES-256-GCM para proteger as API Keys armazenadas em disco (`secrets.dat`).
+- Criação de um módulo Rust dedicado (`security.rs`) para isolar a lógica criptográfica.
+- Abordagem de "Ofuscação" com chave fixa no binário para contornar limitações de assinatura de código no Windows (evitando falhas de Keyring).
+
+### Performance (Banco de Dados)
+- Uso de `Prepared Statements` nas rotinas de backup para máxima velocidade de inserção.
+
+### Resiliência (Backup & Restore)
+- Implementação completa de sistema de exportação e importação do banco de dados em formato JSON.
+- Uso de `BEGIN IMMEDIATE TRANSACTION` no restore para garantir integridade e evitar bloqueios (`database is locked`).
+
+### UX (Polimento)
+- **Splashscreen Nativa:** Implementação de uma janela de carregamento leve em HTML/Rust para eliminar a "tela branca" inicial e mascarar o tempo de boot do app.
+- **Responsividade:** Ajustes finos na Sidebar e Header para telas menores (ocultação de textos, ícone de menu).
+- **Feedback de Erros:** Criação de um sistema centralizado de mensagens de erro (`AppError` no Rust + `errorMessages.ts` no React) para diagnósticos amigáveis.
+
+## 🐛 Problemas Encontrados
+
+### 1. Erro de Dependência Desatualizada (Rust)
+- **Problema:** Conflitos de versão ao adicionar `serde` e `aes-gcm`.
+- **Solução:** Limpeza total do cache de build (`cargo clean`) e atualização do `Cargo.toml`.
+- **Aprendizado:** Em Rust, quando erros de compilação parecerem sem sentido, limpar o cache costuma ser a primeira solução.
+
+### 2. Aviso de Bundle Size no Frontend
+- **Problema:** Vite alertando sobre chunks > 500kB.
+- **Decisão:** Ignorado conscientemente. Para um app desktop rodando localmente (SSD), 500kB é carregado instantaneamente. Implementar Lazy Loading seria complexidade desnecessária (Overengineering).
+
+## 💡 Decisões Técnicas
+
+### Decisão: Não implementar cache manual de imagens de capa
+- **Justificativa:** O WebView do Tauri (baseado em Chromium) já gerencia cache HTTP de forma eficiente. Implementar um sistema de arquivos manual traria alta complexidade para pouco ganho perceptível. Adicionado apenas um fallback visual (`onError`) para links quebrados.
+
+### Decisão: Manter constantes de erro no Frontend (`errorMessages.ts`)
+- **Justificativa:** Facilita a manutenção e tradução futura, além de manter o código dos componentes limpo de "magic strings".
+
+## 📚 Recursos Úteis
+- [Rust AES-GCM Crate](https://docs.rs/aes-gcm/)
+- [SQLite Optimization (Transactions)](https://www.sqlite.org/lang_transaction.html)
+- [Tauri Multi-Window Guide (Splashscreen)](https://tauri.app/v1/guides/features/multiwindow)
+
+## ⏭️ Próxima Sessão
+- [ ] Gerar build final de Release (`.msi` / `.exe`)
+- [ ] Gravar GIF/Vídeo de demonstração para o README
+- [ ] Publicar release v1.0.0 no GitHub
+
+---
 
 #### ⏭️ Próxima Fase (Roadmap v2.0)
 - [ ] **IA:** Melhorar recomendação com explicações via LLM local ou API.
@@ -524,3 +581,5 @@ O objetivo era fugir do visual "página web" e criar uma experiência de aplicat
 
 *Autor: Alan de Oliveira Gonçalves*  
 *Última atualização: 30/12/2025*
+
+

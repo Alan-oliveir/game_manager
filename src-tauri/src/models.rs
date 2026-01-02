@@ -18,13 +18,13 @@ pub struct WishlistGame {
     pub name: String,
     pub cover_url: Option<String>,
     pub store_url: Option<String>,
-    pub current_price: Option<f64>, // Usamos Option porque pode ser nulo ou zero
+    pub current_price: Option<f64>,
     pub lowest_price: Option<f64>,
     pub on_sale: bool,
     pub localized_price: Option<f64>,
     pub localized_currency: Option<String>,
     pub steam_app_id: Option<i32>,
-    pub added_at: Option<String>, // SQLite retorna datas como String
+    pub added_at: Option<String>,
 }
 
 // Enum de erros personalizados para melhor diagnóstico

@@ -22,6 +22,12 @@ export const ERROR_MESSAGES = {
   STEAM_KEYS_REQUIRED: "Preencha e salve as chaves da Steam primeiro.",
   SAVE_ERROR: "Erro ao salvar",
 
+  // Erros de banco de dados
+  DatabaseError: "Houve um problema ao salvar no disco local.",
+
+  // Erros de rede
+  NetworkError: "Verifique sua conexão com a internet.",
+
   // Operações canceladas
   CANCELLED: "CANCELLED", // Erro especial que não deve ser mostrado ao usuário
 } as const;
@@ -66,6 +72,10 @@ export function parseBackupError(error: unknown): string {
   if (errorStr.includes("No such file")) {
     return ERROR_MESSAGES.FILE_NOT_FOUND;
   }
+
+  if (typeof error === 'object' && error !== null && 'type' in error && error.type === "DatabaseError") return ERROR_MESSAGES.DatabaseError;
+
+  if (typeof error === 'object' && error !== null && 'type' in error && error.type === "NetworkError") return ERROR_MESSAGES.NetworkError;
 
   // Erro genérico
   return errorStr;

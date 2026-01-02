@@ -1,9 +1,10 @@
 [package]
-name = "game_manager"
-version = "0.1.0"
-description = "A Tauri App"
+name = "Playlite"
+version = "1.0.0"
+description = "Game Manager Application with Tauri and Rust"
 authors = ["Alan Goncalves"]
 edition = "2021"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

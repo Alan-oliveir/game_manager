@@ -40,25 +40,14 @@ pub fn init_db(state: State<AppState>) -> Result<String, String> {
             current_price REAL,
             lowest_price REAL,
             on_sale BOOLEAN DEFAULT 0,
-            added_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            localized_price REAL,
+            localized_currency TEXT,
+            steam_app_id INTEGER
         )",
         [],
     )
     .map_err(|e| e.to_string())?;
-
-    // Novas colunas (caso atualize o schema): ignoramos erro de coluna duplicada
-    for stmt in [
-        "ALTER TABLE wishlist ADD COLUMN localized_price REAL",
-        "ALTER TABLE wishlist ADD COLUMN localized_currency TEXT",
-        "ALTER TABLE wishlist ADD COLUMN steam_app_id INTEGER",
-    ] {
-        if let Err(err) = conn.execute(stmt, []) {
-            let msg = err.to_string();
-            if !msg.contains("duplicate column name") {
-                return Err(msg);
-            }
-        }
-    }
 
     // === ÍNDICES OTIMIZADOS ===
 
