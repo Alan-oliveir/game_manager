@@ -18,7 +18,6 @@ export function useWishlist() {
     }
   }, []);
 
-  // Carrega ao montar
   useEffect(() => {
     fetchWishlist();
   }, [fetchWishlist]);
@@ -53,5 +52,6 @@ export function useWishlist() {
     isRefreshing,
     removeGame,
     refreshPrices,
+    refreshList: fetchWishlist,
   };
 }

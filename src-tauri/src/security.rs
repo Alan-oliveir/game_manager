@@ -7,7 +7,7 @@ use rand::RngCore;
 // NOTA IMPORTANTE:
 // Em um app comercial real, usariamos keyrings ou outro metodo seguro para armazenar a chave mestre.
 // Para este projeto desktop standalone, usamos uma chave obfuscada.
-const MASTER_KEY: &[u8; 32] = b"Playlist-fghjjkllzxcvbn4567890ab"; // 32 bytes para AES-256
+const MASTER_KEY: &[u8; 32] = b"Playlite-fghjjkllzxcvbn4567890ab"; // 32 bytes para AES-256
 
 /// Encripta uma string e retorna o resultado em Hex
 pub fn encrypt(data: &str) -> String {

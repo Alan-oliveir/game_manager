@@ -34,6 +34,7 @@ pub struct StoreReleaseDate {
 #[derive(Debug, Deserialize)]
 pub struct StorePriceOverview {
     pub currency: String,
+    #[allow(dead_code)]
     pub initial: i64,
     #[serde(rename = "final")]
     pub final_price: i64,
@@ -69,24 +70,28 @@ pub struct SteamPrice {
     pub discount_percent: i32,
 }
 
-#[derive(Debug, Deserialize)]
-struct StoreSearchItem {
-    id: u32,
-    name: String,
+#[derive(Debug, Deserialize, Serialize)]
+pub struct StoreSearchItem {
+    pub id: u32,
+    pub name: String,
+    pub tiny_image: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct StoreSearchResponse {
+    #[allow(dead_code)]
     total: u32,
     items: Option<Vec<StoreSearchItem>>, // Items pode ser null se nada for encontrado
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct SteamSearchItem {
     pub id: String,
     pub name: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct SteamSearchResult {
     pub items: Vec<SteamSearchItem>,
@@ -168,6 +173,7 @@ pub async fn fetch_game_metadata(app_id: u32) -> Result<ProcessedGameData, Strin
     Err("Dados não encontrados".to_string())
 }
 
+#[allow(dead_code)]
 pub async fn search_steam_app_id(game_name: &str) -> Result<Option<u32>, String> {
     // API oficial de busca da loja Steam
     let url = format!(
@@ -229,4 +235,26 @@ pub async fn fetch_price(app_id: u32) -> Result<Option<SteamPrice>, String> {
     }
 
     Ok(None)
+}
+
+// Nova função que retorna LISTA de resultados para o Modal
+pub async fn search_store(query: &str) -> Result<Vec<StoreSearchItem>, String> {
+    let url = format!(
+        "https://store.steampowered.com/api/storesearch/?term={}&l=english&cc=BR",
+        urlencoding::encode(query)
+    );
+
+    let res = HTTP_CLIENT
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !res.status().is_success() {
+        return Ok(Vec::new());
+    }
+
+    let data: StoreSearchResponse = res.json().await.map_err(|e| format!("Erro JSON: {}", e))?;
+
+    Ok(data.items.unwrap_or_default())
 }

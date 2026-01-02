@@ -148,7 +148,7 @@ pub async fn enrich_library(state: State<'_, AppState>) -> Result<String, String
         conn.execute("BEGIN TRANSACTION", [])
             .map_err(|e| format!("Erro ao iniciar transação: {}", e))?;
 
-        let mut updates_applied = 0;
+        let mut _updates_applied = 0;
         for (id, genre) in batch_updates {
             match conn.execute(
                 "UPDATE games SET genre = ?1 WHERE id = ?2",
@@ -156,7 +156,7 @@ pub async fn enrich_library(state: State<'_, AppState>) -> Result<String, String
             ) {
                 Ok(rows) => {
                     if rows > 0 {
-                        updates_applied += rows;
+                        _updates_applied += rows;
                     }
                 }
                 Err(e) => {

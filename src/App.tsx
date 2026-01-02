@@ -9,6 +9,7 @@ import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import AddGameModal from "./components/AddGameModal";
 import GameDetailsModal from "./components/GameDetailsModal.tsx";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Páginas
 import Libraries from "./pages/Libraries.tsx";
@@ -180,7 +181,10 @@ function App() {
           onSearchChange={setSearchTerm}
           activeSection={activeSection}
         />
-        {renderContent()}
+
+        <ErrorBoundary>
+          {renderContent()}
+        </ErrorBoundary>
       </main>
 
       <AddGameModal

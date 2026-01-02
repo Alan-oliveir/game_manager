@@ -15,7 +15,6 @@ export const trendingService = {
   },
 
   addToWishlist: async (game: RawgGame): Promise<void> => {
-    // Tenta buscar o steam_app_id antes de adicionar
     let steamAppId: number | null = null;
     try {
       steamAppId = await invoke<number | null>("search_steam_app_id", {

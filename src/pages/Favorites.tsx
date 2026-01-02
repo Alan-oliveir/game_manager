@@ -47,14 +47,13 @@ export default function Favorites({
     );
   }, [games, searchTerm]);
 
-  if (
-    displayedGames.length === 0 &&
-    games.filter((g) => g.favorite).length === 0
-  ) {
+  if (displayedGames.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground text-lg">
         <Heart className="w-16 h-16 mb-4 opacity-20" />
-        <p>Você ainda não tem favoritos.</p>
+        {searchTerm
+          ? "Nenhum favorito encontrado com os critérios de busca."
+          : "Adicione alguns jogos à sua lista de favoritos!"}
       </div>
     );
   }
