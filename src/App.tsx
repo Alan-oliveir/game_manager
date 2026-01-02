@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useMemo, useState } from "react";
 import { toast, Toaster } from "sonner";
 import { Game, RawgGame, UserProfile } from "./types";
 import { useLibraries } from "./hooks/useLibraries.ts";
@@ -24,11 +23,6 @@ function App() {
   // Hook Principal de Dados
   const { games, refreshGames, saveGame, removeGame, toggleFavorite } =
     useLibraries();
-
-  // Fecha a Splash Screen ao montar
-  useEffect(() => {
-    invoke("close_splash");
-  }, []);
 
   // Estado de Busca com Debounce
   const [searchTerm, setSearchTerm] = useState("");

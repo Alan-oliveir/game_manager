@@ -2,27 +2,15 @@ mod commands;
 mod constants;
 mod database;
 mod models;
+mod security;
 mod services;
 mod storage;
 mod utils;
-mod security;
 
 use rusqlite::Connection;
 use std::sync::Mutex;
-use tauri::{Manager, Window};
+use tauri::Manager;
 use tauri_plugin_shell;
-
-#[tauri::command]
-async fn close_splash(window: Window) {
-    if let Some(splash) = window.get_webview_window("splashscreen") {
-        splash.close().unwrap();
-    }
-
-    if let Some(main) = window.get_webview_window("main") {
-        main.show().unwrap();
-        main.set_focus().unwrap();
-    }
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -54,6 +42,7 @@ pub fn run() {
         })
         // Registra todos os comandos chamando a partir dos módulos
         .invoke_handler(tauri::generate_handler![
+            // Comando de Inicialização do Banco de Dados
             database::init_db,
             // Comandos de Jogos (CRUD)
             commands::games::add_game,
@@ -84,10 +73,8 @@ pub fn run() {
             // Comandos de Backup e Restauração
             commands::backup::export_database,
             commands::backup::import_database,
-            // Comandos de Recomendação
-            commands::recommendations::get_user_profile,
-            // Comandos de Janela
-            close_splash,
+            // Comando de Recomendação
+            commands::recommendations::get_user_profile
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

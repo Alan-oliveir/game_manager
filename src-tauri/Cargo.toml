@@ -1,6 +1,6 @@
 [package]
 name = "Playlite"
-version = "1.0.0"
+version = "1.0.1"
 description = "Game Manager Application with Tauri and Rust"
 authors = ["Alan Goncalves"]
 edition = "2021"

@@ -1,17 +1,18 @@
 import { useState } from "react";
 import {
+  ChartBar,
   Clock,
-  Gamepad2,
-  Heart,
-  Library,
-  Sparkles,
-  TrendingUp,
-  Play,
-  Trophy,
   Dna,
   ExternalLink,
-  ChartBar,
+  Gamepad2,
+  Heart,
   ImageOff,
+  Library,
+  Play,
+  Sparkles,
+  TrendingUp,
+  Trophy,
+  Loader2,
 } from "lucide-react";
 import { useHome } from "../hooks/useHome";
 import { Button } from "@/components/ui/button";
@@ -60,8 +61,21 @@ export default function Home({
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground">
-        Carregando sua central...
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 h-full animate-in fade-in duration-700">
+        <div className="relative flex items-center justify-center">
+          {/* Glow Effect no fundo */}
+          <div className="absolute inset-0 blur-xl bg-primary/20 rounded-full w-12 h-12" />
+          <Loader2 className="h-10 w-10 animate-spin text-primary relative z-10" />
+        </div>
+
+        <div className="flex flex-col items-center gap-1 text-center">
+          <p className="font-semibold text-foreground text-lg tracking-tight">
+            Playlite
+          </p>
+          <p className="text-sm text-muted-foreground animate-pulse">
+            Carregando sua Central...
+          </p>
+        </div>
       </div>
     );
   }
