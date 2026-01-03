@@ -7,6 +7,7 @@ mod services;
 mod storage;
 mod utils;
 
+use crate::utils::logger;
 use rusqlite::Connection;
 use std::sync::Mutex;
 use tauri::Manager;
@@ -20,6 +21,20 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            let app_handle = app.handle();
+            let log_dir = app_handle
+                .path()
+                .app_log_dir()
+                .expect("Falha ao pegar pasta de log");
+
+            std::fs::create_dir_all(&log_dir).expect("Falha ao criar pasta de logs");
+
+            let _guard = logger::init_logging(log_dir.clone());
+            // Armazena o guard no state do Tauri para manter vivo durante toda execução
+            app.manage(_guard);
+
+            tracing::info!("Aplicação iniciada! Logs em: {:?}", log_dir);
+
             let app_data_dir = app
                 .path()
                 .app_data_dir()
@@ -52,6 +67,10 @@ pub fn run() {
             commands::games::update_game,
             // Comandos da Lista de Desejos
             commands::wishlist::search_wishlist_game,
+            commands::wishlist::add_to_wishlist,
+            commands::wishlist::get_wishlist,
+            commands::wishlist::remove_from_wishlist,
+            commands::wishlist::check_wishlist_status,
             commands::wishlist::refresh_prices,
             // Comandos de Integração (Steam/RAWG)
             commands::integrations::import_steam_library,

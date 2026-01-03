@@ -2,11 +2,21 @@ use crate::constants;
 use crate::database::AppState;
 use crate::services::{rawg, steam};
 use crate::storage;
-
+use tracing::{info, error};
 use rusqlite::params;
 use std::time::Duration;
 use tauri::{AppHandle, State};
 use tokio::time::sleep;
+use crate::constants::STEAM_RATE_LIMIT_MS;
+
+#[derive(serde::Serialize)]
+pub struct ImportSummary {
+    pub success_count: i32,
+    pub error_count: i32,
+    pub total_processed: i32,
+    pub message: String,
+    pub errors: Vec<String>, // Lista de nomes que falharam
+}
 
 #[tauri::command]
 pub async fn import_steam_library(
@@ -92,7 +102,9 @@ pub async fn import_steam_library(
 }
 
 #[tauri::command]
-pub async fn enrich_library(state: State<'_, AppState>) -> Result<String, String> {
+pub async fn enrich_library(state: State<'_, AppState>) -> Result<ImportSummary, String> {
+    info!("Iniciando processo de enriquecimento de biblioteca...");
+
     let games_to_update = {
         let conn = state.db.lock().map_err(|_| "Mutex error")?;
         let mut stmt = conn
@@ -109,78 +121,68 @@ pub async fn enrich_library(state: State<'_, AppState>) -> Result<String, String
             let name: String = row.get(1).map_err(|e| e.to_string())?;
             games.push((id, name));
         }
-
         games
     };
 
     let total = games_to_update.len();
     if total == 0 {
-        return Ok("Todos os jogos Steam já estão atualizados!".to_string());
+        return Ok(ImportSummary {
+            success_count: 0,
+            error_count: 0,
+            total_processed: 0,
+            message: "Todos os jogos já estão atualizados.".to_string(),
+            errors: vec![],
+        });
     }
 
-    println!("Iniciando enriquecimento de {} jogos...", total);
+    info!("Encontrados {} jogos com metadados pendentes.", total);
 
     let mut batch_updates: Vec<(String, String)> = Vec::new();
     let mut success_count = 0;
-    let mut error_count = 0;
+    let mut failed_games = Vec::new();
 
-    for (id_str, name) in games_to_update {
+    // Loop de processamento
+    for (i, (id_str, name)) in games_to_update.iter().enumerate() {
         if let Ok(app_id) = id_str.parse::<u32>() {
             match steam::fetch_game_metadata(app_id).await {
                 Ok(metadata) => {
                     batch_updates.push((id_str.clone(), metadata.genre.clone()));
-                    println!("Metadata obtida: {} -> {}", name, metadata.genre);
+                    // Log menos verboso no console, detalhado no arquivo
+                    info!("Metadata OK ({}/{}): {} -> {}", i+1, total, name, metadata.genre);
                     success_count += 1;
                 }
                 Err(e) => {
-                    eprintln!("[ERRO] Falha ao buscar metadata para {}: {}", name, e);
-                    error_count += 1;
+                    error!("Falha metadata ({}/{}): {} - Erro: {}", i+1, total, name, e);
+                    failed_games.push(format!("{} ({})", name, e));
                 }
             }
 
-            sleep(Duration::from_millis(constants::STEAM_RATE_LIMIT_MS)).await;
+            sleep(Duration::from_millis(STEAM_RATE_LIMIT_MS)).await;
         }
     }
 
+    // Salvar no Banco
     if !batch_updates.is_empty() {
-        let conn = state.db.lock().map_err(|_| "Mutex error ao salvar batch")?;
+        let conn = state.db.lock().map_err(|_| "Mutex error ao salvar")?;
+        conn.execute("BEGIN TRANSACTION", []).map_err(|e| e.to_string())?;
 
-        conn.execute("BEGIN TRANSACTION", [])
-            .map_err(|e| format!("Erro ao iniciar transação: {}", e))?;
-
-        let mut _updates_applied = 0;
         for (id, genre) in batch_updates {
-            match conn.execute(
+            let _ = conn.execute(
                 "UPDATE games SET genre = ?1 WHERE id = ?2",
-                params![genre, id],
-            ) {
-                Ok(rows) => {
-                    if rows > 0 {
-                        _updates_applied += rows;
-                    }
-                }
-                Err(e) => {
-                    eprintln!("[WARN] Erro ao atualizar jogo {}: {}", id, e);
-                }
-            }
+                rusqlite::params![genre, id],
+            );
         }
 
-        conn.execute("COMMIT", []).map_err(|e| {
-            let _ = conn.execute("ROLLBACK", []);
-            format!("Erro ao commitar transação: {}", e)
-        })?;
+        conn.execute("COMMIT", []).map_err(|e| e.to_string())?;
+        info!("Transação de atualização salva no banco com sucesso.");
     }
 
-    let summary = if error_count > 0 {
-        format!(
-            "Processo finalizado. {} de {} jogos atualizados com sucesso ({} erros).",
-            success_count, total, error_count
-        )
-    } else {
-        format!(
-            "Processo finalizado. {} de {} jogos atualizados com sucesso!",
-            success_count, total
-        )
+    let summary = ImportSummary {
+        success_count,
+        error_count: failed_games.len() as i32,
+        total_processed: total as i32,
+        message: format!("Processamento concluído. {} sucessos, {} falhas.", success_count, failed_games.len()),
+        errors: failed_games,
     };
 
     Ok(summary)

@@ -1,6 +1,6 @@
 import {invoke} from "@tauri-apps/api/core";
 import {open, save} from "@tauri-apps/plugin-dialog";
-import {KeysBatch} from "../types";
+import {KeysBatch, ImportSummary} from "../types";
 import {ERROR_MESSAGES, parseBackupError} from "@/constants/errorMessages.ts";
 
 export const settingsService = {
@@ -23,8 +23,8 @@ export const settingsService = {
         return await invoke<string>("import_steam_library", {steamId, apiKey});
     },
 
-    enrichLibrary: async (): Promise<string> => {
-        return await invoke<string>("enrich_library");
+    enrichLibrary: async (): Promise<ImportSummary> => {
+        return await invoke<ImportSummary>("enrich_library");
     },
 
     exportDatabase: async (): Promise<string> => {

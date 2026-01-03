@@ -45,6 +45,14 @@ export interface KeysBatch {
   rawg_api_key: string;
 }
 
+export interface ImportSummary {
+  success_count: number;
+  error_count: number;
+  total_processed: number;
+  message: string;
+  errors: string[];
+}
+
 export interface GameDetails {
   description_raw: string; // Descrição em texto puro
   metacritic: number | null;

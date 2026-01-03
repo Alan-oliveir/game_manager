@@ -83,8 +83,18 @@ export function useSettings(onLibraryUpdate: () => void) {
         setLoading((prev) => ({...prev, enriching: true}));
         setStatus({type: null, message: "Buscando dados extras..."});
         try {
-            const msg = await settingsService.enrichLibrary();
-            setStatus({type: "success", message: msg});
+            const summary = await settingsService.enrichLibrary();
+
+            // Cria mensagem detalhada do resultado
+            let detailedMessage = summary.message;
+            if (summary.error_count > 0) {
+                detailedMessage += ` | ${summary.error_count} falhas detectadas.`;
+            }
+
+            setStatus({
+                type: summary.error_count === 0 ? "success" : "error",
+                message: detailedMessage
+            });
             onLibraryUpdate();
         } catch (error) {
             setStatus({type: "error", message: String(error)});

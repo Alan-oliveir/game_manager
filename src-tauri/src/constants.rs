@@ -25,7 +25,7 @@ pub const MIN_RATING: i32 = 1;
 pub const MAX_RATING: i32 = 5;
 
 // Rate limiting
-pub const STEAM_RATE_LIMIT_MS: u64 = 1500;
+pub const STEAM_RATE_LIMIT_MS: u64 = 500;
 #[allow(dead_code)]
 pub const RAWG_PAGE_SIZE: u32 = 20;
 

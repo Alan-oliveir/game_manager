@@ -1,2 +1,2 @@
 pub mod http_client;
-mod logger;
+pub mod logger;
