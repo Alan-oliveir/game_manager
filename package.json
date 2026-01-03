@@ -1,7 +1,7 @@
 {
   "name": "playlite",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "author": "Alan Goncalves",
   "license": "MIT",

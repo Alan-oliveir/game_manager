@@ -8,6 +8,11 @@ use tokio::time::sleep;
 use tracing::{info, error};
 
 #[tauri::command]
+pub async fn search_wishlist_game(query: String) -> Result<Vec<StoreSearchItem>, String> {
+    steam::search_store(&query).await
+}
+
+#[tauri::command]
 pub fn add_to_wishlist(
     state: State<AppState>,
     id: String,
@@ -98,11 +103,6 @@ pub fn check_wishlist_status(state: State<AppState>, id: String) -> Result<bool,
         .unwrap_or(0);
 
     Ok(count > 0)
-}
-
-#[tauri::command]
-pub async fn search_wishlist_game(query: String) -> Result<Vec<StoreSearchItem>, String> {
-    steam::search_store(&query).await
 }
 
 #[tauri::command]
