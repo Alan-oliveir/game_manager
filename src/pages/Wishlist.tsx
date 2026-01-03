@@ -62,7 +62,7 @@ export default function Wishlist() {
           Vá para a aba "Em Alta" para descobrir novos jogos.
         </p>
         <Button onClick={() => setShowAddModal(true)} variant="outline">
-          <Plus className="h-4 w-4" /> Adicionar na Lista
+          <Plus /> Adicionar na Lista
         </Button>
 
         <AddWishlistModal

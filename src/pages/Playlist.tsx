@@ -165,6 +165,7 @@ export default function Playlist({
                         addToPlaylist(game.id);
                         toast.success(`${game.name} na fila!`);
                       }}
+                      title="Adicionar à fila"
                     >
                       <PlusCircle size={14} />{" "}
                       <span className="text-xs font-bold">Add</span>

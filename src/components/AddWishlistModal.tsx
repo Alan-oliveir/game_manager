@@ -68,7 +68,7 @@ export default function AddWishlistModal({
 
         <div className="flex gap-2 my-2">
           <Input
-            placeholder="Nome do jogo na Steam..."
+            placeholder="Nome do jogo..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -86,7 +86,7 @@ export default function AddWishlistModal({
           {results.map((game) => (
             <div
               key={game.id}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 border border-transparent hover:border-border transition-colors"
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 border border-transparent hover:border-border transition-colors mr-2"
             >
               <div className="w-12 h-12 shrink-0 bg-background rounded overflow-hidden">
                 {game.tiny_image ? (
@@ -107,7 +107,6 @@ export default function AddWishlistModal({
               </div>
               <Button
                 size="sm"
-                variant="ghost"
                 disabled={addingId === game.id}
                 onClick={() => handleAdd(game)}
               >

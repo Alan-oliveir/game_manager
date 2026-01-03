@@ -76,7 +76,7 @@ export default function PlaylistItem({
         </div>
       </div>
 
-      {/* 2. Capa Pequena */}
+      {/* Capa Pequena */}
       <div className="relative h-16 w-12 shrink-0 rounded overflow-hidden bg-muted cursor-pointer group/img shadow-sm">
         {game.cover_url ? (
           <img
@@ -102,7 +102,7 @@ export default function PlaylistItem({
         </div>
       </div>
 
-      {/* 3. Info Principal */}
+      {/* Info Principal */}
       <div className="flex-1 min-w-0 cursor-pointer select-none">
         <h4 className="font-semibold truncate group-hover:text-primary transition-colors text-sm">
           {game.name}
@@ -130,7 +130,7 @@ export default function PlaylistItem({
           title="Jogar Agora"
         >
           <Play size={12} className="fill-current" />{" "}
-          <span className="text-xs font-bold">JOGAR</span>
+          <span className="text-xs font-bold">Play</span>
         </Button>
         <Button
           variant="ghost"
