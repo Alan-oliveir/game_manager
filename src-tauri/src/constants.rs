@@ -31,7 +31,7 @@ pub const RAWG_PAGE_SIZE: u32 = 20;
 
 // Configuração de banco de dados
 #[allow(dead_code)]
-pub const DB_FILENAME: &str = "library.db";
+pub const DB_FILENAME_LIBRARY: &str = "library.db";
+pub const DB_FILENAME_SECRETS: &str = "secrets.db";
 #[allow(dead_code)]
 pub const DB_JOURNAL_MODE: &str = "WAL";
-

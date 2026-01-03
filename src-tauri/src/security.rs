@@ -24,7 +24,7 @@ pub fn init_security(app: &AppHandle) -> Result<(), String> {
 
     fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
 
-    // --- Salt persistido ---
+    // Salt persistido
     let salt_path = app_dir.join(SALT_FILE);
     let salt = if salt_path.exists() {
         fs::read(&salt_path).map_err(|e| e.to_string())?
@@ -35,7 +35,7 @@ pub fn init_security(app: &AppHandle) -> Result<(), String> {
         s
     };
 
-    // --- Dados do ambiente ---
+    // Dados do ambiente
     let machine_uid_result = app
         .machine_uid()
         .get_machine_uid()
@@ -48,9 +48,7 @@ pub fn init_security(app: &AppHandle) -> Result<(), String> {
     let username = whoami::username().map_err(|e| e.to_string())?;
     let app_id = app.config().identifier.clone();
 
-    // --- Derivação da chave usando SHA256 ---
-    // Nota: SHA256 é adequado aqui pois estamos derivando de dados da máquina, não de senha
-    // Se fosse senha de usuário, usaríamos Argon2 ou PBKDF2
+    // Derivação da chave usando SHA256
     let mut hasher = Sha256::new();
     hasher.update(machine_uid.as_bytes());
     hasher.update(username.as_bytes());

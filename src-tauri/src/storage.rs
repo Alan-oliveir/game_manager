@@ -1,8 +1,7 @@
 use crate::security;
 use rusqlite::{params, Connection};
 use tauri::{AppHandle, Manager};
-
-const DB_FILE: &str = "secrets.db";
+use crate::constants::DB_FILENAME_SECRETS;
 
 /// Obtém a conexão com o banco de dados de secrets
 fn db(app: &AppHandle) -> Result<Connection, String> {
@@ -11,7 +10,7 @@ fn db(app: &AppHandle) -> Result<Connection, String> {
         .app_data_dir()
         .map_err(|e| format!("app_data_dir não encontrado: {}", e))?;
 
-    let conn = Connection::open(app_dir.join(DB_FILE)).map_err(|e| e.to_string())?;
+    let conn = Connection::open(app_dir.join(DB_FILENAME_SECRETS)).map_err(|e| e.to_string())?;
 
     conn.execute(
         r#"
