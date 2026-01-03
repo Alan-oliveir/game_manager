@@ -43,6 +43,7 @@ export default function Wishlist() {
     }
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -51,14 +52,24 @@ export default function Wishlist() {
     );
   }
 
+  // Empty state
   if (games.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
         <ShoppingCart className="w-16 h-16 mb-4 opacity-20" />
         <h3 className="text-lg font-medium">Sua lista está vazia</h3>
-        <p className="text-sm">
+        <p className="text-sm mb-4">
           Vá para a aba "Em Alta" para descobrir novos jogos.
         </p>
+        <Button onClick={() => setShowAddModal(true)} variant="outline">
+          <Plus className="h-4 w-4" /> Adicionar na Lista
+        </Button>
+
+        <AddWishlistModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={refreshList}
+        />
       </div>
     );
   }
@@ -82,14 +93,12 @@ export default function Wishlist() {
           disabled={isRefreshing || games.length === 0}
           variant="outline"
         >
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-          />
+          <RefreshCw className={`${isRefreshing ? "animate-spin" : ""}`} />
           {isRefreshing ? "Buscando Ofertas..." : "Atualizar Preços"}
         </Button>
 
         <Button onClick={() => setShowAddModal(true)} variant="outline">
-          <Plus className="mr-2 h-4 w-4" /> Adicionar na Lista
+          <Plus /> Adicionar na Lista
         </Button>
       </div>
 
@@ -140,7 +149,7 @@ export default function Wishlist() {
                     size="icon"
                     variant="secondary"
                     className="rounded-full h-10 w-10 shadow-lg"
-                    // Desabilita apenas se não tiver nem ID da Steam nem URL da loja
+                    // Desabilita se não tiver nem ID da Steam nem URL da loja
                     disabled={!targetUrl}
                     onClick={() => {
                       if (targetUrl) openExternalLink(targetUrl);
