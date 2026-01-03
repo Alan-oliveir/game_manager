@@ -21,41 +21,24 @@ import Wishlist from "./pages/Wishlist";
 import Playlist from "./pages/Playlist";
 
 function App() {
-  // Hook Principal de Dados
+  // Estado Global de Jogos e UI
   const { games, refreshGames, saveGame, removeGame, toggleFavorite } =
     useLibraries();
-
-  // Estado de Busca com Debounce
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
-
-  // Estado de UI (Navegação e Modais)
-
-  // Navegação Simples
   const [activeSection, setActiveSection] = useState("home");
-
-  // Modal Add Game State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
-
-  // Estado para detalhes do jogo selecionado
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-
-  // Jogo selecionado para o modal de detalhes
   const selectedGame = useMemo(
     () => games.find((g) => g.id === selectedGameId) || null,
     [games, selectedGameId]
   );
-
-  // Cache do Trending
   const [trendingCache, setTrendingCache] = useState<RawgGame[]>([]);
   const [trendingKey, setTrendingKey] = useState(0);
-
-  // Cache do Perfil do Usuário para recomendações
   const [profileCache, setProfileCache] = useState<UserProfile | null>(null);
 
   // Handlers de UI e Ações
-
   const handleSettingsUpdate = () => {
     refreshGames();
     setTrendingCache([]);
@@ -109,7 +92,6 @@ function App() {
   };
 
   // Roteamento Simples
-
   const renderContent = () => {
     switch (activeSection) {
       case "home":
@@ -182,9 +164,7 @@ function App() {
           activeSection={activeSection}
         />
 
-        <ErrorBoundary>
-          {renderContent()}
-        </ErrorBoundary>
+        <ErrorBoundary>{renderContent()}</ErrorBoundary>
       </main>
 
       <AddGameModal
