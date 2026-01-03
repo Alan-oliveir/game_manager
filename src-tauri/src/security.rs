@@ -2,51 +2,113 @@ use aes_gcm::{
     aead::{Aead, KeyInit},
     Aes256Gcm, Nonce,
 };
+use base64::Engine;
+use once_cell::sync::OnceCell;
 use rand::RngCore;
+use sha2::{Digest, Sha256};
+use std::fs;
+use tauri::{AppHandle, Manager};
+use tauri_plugin_machine_uid::MachineUidExt;
 
-// NOTA IMPORTANTE:
-// Em um app comercial real, usariamos keyrings ou outro metodo seguro para armazenar a chave mestre.
-// Para este projeto desktop standalone, usamos uma chave obfuscada.
-const MASTER_KEY: &[u8; 32] = b"Playlite-fghjjkllzxcvbn4567890ab"; // 32 bytes para AES-256
+static MASTER_KEY: OnceCell<[u8; 32]> = OnceCell::new();
 
-/// Encripta uma string e retorna o resultado em Hex
+const SALT_FILE: &str = "crypto_salt.bin";
+
+/// Inicializa o sistema de segurança derivando a chave mestre dos dados da máquina
+/// Deve ser chamado UMA vez na inicialização do app
+pub fn init_security(app: &AppHandle) -> Result<(), String> {
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Não foi possível resolver app_data_dir: {}", e))?;
+
+    fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
+
+    // --- Salt persistido ---
+    let salt_path = app_dir.join(SALT_FILE);
+    let salt = if salt_path.exists() {
+        fs::read(&salt_path).map_err(|e| e.to_string())?
+    } else {
+        let mut s = vec![0u8; 16];
+        rand::rng().fill_bytes(&mut s);
+        fs::write(&salt_path, &s).map_err(|e| e.to_string())?;
+        s
+    };
+
+    // --- Dados do ambiente ---
+    let machine_uid_result = app
+        .machine_uid()
+        .get_machine_uid()
+        .map_err(|e| e.to_string())?;
+
+    let machine_uid = machine_uid_result
+        .id
+        .ok_or("Machine UID indisponível")?;
+
+    let username = whoami::username().map_err(|e| e.to_string())?;
+    let app_id = app.config().identifier.clone();
+
+    // --- Derivação da chave usando SHA256 ---
+    // Nota: SHA256 é adequado aqui pois estamos derivando de dados da máquina, não de senha
+    // Se fosse senha de usuário, usaríamos Argon2 ou PBKDF2
+    let mut hasher = Sha256::new();
+    hasher.update(machine_uid.as_bytes());
+    hasher.update(username.as_bytes());
+    hasher.update(app_id.as_bytes());
+    hasher.update(salt);
+
+    let key: [u8; 32] = hasher.finalize().into();
+    MASTER_KEY
+        .set(key)
+        .map_err(|_| "Chave já inicializada")?;
+
+    Ok(())
+}
+
+fn cipher() -> Aes256Gcm {
+    let key = MASTER_KEY
+        .get()
+        .expect("Security não inicializado. Chame init_security()");
+    Aes256Gcm::new_from_slice(key).unwrap()
+}
+
+/// Encripta uma string e retorna Base64 (formato: ciphertext_b64:nonce_b64)
 pub fn encrypt(data: &str) -> String {
-    let cipher = Aes256Gcm::new(MASTER_KEY.into());
+    let cipher = cipher();
 
-    // Gera um Nonce (número usado uma vez) aleatório
     let mut nonce_bytes = [0u8; 12];
     rand::rng().fill_bytes(&mut nonce_bytes);
     let nonce = Nonce::from_slice(&nonce_bytes);
 
-    // Encripta
-    let ciphertext = cipher
-        .encrypt(nonce, data.as_bytes())
-        .expect("falha na encriptação"); // Em portfólio panic aqui é aceitável se a memória falhar
+    let ciphertext = cipher.encrypt(nonce, data.as_bytes()).unwrap();
 
-    // Combina Nonce + Ciphertext para salvar junto
-    let mut final_msg = nonce_bytes.to_vec();
-    final_msg.extend_from_slice(&ciphertext);
-
-    hex::encode(final_msg)
+    format!(
+        "{}:{}",
+        base64::engine::general_purpose::STANDARD.encode(ciphertext),
+        base64::engine::general_purpose::STANDARD.encode(nonce_bytes)
+    )
 }
 
-/// Decripta uma string Hex para o texto original
-pub fn decrypt(encoded_data: &str) -> Result<String, String> {
-    let data = hex::decode(encoded_data).map_err(|_| "Falha ao decodificar Hex")?;
+/// Decripta uma string Base64 para o texto original
+pub fn decrypt(data: &str) -> Result<String, String> {
+    let cipher = cipher();
 
-    if data.len() < 12 {
-        return Err("Dados corrompidos ou muito curtos".to_string());
+    let parts: Vec<&str> = data.split(':').collect();
+    if parts.len() != 2 {
+        return Err("Formato inválido".into());
     }
 
-    // Separa o Nonce do conteúdo
-    let (nonce_arr, ciphertext) = data.split_at(12);
-    let cipher = Aes256Gcm::new(MASTER_KEY.into());
-    let nonce = Nonce::from_slice(nonce_arr);
+    let ciphertext = base64::engine::general_purpose::STANDARD
+        .decode(parts[0])
+        .map_err(|e| e.to_string())?;
+    let nonce_bytes = base64::engine::general_purpose::STANDARD
+        .decode(parts[1])
+        .map_err(|e| e.to_string())?;
+    let nonce = Nonce::from_slice(&nonce_bytes);
 
-    // Decripta
-    let plaintext = cipher
-        .decrypt(nonce, ciphertext)
-        .map_err(|_| "Senha incorreta ou dados corrompidos")?;
+    let plain = cipher
+        .decrypt(nonce, ciphertext.as_ref())
+        .map_err(|e| e.to_string())?;
 
-    String::from_utf8(plaintext).map_err(|_| "Erro de codificação UTF-8".to_string())
+    String::from_utf8(plain).map_err(|e| e.to_string())
 }

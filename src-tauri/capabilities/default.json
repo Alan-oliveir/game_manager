@@ -2,6 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
+  "context": "local",
   "windows": [
     "main"
   ],
@@ -13,14 +14,18 @@
     "core:window:allow-set-focus",
     "core:window:allow-show",
     "core:window:allow-close",
+    "core:path:default",
     "opener:default",
     "store:default",
     "store:allow-get",
     "store:allow-set",
     "store:allow-save",
     "shell:allow-open",
+    "shell:default",
     "dialog:allow-open",
     "dialog:allow-save",
-    "dialog:default"
+    "dialog:default",
+    "machine-uid:default",
+    "machine-uid:allow-get-machine-uid"
   ]
 }

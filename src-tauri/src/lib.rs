@@ -20,6 +20,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_machine_uid::init())
         .setup(|app| {
             let app_handle = app.handle();
             let log_dir = app_handle
@@ -34,6 +35,12 @@ pub fn run() {
             app.manage(_guard);
 
             tracing::info!("Aplicação iniciada! Logs em: {:?}", log_dir);
+
+            // Inicializa o sistema de segurança (derivação de chave)
+            security::init_security(&app_handle)
+                .expect("Falha ao inicializar sistema de segurança");
+
+            tracing::info!("Sistema de segurança inicializado");
 
             let app_data_dir = app
                 .path()
