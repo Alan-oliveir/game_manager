@@ -174,14 +174,14 @@ pub async fn enrich_library(state: State<'_, AppState>) -> Result<ImportSummary,
         }
 
         conn.execute("COMMIT", []).map_err(|e| e.to_string())?;
-        info!("Transação de atualização salva no banco com sucesso.");
+        info!("Processamento concluído: {} sucessos e {} falhas.", success_count, failed_games.len());
     }
 
     let summary = ImportSummary {
         success_count,
         error_count: failed_games.len() as i32,
         total_processed: total as i32,
-        message: format!("Processamento concluído. {} sucessos, {} falhas.", success_count, failed_games.len()),
+        message: format!("Processamento concluído: {} sucessos e {} falhas.", success_count, failed_games.len()),
         errors: failed_games,
     };
 

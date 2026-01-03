@@ -13,7 +13,7 @@ pub fn init_logging(log_dir: PathBuf) -> WorkerGuard {
 
     // Configura o formato do log
     let registry = tracing_subscriber::registry()
-        .with(EnvFilter::new("info,game_manager_lib=debug"))
+        .with(EnvFilter::new("info,game_manager_lib=debug,tao=error"))
         .with(
             fmt::Layer::default()
                 .with_writer(non_blocking)

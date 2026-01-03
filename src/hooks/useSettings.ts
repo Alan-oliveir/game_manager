@@ -35,6 +35,16 @@ export function useSettings(onLibraryUpdate: () => void) {
             .finally(() => setLoading((prev) => ({...prev, initial: false})));
     }, []);
 
+    useEffect(() => {
+        if (status.type && status.message) {
+            const timer = setTimeout(() => {
+                setStatus({ type: null, message: "" });
+            }, 5000); // 5000ms = 5 segundos
+
+            return () => clearTimeout(timer); // Limpa se o componente desmontar
+        }
+    }, [status]);
+
     const saveKeys = async () => {
         setLoading((prev) => ({...prev, saving: true}));
         setStatus({type: null, message: ""});
@@ -85,16 +95,18 @@ export function useSettings(onLibraryUpdate: () => void) {
         try {
             const summary = await settingsService.enrichLibrary();
 
-            // Cria mensagem detalhada do resultado
-            let detailedMessage = summary.message;
-            if (summary.error_count > 0) {
-                detailedMessage += ` | ${summary.error_count} falhas detectadas.`;
+            if (summary.error_count === 0) {
+                setStatus({
+                    type: "success",
+                    message: `Sucesso total! ${summary.success_count} jogos atualizados.`
+                });
+            } else {
+                setStatus({
+                    type: "success",
+                    message: `Concluído: ${summary.success_count} atualizados, mas ${summary.error_count} falharam.`
+                });
             }
 
-            setStatus({
-                type: summary.error_count === 0 ? "success" : "error",
-                message: detailedMessage
-            });
             onLibraryUpdate();
         } catch (error) {
             setStatus({type: "error", message: String(error)});
