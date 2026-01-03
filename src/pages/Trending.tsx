@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import Hero from "@/components/Hero";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { ErrorState } from "../components/ErrorState";
+import { ActionButton } from "@/components/ActionButton.tsx";
 
 interface TrendingProps {
   userGames: Game[];
@@ -248,27 +249,21 @@ export default function Trending(props: TrendingProps) {
                 actions={
                   <>
                     {/* Botões Wishlist e Detalhes */}
-                    <Button
-                      size="sm"
+                    <ActionButton
+                      icon={Heart}
                       variant="secondary"
-                      className="rounded-full h-10 w-10 shadow-lg"
                       onClick={() => handleWishlistClick(game)}
-                      title={"Lista de Desejos"}
-                    >
-                      <Heart size={16} />
-                    </Button>
-                    <Button
-                      size="sm"
+                      tooltip="Lista de Desejos"
+                    />
+                    <ActionButton
+                      icon={ExternalLink}
                       variant="secondary"
-                      className="rounded-full h-10 w-10 shadow-lg"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openExternalLink(`https://rawg.io/games/${game.id}`);
-                      }}
-                      title={"Ver Detalhes"}
-                    >
-                      <ExternalLink size={16} />
-                    </Button>
+                      size={16}
+                      onClick={() =>
+                        openExternalLink(`https://rawg.io/games/${game.id}`)
+                      }
+                      tooltip="Ver Detalhes"
+                    />
                   </>
                 }
               />
@@ -306,27 +301,21 @@ export default function Trending(props: TrendingProps) {
                   actions={
                     <>
                       {/* Botões Wishlist e Detalhes */}
-                      <Button
-                        size="sm"
+                      <ActionButton
+                        icon={Heart}
                         variant="secondary"
-                        className="rounded-full h-10 w-10 shadow-lg"
                         onClick={() => handleWishlistClick(game)}
-                        title={"Lista de Desejos"}
-                      >
-                        <Heart size={16} />
-                      </Button>
-                      <Button
-                        size="sm"
+                        tooltip="Lista de Desejos"
+                      />
+                      <ActionButton
+                        icon={ExternalLink}
                         variant="secondary"
-                        className="rounded-full h-10 w-10 shadow-lg"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openExternalLink(`https://rawg.io/games/${game.id}`);
-                        }}
-                        title={"Ver Detalhes"}
-                      >
-                        <ExternalLink size={16} />
-                      </Button>
+                        size={16}
+                        onClick={() =>
+                          openExternalLink(`https://rawg.io/games/${game.id}`)
+                        }
+                        tooltip="Ver Detalhes"
+                      />
                     </>
                   }
                 />

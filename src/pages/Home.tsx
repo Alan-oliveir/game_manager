@@ -8,11 +8,11 @@ import {
   Heart,
   ImageOff,
   Library,
+  Loader2,
   Play,
   Sparkles,
   TrendingUp,
   Trophy,
-  Loader2,
 } from "lucide-react";
 import { useHome } from "../hooks/useHome";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { Game, RawgGame, UserProfile } from "../types";
 import StandardGameCard from "@/components/StandardGameCard";
 import { Separator } from "@/components/ui/separator.tsx";
 import Hero from "@/components/Hero";
+import { ActionButton } from "@/components/ActionButton.tsx";
 
 interface HomeProps {
   onChangeTab: (tab: string) => void;
@@ -31,6 +32,7 @@ interface HomeProps {
   setTrendingCache: (games: RawgGame[]) => void;
   profileCache: UserProfile | null;
   setProfileCache: (profile: UserProfile) => void;
+  onGameClick: (game: Game) => void;
 }
 
 export default function Home({
@@ -40,6 +42,7 @@ export default function Home({
   setTrendingCache,
   profileCache,
   setProfileCache,
+  onGameClick,
 }: HomeProps) {
   const {
     stats,
@@ -146,21 +149,19 @@ export default function Home({
           // Ação Dinâmica (Local vs Remoto)
           actions={
             isLocalGame(currentHero) ? (
-              <Button
-                className="px-8 h-12 text-md"
-                onClick={() => launchGame(currentHero)}
-              >
-                <Play size={20} className="mr-2" /> Jogar Agora
+              <Button onClick={() => launchGame(currentHero)}>
+                <Play size={18} />
+                <p className="font-bold">Jogar Agora</p>
               </Button>
             ) : (
               <Button
-                className="px-8 h-12 text-md"
-                variant="secondary"
+                variant="outline"
+                className="gap-2 bg-transparent text-white border-white/20 hover:bg-white/10"
                 onClick={() =>
                   openExternalLink(`https://rawg.io/games/${currentHero.id}`)
                 }
               >
-                <ExternalLink size={20} className="mr-2" /> Ver Detalhes
+                <ExternalLink size={18} /> Ver Detalhes
               </Button>
             )
           }
@@ -221,17 +222,15 @@ export default function Home({
                   title={game.name}
                   coverUrl={game.cover_url}
                   subtitle={`${formatTime(game.playtime)} jogadas`}
-                  onClick={() => launchGame(game)}
+                  onClick={() => onGameClick(game)}
                   // Ação de Play no Hover
                   actions={
-                    <Button
-                      size="icon"
-                      className="bg-transparent border border-transparent hover:border-white hover:bg-muted-foreground text-white p-3 rounded-full shadow-xl transform scale-90 group-hover:scale-100 transition-all"
+                    <ActionButton
+                      icon={Play}
+                      variant="secondary"
                       onClick={() => launchGame(game)}
-                      title="Jogar Agora"
-                    >
-                      <Play className="text-white fill-white" />
-                    </Button>
+                      tooltip="Jogar Agora"
+                    />
                   }
                 />
               ))}
@@ -270,14 +269,12 @@ export default function Home({
                   badge="Recomendado"
                   onClick={() => launchGame(game)}
                   actions={
-                    <Button
-                      size="icon"
-                      className="bg-transparent border border-transparent hover:border-white hover:bg-muted-foreground text-white p-3 rounded-full shadow-xl transform scale-90 group-hover:scale-100 transition-all"
+                    <ActionButton
+                      icon={Play}
+                      variant="secondary"
                       onClick={() => launchGame(game)}
-                      title="Jogar Agora"
-                    >
-                      <Play className="text-white fill-white" />
-                    </Button>
+                      tooltip="Jogar Agora"
+                    />
                   }
                 />
               ))}

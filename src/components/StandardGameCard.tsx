@@ -1,6 +1,7 @@
 import { ReactNode, useState } from "react";
-import { Play, ImageOff } from "lucide-react"; // Adicionei ImageOff
+import { Play, ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ActionButton } from "./ActionButton";
 
 interface StandardGameCardProps {
   title: string;
@@ -58,19 +59,13 @@ export default function StandardGameCard({
 
         {/* Overlay de Ações (Hover) */}
         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4 z-20">
-          {/* Botão Play (Estilo Padronizado) */}
           {onPlay && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onPlay();
-              }}
-              className="h-9 w-9 flex items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md hover:bg-black/80 transition-colors shadow-sm"
-              title="Jogar Agora" // Tooltip nativo
-            >
-              <Play className="fill-white" size={18} />{" "}
-              {/* Tamanho 18 para alinhar com os outros ícones */}
-            </button>
+            <ActionButton
+              icon={Play}
+              variant="glass"
+              onClick={onPlay}
+              tooltip="Jogar Agora"
+            />
           )}
 
           {/* Ações secundárias (Favoritar, Menu, etc) */}

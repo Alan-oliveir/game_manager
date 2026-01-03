@@ -13,6 +13,7 @@ import StandardGameCard from "@/components/StandardGameCard";
 import { toast } from "sonner";
 import AddWishlistModal from "@/components/AddWishlistModal";
 import { useState } from "react";
+import { ActionButton } from "@/components/ActionButton.tsx";
 
 export default function Wishlist() {
   const {
@@ -135,31 +136,26 @@ export default function Wishlist() {
               badge={game.on_sale ? "OFERTA!" : undefined}
               actions={
                 <>
-                  <Button
-                    size="icon"
+                  <ActionButton
+                    icon={Trash2}
                     variant="destructive"
-                    className="rounded-full h-10 w-10 shadow-lg"
+                    size={16}
                     onClick={() => handleRemoveClick(game.id, game.name)}
-                    title="Remover"
-                  >
-                    <Trash2 size={16} />
-                  </Button>
+                    tooltip="Remover"
+                  />
 
-                  <Button
-                    size="icon"
+                  <ActionButton
+                    icon={ExternalLink}
                     variant="secondary"
-                    className="rounded-full h-10 w-10 shadow-lg"
-                    // Desabilita se não tiver nem ID da Steam nem URL da loja
+                    size={16}
                     disabled={!targetUrl}
                     onClick={() => {
                       if (targetUrl) openExternalLink(targetUrl);
                     }}
-                    title={
+                    tooltip={
                       game.steam_app_id ? "Abrir na Steam" : "Ir para Loja"
                     }
-                  >
-                    <ExternalLink size={16} />
-                  </Button>
+                  />
                 </>
               }
             />

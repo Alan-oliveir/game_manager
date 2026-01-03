@@ -103,6 +103,7 @@ function App() {
             setTrendingCache={setTrendingCache}
             profileCache={profileCache}
             setProfileCache={setProfileCache}
+            onGameClick={handleGameClick}
           />
         );
       case "libraries":

@@ -19,6 +19,7 @@ import { launchGame } from "../utils/launcher";
 // Importar Hooks
 import { usePlaylist } from "../hooks/usePlaylist";
 import { toast } from "sonner";
+import { ActionButton } from "@/components/ActionButton.tsx";
 
 interface FavoritesProps extends GameActions {
   games: Game[];
@@ -90,34 +91,21 @@ export default function Favorites({
                   actions={
                     <>
                       {/* Botão de Favorito */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          actions.onToggleFavorite(game.id);
-                        }}
-                        className="p-2 bg-black/60 backdrop-blur-sm rounded-full hover:bg-black/80 transition-colors z-10"
-                        title="Remover dos Favoritos"
-                      >
-                        <Heart
-                          size={18}
-                          className={
-                            game.favorite
-                              ? "fill-red-500 text-red-500"
-                              : "text-white"
-                          }
-                        />
-                      </button>
+                      <ActionButton
+                        icon={Heart}
+                        variant={game.favorite ? "glass-destructive" : "glass"}
+                        tooltip="Remover dos Favoritos"
+                        onClick={() => actions.onToggleFavorite(game.id)}
+                      />
 
                       {/* Menu de Opções */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button
-                            className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-md"
-                            onClick={(e) => e.stopPropagation()}
-                            title="Mais Opções"
-                          >
-                            <MoreVertical size={18} />
-                          </button>
+                          <ActionButton
+                            icon={MoreVertical}
+                            variant="glass"
+                            tooltip="Mais Opções"
+                          />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {/* PLAYLIST */}
