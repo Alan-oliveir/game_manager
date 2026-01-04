@@ -46,7 +46,7 @@ Este projeto nasceu para resolver esse problema real, ao mesmo tempo em que serv
 - Arquitetura técnica: [`docs/architecture.md`](docs/architecture.md)
 - Decisões arquiteturais (ADR): [`ADR.md`](ADR.md)
 - Atualizações do projeto: [`CHANGELOG.md`](CHANGELOG.md)
-- Diário de desenvolvimento: [`DEV_LOG.md`](DEV_LOG.md)
+- Diário de desenvolvimento: [`DEV_LOG.md`](docs/dev_logs/DEV_LOG_1_MVP.md)
 
 ## 🤖 Sistema de Recomendação
 

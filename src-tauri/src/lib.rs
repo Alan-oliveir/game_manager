@@ -28,7 +28,7 @@ pub fn run() {
                 .app_log_dir()
                 .expect("Falha ao pegar pasta de log");
 
-            std::fs::create_dir_all(&log_dir).expect("Falha ao criar pasta de logs");
+            std::fs::create_dir_all(&log_dir).expect("Falha ao criar pasta de dev_logs");
 
             let _guard = logger::init_logging(log_dir.clone());
             // Armazena o guard no state do Tauri para manter vivo durante toda execução
