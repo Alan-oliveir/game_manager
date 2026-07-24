@@ -7,6 +7,7 @@ export { useGogConfig } from './useGogConfig';
 export { useHeroicConfig } from './useHeroicConfig';
 export { useImportProgress } from './useImportProgress';
 export { useIndiegalaConfig } from './useIndiegalaConfig';
+export { useItchConfig } from './useItchConfig';
 export { useLegacyConfig } from './useLegacyConfig';
 export { useLocalStoragePlatformPath } from './useLocalStoragePlatformPath';
 export { useNativePathPicker } from './useNativePathPicker';

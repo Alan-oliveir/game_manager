@@ -135,6 +135,7 @@ pub fn run() {
             commands::platforms::amazon::import_amazon_games,
             commands::platforms::xbox::import_xbox_games,
             commands::platforms::indiegala::import_indiegala_games,
+            commands::platforms::itch::import_itch_games,
             // Comandos de Metadados (Enriquecimento, Capas, Refresh, Busca)
             commands::metadata::enrichment::update_metadata,
             commands::metadata::get_metadata::fill_missing_metadata,

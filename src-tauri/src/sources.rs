@@ -11,6 +11,8 @@
 //! - `epic`: Importa jogos da Epic Games Store, conectando-se aos arquivos locais para obter a lista completa de jogos instalados.
 //! - `gog`: Importa jogos do GOG Galaxy, com OAuth.
 //! - `heroic`: Importa jogos do Heroic Games Launcher, lendo os arquivos de configuração do Heroic para detectar jogos instalados via essa plataforma.
+//! - `indiegala`: Importa jogos da IndieGala, conectando-se aos arquivos locais para obter a lista de jogos instalados ou biblioteca completa.
+//! - `itch`: Importa jogos da plataforma Itch.io, lendo o banco de dados do app itch.
 //! - `legacy`: Importa jogos da loja Legacy Games, utilizando métodos de leitura de arquivos para identificar jogos obtidos por essa plataforma.
 //! - `providers`: Gerencia provedores de jogos, permitindo a integração com múltiplas plataformas de jogos.
 //! - `scanner`: Escaneia pastas em busca de jogos instalados localmente.
@@ -25,6 +27,7 @@ pub mod epic;
 pub mod gog;
 pub mod heroic;
 pub mod indiegala;
+pub mod itch;
 pub mod legacy;
 pub mod providers;
 pub mod scanner;

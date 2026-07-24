@@ -140,17 +140,26 @@ export default function AddGame({
                   <SelectItem value="GOG">
                     {t('add_game_platform_gog_galaxy')}
                   </SelectItem>
-                  <SelectItem value="EA">
-                    {t('add_game_platform_ea')}
+                  <SelectItem value="Amazon">
+                    {t('add_game_platform_amazon_games')}
                   </SelectItem>
                   <SelectItem value="Ubisoft">
                     {t('add_game_platform_ubisoft')}
                   </SelectItem>
+                  <SelectItem value="EA">
+                    {t('add_game_platform_ea')}
+                  </SelectItem>
                   <SelectItem value="Battle.net">
                     {t('add_game_platform_battlenet')}
                   </SelectItem>
-                  <SelectItem value="Amazon">
-                    {t('add_game_platform_amazon_games')}
+                  <SelectItem value={'Xbox'}>
+                    {t('add_game_platform_xbox')}
+                  </SelectItem>
+                  <SelectItem value="Indiegala">
+                    {t('add_game_platform_indiegala')}
+                  </SelectItem>
+                  <SelectItem value={'Itch.io'}>
+                    {t('add_game_platform_itch')}
                   </SelectItem>
                   <SelectItem value="Indie">
                     {t('add_game_platform_indie')}

@@ -3,7 +3,7 @@ import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ActionButton, GameActionsMenu } from '@/components/common';
-import { Game } from '@/types';
+import { Game, PlatformDisplayNames } from '@/types';
 import { launchGame } from '@/utils/launcher';
 
 import StandardGameCard from './StandardGameCard';
@@ -102,7 +102,7 @@ export const LibraryGameCard = memo(function LibraryGameCard({
         id={game.id.toString()}
         title={game.name}
         coverUrl={game.coverUrl}
-        platform={game.platform}
+        platform={PlatformDisplayNames[game.platform]}
         subtitle={subtitle}
         rating={game.userRating || undefined}
         onClick={handleClick}

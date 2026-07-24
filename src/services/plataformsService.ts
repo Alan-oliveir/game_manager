@@ -224,4 +224,19 @@ export const platformsService = {
       configJsonPath: null,
     });
   },
+
+  /**
+   * Importa jogos da Itch.io lendo o butler.db. Detecção automática.
+   *
+   * `full=false`: apenas jogos efetivamente instalados localmente.
+   * `full=true`: biblioteca completa de posse do usuário na plataforma.
+   *
+   * @throws Se nenhum jogo for encontrado ou o banco de dados não existir.
+   */
+  importItchGames: async (full: boolean): Promise<string> => {
+    return await invoke<string>('import_itch_games', {
+      full,
+      butlerDbPath: null,
+    });
+  },
 };

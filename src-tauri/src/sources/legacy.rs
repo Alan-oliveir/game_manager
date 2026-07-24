@@ -119,7 +119,7 @@ fn normalize_game_name(name: &str) -> String {
             let cut = &trimmed[..rest.len()];
             // Remove separadores opcionais antes do sufixo: espaço, hífen, vírgula, dois-pontos
             return cut
-            .trim_end_matches(['-', ':', ',', ' '])
+                .trim_end_matches(['-', ':', ',', ' '])
                 .trim()
                 .to_string();
         }
@@ -327,7 +327,7 @@ impl LegacySource {
                 Self::resolve_install_info(library_paths, &catalog_game.game_name);
 
             let source = SourceGame {
-                platform: "Legacy Games".to_string(),
+                platform: "LegacyGames".to_string(),
                 platform_game_id: acquired.product_id.clone(),
                 name: Some(normalize_game_name(&catalog_game.game_name)),
                 installed,

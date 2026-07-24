@@ -30,14 +30,35 @@ export type Platform =
   | 'Steam'
   | 'Epic'
   | 'GOG'
-  | 'EA'
-  | 'Ubisoft'
-  | 'Battle.net'
   | 'Amazon'
+  | 'Ubisoft'
+  | 'EA'
+  | 'BattleNet'
+  | 'Xbox'
   | 'Heroic'
-  | 'Legacy Games'
+  | 'LegacyGames'
+  | 'Indiegala'
+  | 'Itch'
   | 'Indie'
   | 'Outra';
+
+// Dicionário para renderização visual na interface
+export const PlatformDisplayNames: Record<Platform, string> = {
+  Steam: 'Steam',
+  Epic: 'Epic Games',
+  GOG: 'GOG',
+  Amazon: 'Amazon Games',
+  Ubisoft: 'Ubisoft Connect',
+  EA: 'EA App',
+  BattleNet: 'Battle.net',
+  Xbox: 'Xbox',
+  Heroic: 'Heroic Launcher',
+  LegacyGames: 'Legacy Games',
+  Indiegala: 'IndieGala',
+  Itch: 'Itch.io',
+  Indie: 'Indie',
+  Outra: 'Outra',
+};
 
 // Nível de confiança da importação
 export type ImportConfidence = 'High' | 'Medium' | 'Low';

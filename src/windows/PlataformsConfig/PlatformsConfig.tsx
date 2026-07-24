@@ -11,6 +11,7 @@ import {
   Gog,
   Heroic,
   Indiegala,
+  Itch,
   Legacy,
   Steam,
   Ubisoft,
@@ -26,6 +27,7 @@ import {
   EpicGamesSettings,
   GogSettings,
   HeroicSettings,
+  ItchSettings,
   LegacySettings,
   LocalScannerSettings,
   SteamSettings,
@@ -47,6 +49,7 @@ type SourceProvider =
   | 'amazon'
   | 'xbox'
   | 'indiegala'
+  | 'itch'
   | 'local'
   | 'wine';
 
@@ -133,6 +136,12 @@ export default function PlatformsConfig({
       connected: true,
     },
     {
+      id: 'itch',
+      name: t('config_store_itch'),
+      Icon: Itch,
+      connected: true,
+    },
+    {
       id: 'local',
       name: t('config_store_local'),
       Icon: Settings2,
@@ -210,6 +219,10 @@ export default function PlatformsConfig({
             onLibraryUpdate={onLibraryUpdate}
             progress={progress}
           />
+        );
+      case 'itch':
+        return (
+          <ItchSettings onLibraryUpdate={onLibraryUpdate} progress={progress} />
         );
       case 'local':
         return <LocalScannerSettings />;

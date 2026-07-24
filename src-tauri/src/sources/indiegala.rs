@@ -210,7 +210,7 @@ impl IndiegalaSource {
                 (!raw_tag_slugs.is_empty()).then(|| classify_and_sort_tags(raw_tag_slugs, 10));
 
             let source = SourceGame {
-                platform: "Indie".to_string(),
+                platform: "Indiegala".to_string(),
                 platform_game_id: item.id_key_name.clone(),
                 name: Some(item.name.clone()),
                 installed: true,
@@ -306,7 +306,7 @@ impl IndiegalaSource {
                 (!raw_tag_slugs.is_empty()).then(|| classify_and_sort_tags(raw_tag_slugs, 10));
 
             let source = SourceGame {
-                platform: "Indie".to_string(),
+                platform: "Indiegala".to_string(),
                 platform_game_id: owned.prod_id_key_name.clone(),
                 name: Some(owned.prod_name.clone()),
                 installed: false,
