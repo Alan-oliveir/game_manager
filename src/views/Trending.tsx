@@ -70,15 +70,18 @@ interface TrendingProps {
 
 const PLATFORM_OPTIONS = [
   { id: 'Steam', label: 'Steam' },
-  { id: 'Epic Games Store', label: 'Epic Games' },
-  { id: 'Prime Gaming', label: 'Prime Gaming' },
-  { id: 'GOG', label: 'GOG' },
-  { id: 'Ubisoft', label: 'Ubisoft' },
+  { id: 'Epic Store', label: 'Epic Games' },
   { id: 'Itch.io', label: 'Itch.io' },
+  { id: 'GOG', label: 'GOG' },
+  { id: 'Origin', label: 'EA' },
+  { id: 'Ubisoft Connect', label: 'Ubisoft Connect' },
+  { id: 'Battle.net', label: 'Battle.net' },
+  { id: 'Amazon', label: 'Amazon' },
   { id: 'IndieGala', label: 'IndieGala' },
+  { id: 'DRM-Free', label: 'DRM-Free' },
 ];
 
-export default function Trending(props: TrendingProps) {
+export default function Trending(props: Readonly<TrendingProps>) {
   // Hooks globais
   const { t } = useTranslation('trending');
   const isOnline = useNetworkStatus();
