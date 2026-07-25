@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 import { ActionButton, CachedImage } from '@/components';
 import { cn } from '@/lib/utils';
-import { getPlatformIcon } from '@/utils/platform';
 
 interface StandardGameCardProps {
   id: string;
@@ -88,11 +87,6 @@ function StandardGameCard({
 
         {platform && (
           <div className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-md">
-            {(() => {
-              const Icon = getPlatformIcon(platform);
-
-              return <Icon size={12} />;
-            })()}
             {platform}
           </div>
         )}

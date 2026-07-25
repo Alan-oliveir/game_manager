@@ -27,11 +27,11 @@ The goal of this phase is to improve the visual and informative quality of games
 After consolidating the catalog layer, the next evolution is to expand the app's ability to discover and track games
 installed on other platforms.
 
-- [~] **Epic Games Store**: Local import via manifests and/or detected installations.
+- [x] **Epic Games Store**: Local import via manifests and/or detected installations.
 - [x] **Ubisoft Connect**: Local reading of installed games and library integration.
-- [ ] **Origin / EA Desktop**: Local reading of installed games and library integration.
-- [ ] **GOG Galaxy / GOG**: Local reading of installed games and library integration.
-- [ ] **Local sync improvements**: Reduce inconsistencies between imports, manual edits, and data enrichment.
+- [x] **Origin / EA Desktop**: Local reading of installed games and library integration.
+- [x] **GOG Galaxy / GOG**: Local reading of installed games and library integration.
+- [x] **Local sync improvements**: Reduce inconsistencies between imports, manual edits, and data enrichment.
 
 ## ☁️ Optional Future Synchronization
 

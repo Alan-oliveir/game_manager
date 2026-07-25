@@ -88,7 +88,8 @@ struct AcquiredGame {
 /// - `GOTY` / `Game of the Year Edition`
 ///
 /// # Exemplos
-/// ```
+/// ```rust
+/// # use game_manager_lib::sources::legacy::normalize_game_name;
 /// assert_eq!(normalize_game_name("Fable CE"), "Fable");
 /// assert_eq!(normalize_game_name("Mystery Game Collector's Edition"), "Mystery Game");
 /// assert_eq!(normalize_game_name("Some Game - Deluxe Edition"), "Some Game");
@@ -151,9 +152,12 @@ where
 /// Provedor de jogos da Legacy Games.
 ///
 /// # Exemplo
-/// ```rust
+/// ```rust,no_run
+/// # use game_manager_lib::sources::legacy::LegacySource;
 /// let source = LegacySource::new(None); // busca o caminho padrão
-/// let games = source.fetch_games_detailed().await?;
+/// # tokio_test::block_on(async {
+/// let games = source.fetch_games_detailed().await.unwrap();
+/// # });
 /// ```
 pub struct LegacySource {
     /// Caminho para o arquivo `app-state-bck.json`.

@@ -33,4 +33,8 @@ export const DETECTED_PATHS = {
     windowsInstalled: '%APPDATA%\\IGClient\\storage\\installed.json',
     windowsConfig: '%APPDATA%\\IGClient\\config.json',
   },
+  itch: {
+    windows: '%APPDATA%\\itch\\db\\butler.db',
+    linux: '~/.config/itch/db/butler.db',
+  },
 } as const;

@@ -1,26 +1,7 @@
-import { Gamepad, Globe, LucideIcon, Monitor, Package } from 'lucide-react';
-
 /**
  * Utilitários para gerenciar informações de plataforma de jogos.
  * Centraliza lógica compartilhada entre componentes de cards.
  */
-
-/**
- * Retorna o ícone apropriado para uma plataforma
- */
-export function getPlatformIcon(platform: string): LucideIcon {
-  const p = platform.toLowerCase();
-
-  if (p.includes('steam')) return Monitor;
-
-  if (p.includes('gog')) return Globe;
-
-  if (p.includes('epic')) return Gamepad;
-
-  if (p.includes('legacy')) return Package;
-
-  return Gamepad;
-}
 
 /**
  * Retorna o label limpo da plataforma
@@ -34,11 +15,23 @@ export function getPlatformLabel(platform: string): string {
 
   if (platform.includes('Prime')) return 'Amazon Prime';
 
+  if (platform.includes('Amazon')) return 'Amazon Games';
+
   if (platform.includes('Ubisoft')) return 'Ubisoft';
 
   if (platform.includes('Legacy')) return 'Legacy Games';
 
   if (platform.includes('Heroic')) return 'Heroic';
+
+  if (platform.includes('Battle.net')) return 'Battle.net';
+
+  if (platform === 'EA') return 'EA App';
+
+  if (platform.includes('Xbox')) return 'Xbox / Microsoft Store';
+
+  if (platform === 'Indiegala') return 'IndieGala';
+
+  if (platform === 'Indie') return 'Indie';
 
   return platform.replace('PC, ', '');
 }
@@ -47,19 +40,35 @@ export function getPlatformLabel(platform: string): string {
  * Retorna as classes Tailwind para cor da badge da plataforma
  */
 export function getPlatformColor(platform: string): string {
-  if (platform.includes('Epic')) return 'bg-slate-900 text-white';
+  const p = platform.toLowerCase();
 
-  if (platform.includes('Steam')) return 'bg-blue-600 text-white';
+  if (p.includes('epic')) return 'bg-[#2a2a2a] text-white'; // cinza-escuro Epic
 
-  if (platform.includes('Prime')) return 'bg-cyan-600 text-white';
+  if (p.includes('steam')) return 'bg-[#1b2838] text-white'; // azul petróleo Steam
 
-  if (platform.includes('Legacy')) return 'bg-orange-600 text-white';
+  if (p.includes('prime') || p.includes('amazon'))
+    return 'bg-[#ff9900] text-black'; // laranja Amazon
 
-  if (platform.includes('Ubisoft')) return 'bg-indigo-600 text-white';
+  if (p.includes('legacy')) return 'bg-orange-600 text-white';
 
-  if (platform.includes('Heroic')) return 'bg-yellow-600 text-white';
+  if (p.includes('ubisoft')) return 'bg-[#0d1b2a] text-white'; // azul-marinho Ubisoft
 
-  if (platform.includes('GOG')) return 'bg-violet-600 text-white';
+  if (p.includes('heroic')) return 'bg-yellow-600 text-white';
+
+  if (p.includes('gog')) return 'bg-violet-700 text-white';
+
+  if (p.includes('battlenet') || p.includes('battle.net'))
+    return 'bg-sky-700 text-white';
+
+  if (p === 'ea') return 'bg-[#ff4747] text-white'; // evita falso positivo em "sea", "beat", etc.
+
+  if (p.includes('xbox')) return 'bg-[#107c10] text-white'; // verde Xbox oficial
+
+  if (p.includes('itch')) return 'bg-[#fa5c5c] text-white';
+
+  if (p.includes('indiegala')) return 'bg-purple-700 text-white'; // antes do 'indie' genérico
+
+  if (p.includes('indie')) return 'bg-pink-600 text-white';
 
   return 'bg-purple-600 text-white';
 }

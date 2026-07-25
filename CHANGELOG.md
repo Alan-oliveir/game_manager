@@ -2,6 +2,72 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.3.0] - 2026-07-25
+
+### Added
+
+- Itch.io integration: local library detection of owned games, installed games, and playtime synchronization with
+  `butler.db` integrated with the new standardized platform enumerators
+- IndieGala integration: installed-game detection via IGClient's `installed.json`, with an optional full-library
+  mode reading the account's owned-games list from `config.json` and cross-referencing it with installed titles
+  to reuse their complete metadata; game tags are run through the existing RAWG tag-classification pipeline
+- Xbox App / Microsoft Store integration: installed-game detection via Gaming Services, locating game folders
+  through each drive's `.GamingRoot` marker and reading `MicrosoftGame.config` manifests — covers both
+  first-party and third-party titles, with downloadable content and non-standalone add-ons automatically
+  excluded based on manifest structure
+- Amazon Games integration: full library import via account login (device-registration authentication flow),
+  cross-referenced with the Amazon Games App's local database for installed games — installed titles are matched by
+  exact product ID and flagged accordingly within the imported library, rather than imported as a separate list
+- Epic Games Store full library import via account login (OAuth2 device-registration flow), in addition to the
+  existing installed-game detection via local manifest files — library titles are resolved through the Epic
+  catalog API and deduplicated by namespace to correctly separate base games from DLC and soundtracks
+- EA App integration: installed-game detection via a user-configured install folder, now also recovering
+  previously installed (currently uninstalled) titles from EA's local install history — an intentional
+  reflection of how the EA App itself retains this information, not a detection gap
+- Battle.net integration: installed-game detection via the Agent's `product.db` (parsed as raw protobuf, no
+  external dependency), enriched with `aggregate.json` when present for display name, executable path, and last
+  played time, with a static fallback catalog (adapted from Playnite) for titles `aggregate.json` doesn't cover
+  — internal Agent/Desktop app entries are excluded from the imported list
+- GOG integration: full library import via account login (OAuth2 with PKCE) alongside installed-game detection
+  via a user-configured games folder, matched against store titles by prefix instead of exact name to account
+  for store-only suffixes (e.g. "Deluxe Edition") that don't appear in the installed folder name
+
+### Fixed
+
+- The manual "Add Game" platform dropdown still offered the outdated `"Battle.net"` and `"Itch.io"`
+  values, which no longer match the standardized enum; manually added games using those options
+  would have become invisible to platform filtering.
+- Platform filtering errors resolved by strictly standardizing platform identifiers to `PascalCase` (e.g., `BattleNet`,
+  `LegacyGames`, `Itch`) across Rust enums/structs and frontend types, eliminating spaces and special characters that
+  broke filter matching
+- Rust documentation corrected and updated in `legacy.rs` and `gamebrain/models.rs`
+
+### Improved
+
+- Frontend rendering of platform names now utilizes a centralized `PlatformDisplayNames` dictionary to map internal
+  `PascalCase` codes to their proper commercial names (e.g., `Battle.net`, `Itch.io`) across all UI components
+- Platform settings screens standardized across all integrations: page titles now show only the platform name,
+  descriptions and account-connection labels use consistent imperative phrasing, and the import button includes
+  the platform name and is disabled (with an explanatory tooltip) rather than hidden when a required connection
+  or credentials are missing, `ImportedItemsBox` now renders its checkmark from the component itself instead of
+  relying on it being hardcoded into each translated string, Detected-path listings and icons unified across
+  platforms with a fixed local path
+- GOG's import button is no longer hidden entirely while logged out; it now stays visible but
+  disabled, with a tooltip explaining that an account connection is required — consistent with how
+  other platforms present unmet prerequisites.
+- Manually selected paths (EA, GOG, Legacy Games) now persist consistently across sessions through a shared
+  `useLocalStoragePlatformPath` hook, replacing per-component `localStorage` handling
+- Reorganized platform-name translation keys into a single contiguous block for easier maintenance
+- OAuth token storage extended to support provider-specific auxiliary data (e.g. Amazon Games' device serial) without
+  affecting previously stored tokens.
+- Catalog lookups for the Epic Games library parallelized (up to 8 concurrent requests), reducing full-library
+  import time from several minutes to a few seconds on larger libraries
+
+### Removed
+
+- The per-platform icon from the library/favorites game card badge (`StandardGameCard`), which now shows the platform
+  name as text only.
+
 ## [4.2.0] - 2026-07-13
 
 ### Added

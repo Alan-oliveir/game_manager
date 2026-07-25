@@ -21,6 +21,7 @@ pub struct GameBrainSearchResult {
 /// # Exemplo
 ///
 /// ```rust
+/// # use game_manager_lib::services::integration::gamebrain::{GameBrainSearchParams, GameBrainFilter, GameBrainFilterValue, GameBrainSort, GameBrainSortOrder};
 /// let params = GameBrainSearchParams {
 ///     filters: vec![
 ///         GameBrainFilter {

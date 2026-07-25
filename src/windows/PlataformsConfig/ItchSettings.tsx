@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SettingsRow, StatusBadge } from '@/components/common';
 import { ImportProgressPayload, useItchConfig } from '@/hooks/plataforms';
 import { Switch } from '@/ui/toggle-switch';
+import { DETECTED_PATHS } from '@/windows/PlataformsConfig/constants';
 
 import {
   DetectedPathsBox,
@@ -53,11 +54,11 @@ export function ItchSettings({
             paths={[
               {
                 label: t('itch_windows_db_label'),
-                path: '%APPDATA%\\itch\\db\\butler.db',
+                path: DETECTED_PATHS.itch.windows,
               },
               {
                 label: t('itch_linux_db_label'),
-                path: '~/.config/itch/db/butler.db',
+                path: DETECTED_PATHS.itch.linux,
               },
             ]}
           />

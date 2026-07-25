@@ -149,7 +149,7 @@ export default function AddGame({
                   <SelectItem value="EA">
                     {t('add_game_platform_ea')}
                   </SelectItem>
-                  <SelectItem value="Battle.net">
+                  <SelectItem value="BattleNet">
                     {t('add_game_platform_battlenet')}
                   </SelectItem>
                   <SelectItem value={'Xbox'}>
@@ -158,7 +158,7 @@ export default function AddGame({
                   <SelectItem value="Indiegala">
                     {t('add_game_platform_indiegala')}
                   </SelectItem>
-                  <SelectItem value={'Itch.io'}>
+                  <SelectItem value={'Itch'}>
                     {t('add_game_platform_itch')}
                   </SelectItem>
                   <SelectItem value="Indie">
