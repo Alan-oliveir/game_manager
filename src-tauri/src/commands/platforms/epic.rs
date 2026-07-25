@@ -1,17 +1,20 @@
 //! Epic Games - Login OAuth e importação (biblioteca completa + instalados)
 
-use crate::commands::platforms::core::persist_source_games;
+use crate::commands::platforms::core::{
+    format_import_empty, format_import_summary, format_login_success, persist_source_games,
+};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::epic::{merge_local_install_status, EpicSource};
 use crate::sources::providers::OAuthGameSource;
 use tauri::{AppHandle, Emitter, State};
+use tracing::info;
 
 #[tauri::command]
 pub async fn epic_login(app: AppHandle) -> Result<String, AppError> {
     let source = EpicSource::new(app, None);
     source.login().await?;
-    Ok("Conta Epic conectada com sucesso!".to_string())
+    Ok(format_login_success("Epic"))
 }
 
 #[tauri::command]
@@ -50,14 +53,14 @@ pub async fn import_epic_games(
     merge_local_install_status(&mut games, local_games);
 
     if games.is_empty() {
-        return Ok("Nenhum jogo Epic encontrado.".to_string());
+        return Ok(format_import_empty("Epic"));
     }
 
     let (inserted, updated, _newly_imported) = persist_source_games(&state, games).await?;
+    let message = format_import_summary("Epic", inserted, updated);
+    info!("{}", message);
+
     let _ = app.emit("library_updated", ());
 
-    Ok(format!(
-        "Epic: {} adicionados, {} atualizados",
-        inserted, updated
-    ))
+    Ok(message)
 }

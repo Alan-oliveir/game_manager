@@ -1,5 +1,6 @@
 //! IndieGala - Importa jogos instalados ou biblioteca completa via IGClient
 
+use crate::commands::platforms::core::format_import_summary;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::indiegala::IndiegalaSource;
@@ -158,10 +159,7 @@ pub async fn import_indiegala_games(
     }
 
     let (inserted, updated) = persist_indiegala_games(&state, games).await?;
-    let message = format!(
-        "IndieGala: {} adicionados, {} atualizados",
-        inserted, updated
-    );
+    let message = format_import_summary("IndieGala", inserted, updated);
     info!("{}", message);
 
     let _ = app.emit("library_updated", ());

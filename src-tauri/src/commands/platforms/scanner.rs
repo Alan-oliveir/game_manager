@@ -2,12 +2,15 @@
 //!
 //! Retorna uma lista de descobertas encontradas.
 
-use crate::commands::platforms::core::{persist_source_games, ScanGameInput, ScanResult};
+use crate::commands::platforms::core::{
+    format_import_summary, persist_source_games, ScanGameInput, ScanResult,
+};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::scanner::scan_folder;
 use std::path::Path;
 use tauri::{AppHandle, Emitter, State};
+use tracing::info;
 
 #[tauri::command]
 pub async fn scan_games_folder(folder_path: String) -> Result<ScanResult, String> {
@@ -105,7 +108,10 @@ pub async fn add_games_from_scan(
         .collect();
 
     let (inserted, updated, _newly_imported) = persist_source_games(&state, source_games).await?;
+    let message = format_import_summary("Local", inserted, updated);
+    info!("{}", message);
+
     let _ = app.emit("library_updated", ());
 
-    Ok(format!("{} adicionados, {} atualizados", inserted, updated))
+    Ok(message)
 }

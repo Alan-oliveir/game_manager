@@ -1,5 +1,6 @@
 //! Itch.io - Importa jogos instalados ou biblioteca completa lendo o butler.db
 
+use crate::commands::platforms::core::format_import_summary;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::itch::{ItchioGame, ItchioSource};
@@ -165,7 +166,7 @@ pub async fn import_itch_games(
     }
 
     let (inserted, updated) = persist_itch_games(&state, games).await?;
-    let message = format!("Itch.io: {} adicionados, {} atualizados", inserted, updated);
+    let message = format_import_summary("Itch.io", inserted, updated);
     info!("{}", message);
 
     let _ = app.emit("library_updated", ());

@@ -1,6 +1,8 @@
 //! EA - Importa jogos instalados via EA Desktop (Electronic Arts)
 
-use crate::commands::platforms::core::persist_source_games;
+use crate::commands::platforms::core::{
+    format_import_empty, format_import_summary, persist_source_games,
+};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::ea::EaSource;
@@ -25,11 +27,11 @@ pub async fn import_ea_games(
     let games = source.import_installed().await?;
 
     if games.is_empty() {
-        return Ok("Nenhum jogo EA encontrado.".to_string());
+        return Ok(format_import_empty("EA"));
     }
 
     let (inserted, updated, _newly_imported) = persist_source_games(&state, games).await?;
-    let message = format!("EA: {} adicionados, {} atualizados", inserted, updated);
+    let message = format_import_summary("EA", inserted, updated);
     info!("{}", message);
 
     let _ = app.emit("library_updated", ());

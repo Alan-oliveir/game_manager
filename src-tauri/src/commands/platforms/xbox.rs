@@ -1,9 +1,12 @@
 //! Xbox / Microsoft Store - Importação de jogos instalados via Gaming Services
 
-use crate::commands::platforms::core::persist_source_games;
+use crate::commands::platforms::core::{
+    format_import_empty, format_import_summary, persist_source_games,
+};
 use crate::database::AppState;
 use crate::errors::AppError;
 use tauri::{AppHandle, Emitter, State};
+use tracing::info;
 
 #[tauri::command]
 pub async fn import_xbox_games(
@@ -13,14 +16,14 @@ pub async fn import_xbox_games(
     let games = crate::sources::xbox::import_installed()?;
 
     if games.is_empty() {
-        return Ok("Nenhum jogo Xbox/Microsoft Store encontrado.".to_string());
+        return Ok(format_import_empty("Xbox"));
     }
 
     let (inserted, updated, _newly_imported) = persist_source_games(&state, games).await?;
+    let message = format_import_summary("Xbox", inserted, updated);
+    info!("{}", message);
+
     let _ = app.emit("library_updated", ());
 
-    Ok(format!(
-        "Xbox: {} adicionados, {} atualizados",
-        inserted, updated
-    ))
+    Ok(message)
 }

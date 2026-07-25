@@ -1,5 +1,8 @@
 //! GOG GALAXY - Importa jogos da GOG
 
+use crate::commands::platforms::core::{
+    format_import_empty, format_import_summary, format_login_success,
+};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::gog::GogSource;
@@ -8,7 +11,7 @@ use crate::utils::status_logic;
 use chrono::Utc;
 use rusqlite::params;
 use tauri::{AppHandle, Emitter, State};
-use tracing::info;
+use tracing::{info, warn};
 use uuid::Uuid;
 
 // === GOG (OAuth) ===
@@ -19,7 +22,7 @@ use uuid::Uuid;
 pub async fn gog_login(app: AppHandle) -> Result<String, AppError> {
     let source = GogSource::new(app);
     source.login().await?;
-    Ok("Conta GOG conectada com sucesso!".to_string())
+    Ok(format_login_success("GOG"))
 }
 
 /// Remove o token OAuth salvo da conta GOG (logout).
@@ -133,16 +136,16 @@ pub async fn import_gog_games(
         if path.exists() && path.is_dir() {
             detect_installed_games(&mut games, path);
         } else {
-            log::warn!("GOG games directory provided but not found: {}", dir);
+            warn!("GOG games directory provided but not found: {}", dir);
         }
     }
 
     if games.is_empty() {
-        return Ok("Nenhum jogo GOG encontrado.".to_string());
+        return Ok(format_import_empty("GOG"));
     }
 
     let (inserted, updated) = persist_gog_games(&state, games).await?;
-    let message = format!("GOG: {} adicionados, {} atualizados", inserted, updated);
+    let message = format_import_summary("GOG", inserted, updated);
     info!("{}", message);
 
     let _ = app.emit("library_updated", ());

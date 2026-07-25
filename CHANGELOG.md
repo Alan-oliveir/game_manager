@@ -44,6 +44,9 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 
+- Import command success/empty messages/login success messages standardized across all platform sources via shared
+  `format_import_summary`/`format_import_empty`/`format_login_success` helpers in `commands/platforms/core.rs`,
+  replacing inconsistent per-platform phrasing with a single consistent format.
 - Frontend rendering of platform names now utilizes a centralized `PlatformDisplayNames` dictionary to map internal
   `PascalCase` codes to their proper commercial names (e.g., `Battle.net`, `Itch.io`) across all UI components
 - Platform settings screens standardized across all integrations: page titles now show only the platform name,

@@ -348,7 +348,7 @@ export default function Trending(props: TrendingProps) {
         </div>
       </div>
 
-      {/* 3. Container Principal de Conteúdo (Jogos Grátis) */}
+      {/* 3. Container Principal de Conteúdo */}
       <div className="mx-auto max-w-7xl px-6 py-8">
         {shouldShowGiveawaysSection && (
           <>

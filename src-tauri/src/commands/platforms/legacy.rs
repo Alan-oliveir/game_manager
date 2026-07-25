@@ -1,5 +1,6 @@
 //! Legacy - Importa jogos de Legacy Games Launcher
 
+use crate::commands::platforms::core::{format_import_empty, format_import_summary};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::legacy::LegacySource;
@@ -134,14 +135,11 @@ pub async fn import_legacy_games(
     let games = source.fetch_games_detailed().await?;
 
     if games.is_empty() {
-        return Ok("Nenhum jogo Legacy Games encontrado.".to_string());
+        return Ok(format_import_empty("Legacy Games"));
     }
 
     let (inserted, updated) = persist_legacy_games(&state, games).await?;
-    let message = format!(
-        "Legacy Games: {} adicionados, {} atualizados",
-        inserted, updated
-    );
+    let message = format_import_summary("Legacy Games", inserted, updated);
     info!("{}", message);
 
     let _ = app.emit("library_updated", ());

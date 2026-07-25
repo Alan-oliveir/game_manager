@@ -1,16 +1,19 @@
 //! Amazon Games - Login (registro de dispositivo) e importação de biblioteca completa
 
-use crate::commands::platforms::core::persist_source_games;
+use crate::commands::platforms::core::{
+    format_import_empty, format_import_summary, format_login_success, persist_source_games,
+};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::amazon::AmazonSource;
 use tauri::{AppHandle, Emitter, State};
+use tracing::info;
 
 #[tauri::command]
 pub async fn amazon_login(app: AppHandle) -> Result<String, AppError> {
     let source = AmazonSource::new(app);
     source.login().await?;
-    Ok("Conta Amazon Games conectada com sucesso!".to_string())
+    Ok(format_login_success("Amazon"))
 }
 
 #[tauri::command]
@@ -44,14 +47,14 @@ pub async fn import_amazon_games(
     crate::sources::amazon::merge_local_install_status(&mut games, local_games);
 
     if games.is_empty() {
-        return Ok("Nenhum jogo Amazon encontrado.".to_string());
+        return Ok(format_import_empty("Amazon"));
     }
 
     let (inserted, updated, _newly_imported) = persist_source_games(&state, games).await?;
+    let message = format_import_summary("Amazon", inserted, updated);
+    info!("{}", message);
+
     let _ = app.emit("library_updated", ());
 
-    Ok(format!(
-        "Amazon: {} adicionados, {} atualizados",
-        inserted, updated
-    ))
+    Ok(message)
 }

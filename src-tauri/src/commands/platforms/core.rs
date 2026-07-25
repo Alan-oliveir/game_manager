@@ -1,6 +1,6 @@
 //! Funções genéricas usadas na importação de bibliotecas de plataformas externas (Steam, Epic, GOG).
 //!
-//! Fornece comandos para salvar dados dos jogos nos bancos de dados.
+//! Fornece comandos para salvar dados dos jogos nos bancos de dados e mensagens padronizadas.
 
 use crate::constants;
 use crate::database::AppState;
@@ -154,4 +154,21 @@ pub(crate) async fn persist_source_games(
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
     Ok((inserted, updated, newly_imported))
+}
+
+// === Funções padronizadas para mensagens ===
+
+/// Mensagem padrão de sucesso: "<Plataforma>: X adicionados, Y atualizados".
+pub fn format_import_summary(platform: &str, inserted: u32, updated: u32) -> String {
+    format!("{platform}: {inserted} adicionados, {updated} atualizados")
+}
+
+/// Mensagem padrão de biblioteca vazia: "Nenhum jogo <plataforma> encontrado."
+pub fn format_import_empty(platform: &str) -> String {
+    format!("Nenhum jogo {platform} encontrado.")
+}
+
+/// Mensagem padrão de conexão bem sucedida: "Conta <plataforma> conectada com sucesso!"
+pub fn format_login_success(platform: &str) -> String {
+    format!("Conta {platform} conectada com sucesso!")
 }
