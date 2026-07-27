@@ -96,6 +96,9 @@ pub enum AppError {
 
     #[error("Token OAuth não encontrado para o provedor: {0}")]
     OAuthTokenNotFound(String),
+
+    #[error("Erro ao lançar jogo: {0}")]
+    LaunchError(String),
 }
 
 impl From<rusqlite::Error> for AppError {

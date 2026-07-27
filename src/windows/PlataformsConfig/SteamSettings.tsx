@@ -7,6 +7,7 @@ import { Input } from '@/ui/input';
 
 import {
   ImportProgressIndicator,
+  LauncherPathSection,
   PathPickerField,
   PlatformActionButton,
   PlatformActionsFooter,
@@ -102,6 +103,12 @@ export function SteamSettings({
             showPreview={false}
           />
         </SettingsRow>
+
+        <LauncherPathSection
+          platform="Steam"
+          title={t('steam_launcher_path_title')}
+          description={t('launcher_path_description')}
+        />
       </div>
 
       {/* Ajuda */}

@@ -9,6 +9,7 @@ import {
   ImportedItemsBox,
   ImportProgressIndicator,
   InfoNoteBox,
+  LauncherPathSection,
   PlatformActionButton,
   PlatformActionsFooter,
   PlatformHeader,
@@ -107,6 +108,12 @@ export function EpicGamesSettings({
             </p>
           </InfoNoteBox>
         </SettingsRow>
+
+        <LauncherPathSection
+          platform="Epic"
+          title={t('epic_launcher_path_title')}
+          description={t('launcher_path_description')}
+        />
 
         {/* Info sobre o que será importado */}
         <ImportedItemsBox

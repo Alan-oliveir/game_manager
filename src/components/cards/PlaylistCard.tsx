@@ -1,16 +1,8 @@
-import {
-  ArrowDown,
-  ArrowUp,
-  GripVertical,
-  ImageOff,
-  Play,
-  Trash2,
-} from 'lucide-react';
+import { ArrowDown, ArrowUp, GripVertical, ImageOff, Play, Trash2, } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Game } from '@/types';
 import { Button } from '@/ui/button';
-import { launchGame } from '@/utils/launcher';
 
 interface PlaylistItemProps {
   game: Game;
@@ -168,7 +160,7 @@ export function PlaylistCard({
           onClick={e => {
             e.stopPropagation();
             e.preventDefault();
-            launchGame(game);
+            onPlay();
           }}
           onMouseDown={e => e.stopPropagation()}
           onTouchStart={e => e.stopPropagation()}

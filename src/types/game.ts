@@ -64,6 +64,15 @@ export const PlatformDisplayNames: Record<Platform, string> = {
 export type ImportConfidence = 'High' | 'Medium' | 'Low';
 
 /**
+ * Tipos para iniciar jogos por plataforma
+ */
+export type LaunchOutcome =
+  | { kind: 'launched' }
+  | { kind: 'openedLauncher'; installed: boolean }
+  | { kind: 'openedStore' }
+  | { kind: 'unavailable' };
+
+/**
  * Informações básicas do jogo - Schema 3.0
  *
  * Dados básicos armazenados no banco de dados local.

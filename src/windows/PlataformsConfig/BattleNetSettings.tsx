@@ -9,6 +9,7 @@ import {
   DetectedPathsBox,
   ImportedItemsBox,
   ImportProgressIndicator,
+  LauncherPathSection,
   PlatformActionButton,
   PlatformActionsFooter,
   PlatformHeader,
@@ -56,6 +57,12 @@ export function BattleNetSettings({
             note={t('battlenet_linux_note')}
           />
         </SettingsRow>
+
+        <LauncherPathSection
+          platform="BattleNet"
+          title={t('battlenet_launcher_path_title')}
+          description={t('launcher_path_description')}
+        />
 
         <ImportedItemsBox
           title={t('battlenet_imported_title')}

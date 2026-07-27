@@ -19,6 +19,7 @@
 
 use crate::errors::AppError;
 use crate::sources::providers::SourceGame;
+use crate::utils::executable_heuristics::guess_main_executable;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -101,12 +102,15 @@ impl EaSource {
                         matched_known.insert(m.clone());
                     }
 
+                    let executable_path =
+                        guess_main_executable(&path).map(|p| p.to_string_lossy().to_string());
+
                     games.push(SourceGame {
                         platform: "EA".to_string(),
                         platform_game_id: normalize_id(&display_name),
                         name: Some(display_name),
                         installed: true,
-                        executable_path: None,
+                        executable_path,
                         install_path: Some(path.to_string_lossy().to_string()),
                         playtime_minutes: None,
                         last_played: None,

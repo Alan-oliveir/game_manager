@@ -8,6 +8,7 @@ export { useHeroicConfig } from './useHeroicConfig';
 export { useImportProgress } from './useImportProgress';
 export { useIndiegalaConfig } from './useIndiegalaConfig';
 export { useItchConfig } from './useItchConfig';
+export { useLauncherPathOverride } from './useLauncherPathOverride';
 export { useLegacyConfig } from './useLegacyConfig';
 export { useLocalStoragePlatformPath } from './useLocalStoragePlatformPath';
 export { useNativePathPicker } from './useNativePathPicker';

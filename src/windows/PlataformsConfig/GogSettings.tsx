@@ -2,12 +2,17 @@ import { FolderOpen, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import { ImportProgressPayload, useGogConfig, useNativePathPicker, } from '@/hooks/plataforms';
+import {
+  ImportProgressPayload,
+  useGogConfig,
+  useNativePathPicker,
+} from '@/hooks/plataforms';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 
 import {
   ImportedItemsBox,
   ImportProgressIndicator,
+  LauncherPathSection,
   PathPickerField,
   PlatformActionButton,
   PlatformActionsFooter,
@@ -101,6 +106,12 @@ export function GogSettings({
             showPreview={false}
           />
         </SettingsRow>
+
+        <LauncherPathSection
+          platform="GOG"
+          title={t('gog_launcher_path_title')}
+          description={t('launcher_path_description')}
+        />
 
         <ImportedItemsBox
           title={t('gog_imported_title')}

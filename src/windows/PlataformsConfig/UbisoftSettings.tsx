@@ -9,6 +9,7 @@ import {
   ImportedItemsBox,
   ImportProgressIndicator,
   InfoNoteBox,
+  LauncherPathSection,
   PlatformActionButton,
   PlatformActionsFooter,
   PlatformHeader,
@@ -73,6 +74,12 @@ export function UbisoftSettings({
             </p>
           </InfoNoteBox>
         </SettingsRow>
+
+        <LauncherPathSection
+          platform="Ubisoft"
+          title={t('ubisoft_launcher_path_title')}
+          description={t('launcher_path_description')}
+        />
 
         {/* Info sobre o que será importado */}
         <ImportedItemsBox

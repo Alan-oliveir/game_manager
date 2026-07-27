@@ -98,8 +98,8 @@ pub(crate) async fn persist_source_games(
                 "INSERT INTO games (
                     id, name, cover_url, platform, platform_game_id,
                     installed, status, playtime, last_played, added_at,
-                    favorite, user_rating, install_path
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0, NULL, ?11)",
+                    favorite, user_rating, install_path, executable_path
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0, NULL, ?11, ?12)",
                 params![
                     new_id,
                     game.name.unwrap_or_else(|| "Unknown".to_string()),
@@ -111,7 +111,8 @@ pub(crate) async fn persist_source_games(
                     game.playtime_minutes.unwrap_or(0),
                     last_played_iso,
                     now,
-                    game.install_path
+                    game.install_path,
+                    game.executable_path,
                 ],
             )
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
@@ -131,14 +132,16 @@ pub(crate) async fn persist_source_games(
                     status = ?2,
                     playtime = ?3,
                     last_played = ?4,
-                    install_path = COALESCE(?5, install_path)
-                 WHERE platform = ?6 AND platform_game_id = ?7",
+                    install_path = COALESCE(?5, install_path),
+                    executable_path = COALESCE(?6, executable_path)
+                 WHERE platform = ?7 AND platform_game_id = ?8",
                 params![
                     game.installed,
                     status,
                     game.playtime_minutes.unwrap_or(0),
                     last_played_iso,
                     game.install_path,
+                    game.executable_path,
                     game.platform,
                     game.platform_game_id
                 ],

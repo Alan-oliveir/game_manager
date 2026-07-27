@@ -8,12 +8,12 @@ use crate::errors::AppError;
 use crate::models::GameTag;
 use crate::services::tags::classify_and_sort_tags;
 use crate::sources::providers::SourceGame;
+use crate::utils::executable_heuristics::guess_main_executable;
 use async_trait::async_trait;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-
 // === JOGO IMPORTADO COM METADADOS EXTRAS (além do SourceGame padrão) ===
 
 /// Jogo importado da IndieGala com campos adicionais além do `SourceGame` padrão.
@@ -177,25 +177,36 @@ impl IndiegalaSource {
             let item = &entry.target.item_data;
             let game_data = &entry.target.game_data;
 
-            let install_path = entry.path.first().map(|root| {
-                let candidate = Path::new(root).join(&item.slugged_name);
-                if candidate.is_dir() {
-                    candidate.to_string_lossy().to_string()
-                } else {
-                    log::warn!(
-                        "IndieGala: pasta esperada '{}' não existe, usando raiz configurada '{root}' como install_path",
-                        candidate.display()
-                    );
-                    root.clone()
-                }
-            });
+            // Pasta específica do jogo, se existir de fato — distinto do `install_path`, que pode
+            // cair pra raiz compartilhada quando essa pasta não existe. A heurística de executável
+            // deve rodar na pasta específica; rodar na raiz compartilhada traria o .exe de outro jogo.
+            let game_folder = entry
+                .path
+                .first()
+                .map(|root| Path::new(root).join(&item.slugged_name))
+                .filter(|candidate| candidate.is_dir());
 
-            // exe_path costuma ser relativo (ex: "deponia.exe", "ScummVM/scummvm.exe").
+            let install_path = match &game_folder {
+                Some(folder) => Some(folder.to_string_lossy().to_string()),
+                None => entry.path.first().cloned().inspect(|root| {
+                    log::warn!(
+                "IndieGala: pasta esperada '{}/{}' não existe, usando raiz configurada '{root}' como install_path",
+                root, item.slugged_name
+            );
+                }),
+            };
+
+            // exe_path costuma ser relativo (ex: "deponia.exe", "ScummVM/scummvm.exe"), mas é
+            // comumente `null` (confirmado em jogos reais) — nesse caso, tenta a heurística de
+            // maior .exe na pasta específica do jogo, se ela existir.
             let executable_path = match (&game_data.exe_path, &install_path) {
-                (Some(exe), Some(base)) => {
+                (Some(exe), Some(base)) if !exe.trim().is_empty() => {
                     Some(Path::new(base).join(exe).to_string_lossy().to_string())
                 }
-                _ => None,
+                _ => game_folder
+                    .as_deref()
+                    .and_then(guess_main_executable)
+                    .map(|p| p.to_string_lossy().to_string()),
             };
 
             // playtime vem em SEGUNDOS.

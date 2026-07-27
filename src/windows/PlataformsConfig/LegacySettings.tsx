@@ -12,6 +12,7 @@ import {
   ImportedItemsBox,
   ImportProgressIndicator,
   InfoNoteBox,
+  LauncherPathSection,
   PathPickerField,
   PlatformActionButton,
   PlatformActionsFooter,
@@ -117,6 +118,12 @@ export function LegacySettings({
             ariaLabel={t('legacy_manual_path_title')}
           />
         </SettingsRow>
+
+        <LauncherPathSection
+          platform="Legacy"
+          title={t('legacy_launcher_path_title')}
+          description={t('launcher_path_description')}
+        />
 
         {/* O que será importado */}
         <ImportedItemsBox

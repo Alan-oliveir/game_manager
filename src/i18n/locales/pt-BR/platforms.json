@@ -373,5 +373,20 @@
   "epic_importing_status": "Importando jogos Epic Games...",
   "heroic_importing_status": "Importando jogos Heroic...",
   "ubisoft_importing_status": "Importando jogos Ubisoft...",
-  "legacy_importing_status": "Importando jogos Legacy Games..."
+  "legacy_importing_status": "Importando jogos Legacy Games...",
+
+  "steam_launcher_path_title": "Local do Steam",
+  "epic_launcher_path_title": "Local do Epic Games Launcher",
+  "gog_launcher_path_title": "Local do GOG Galaxy",
+  "ubisoft_launcher_path_title": "Local do Ubisoft Connect",
+  "battlenet_launcher_path_title": "Local do Battle.net",
+  "indiegala_launcher_path_title": "Local do IndieGala Cliente",
+  "itch_launcher_path_title": "Local do Itch.io App",
+  "legacy_launcher_path_title": "Local do launcher Legacy Games",
+  "launcher_path_description": "Usado quando o jogo precisa abrir via launcher em vez de direto.",
+  "launcher_path_not_set": "Não configurado (usando local padrão)",
+  "launcher_path_select_button": "Selecionar",
+  "launcher_path_clear_title": "Remover caminho customizado",
+  "launcher_path_picker_title": "Selecione o executável do launcher",
+  "launcher_path_picker_success": "Caminho do launcher salvo"
 }

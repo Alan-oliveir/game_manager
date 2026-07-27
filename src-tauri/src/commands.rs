@@ -21,6 +21,7 @@ pub mod achievements;
 pub mod ai_translation;
 pub mod caches;
 pub mod games;
+pub mod launcher;
 pub mod metadata;
 pub mod platforms;
 pub mod recommendation;

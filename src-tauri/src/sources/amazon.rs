@@ -22,7 +22,8 @@ use async_trait::async_trait;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::time::Duration;
 use tauri::{AppHandle, WebviewUrl, WebviewWindowBuilder};
@@ -107,6 +108,20 @@ struct AmazonProduct {
     id: String,
     #[serde(default)]
     title: Option<String>,
+}
+
+// === STRUCTS: fuel.json ===
+
+#[derive(Deserialize)]
+struct FuelMain {
+    #[serde(rename = "Command")]
+    command: String,
+}
+
+#[derive(Deserialize)]
+struct FuelManifest {
+    #[serde(rename = "Main")]
+    main: FuelMain,
 }
 
 // === SOURCE ===
@@ -551,8 +566,26 @@ fn resolve_db_path() -> Option<PathBuf> {
 /// Copia o DB pra um arquivo temporário antes de abrir — evita conflito de lock com o Amazon Games App, caso esteja rodando ao mesmo tempo.
 fn copy_to_temp(source: &PathBuf) -> Result<PathBuf, AppError> {
     let temp_path = std::env::temp_dir().join("playlite_amazon_gameinstallinfo.sqlite");
-    std::fs::copy(source, &temp_path)?;
+    fs::copy(source, &temp_path)?;
     Ok(temp_path)
+}
+
+/// Resolve o executável de um jogo Amazon Games a partir do `fuel.json` salvo na pasta de instalação.
+///
+/// **Observação:** formato não documentado oficialmente pela Amazon — inferido a partir do próprio
+/// arquivo e de integrações da comunidade (Nile, Playnite). Se o arquivo não existir, vier malformado,
+/// ou `Command` estiver vazio, retorna `None` sem erro — quem chama cai pro fallback (launcher).
+fn resolve_amazon_executable(install_dir: &Path) -> Option<PathBuf> {
+    let fuel_path = install_dir.join("fuel.json");
+    let content = fs::read_to_string(&fuel_path).ok()?;
+    let manifest: FuelManifest = serde_json::from_str(&content).ok()?;
+
+    let command = manifest.main.command.trim();
+    if command.is_empty() {
+        return None;
+    }
+
+    Some(install_dir.join(command))
 }
 
 /// Importa jogos instalados detectados no banco local do Amazon Games App.
@@ -577,12 +610,17 @@ pub fn import_installed() -> Result<Vec<SourceGame>, AppError> {
             let install_dir: Option<String> = row.get(1)?;
             let title: Option<String> = row.get(3)?;
 
+            let executable_path = install_dir
+                .as_ref()
+                .and_then(|dir| resolve_amazon_executable(Path::new(dir)))
+                .map(|p| p.to_string_lossy().to_string());
+
             Ok(SourceGame {
                 platform: "Amazon".to_string(),
                 platform_game_id: id,
                 name: title,
                 installed: true,
-                executable_path: None, // não disponível nesta tabela
+                executable_path, // resolvido via fuel.json quando disponível
                 install_path: install_dir,
                 playtime_minutes: None,
                 last_played: None,
@@ -591,7 +629,7 @@ pub fn import_installed() -> Result<Vec<SourceGame>, AppError> {
         .filter_map(|r| r.ok())
         .collect();
 
-    let _ = std::fs::remove_file(&temp_path);
+    let _ = fs::remove_file(&temp_path);
 
     Ok(games)
 }
@@ -612,6 +650,7 @@ pub fn merge_local_install_status(
             Some(g) => {
                 g.installed = true;
                 g.install_path = local.install_path;
+                g.executable_path = local.executable_path;
             }
             None => library_games.push(local), // instalado mas ausente da lib (raro; mantém mesmo assim)
         }

@@ -17,7 +17,7 @@ use crate::utils::text::is_likely_non_base_game;
 use async_trait::async_trait;
 use serde::Deserialize;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::time::Duration;
 use tauri::{AppHandle, WebviewUrl, WebviewWindowBuilder};
@@ -40,6 +40,22 @@ struct GogFilteredProductsResponse {
     #[serde(rename = "totalPages")]
     total_pages: u32,
     products: Vec<GogProduct>,
+}
+
+#[derive(Deserialize)]
+struct GogPlayTask {
+    #[serde(rename = "type")]
+    task_type: String,
+    category: Option<String>,
+    path: Option<String>,
+    #[serde(rename = "isPrimary", default)]
+    is_primary: bool,
+}
+
+#[derive(Deserialize)]
+struct GogGameInfo {
+    #[serde(rename = "playTasks")]
+    play_tasks: Vec<GogPlayTask>,
 }
 
 // === IMPLEMENTAÇÕES ===
@@ -263,6 +279,26 @@ pub fn detect_installed_games(games: &mut [SourceGame], gog_games_dir: &Path) {
         if let Some((_, path)) = matched {
             game.installed = true;
             game.install_path = Some(path.to_string_lossy().to_string());
+            game.executable_path = resolve_gog_executable(path, &game.platform_game_id)
+                .map(|p| p.to_string_lossy().to_string());
         }
     }
+}
+
+fn resolve_gog_executable(install_path: &Path, product_id: &str) -> Option<PathBuf> {
+    let info_path = install_path.join(format!("goggame-{product_id}.info"));
+    let content = fs::read_to_string(&info_path).ok()?;
+    let info: GogGameInfo = serde_json::from_str(&content).ok()?;
+
+    let is_game_file_task =
+        |t: &GogPlayTask| t.task_type == "FileTask" && t.category.as_deref() == Some("game");
+
+    // Preferência: task marcado como primário. Fallback: primeiro FileTask de categoria "game",
+    // já que alguns goggame-*.info não marcam isPrimary em nenhum task.
+    info.play_tasks
+        .iter()
+        .find(|t| is_game_file_task(t) && t.is_primary)
+        .or_else(|| info.play_tasks.iter().find(|t| is_game_file_task(t)))
+        .and_then(|t| t.path.as_ref())
+        .map(|rel| install_path.join(rel))
 }

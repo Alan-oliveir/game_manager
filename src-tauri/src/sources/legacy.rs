@@ -129,6 +129,24 @@ fn normalize_game_name(name: &str) -> String {
     trimmed.to_string()
 }
 
+// === SANITIZAÇÃO DE CAMINHOS ===
+
+/// Remove caracteres inválidos para nomes de arquivo/pasta no Windows.
+///
+/// A Legacy Games faz o mesmo ao criar a pasta de instalação a partir do
+/// nome do catálogo — por exemplo, `"Around The World 1: Travel to Brazil CE"`
+/// vira a pasta `Around The World 1 Travel to Brazil CE` (sem o `:`, mas com
+/// os espaços preservados e o sufixo de edição mantido). Diferente de
+/// `normalize_game_name`, esta função NÃO remove sufixos de edição — apenas
+/// os caracteres que o sistema de arquivos do Windows não aceita.
+fn sanitize_path_component(name: &str) -> String {
+    name.replace([':', '/', '\\', '*', '?', '"', '<', '>', '|'], "")
+        // Colapsa espaços duplos que podem sobrar após remover o caractere
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 // === HELPER DE DESSERIALIZAÇÃO ===
 
 /// Helper: deserializa product_id tanto como String quanto como número
@@ -160,11 +178,9 @@ where
 /// # });
 /// ```
 pub struct LegacySource {
-    /// Caminho para o arquivo `app-state-bck.json`.
-    /// Se `None`, usa o caminho padrão do sistema operacional.
+    /// Caminho para o arquivo `app-state-bck.json`. Se `None`, usa o caminho padrão do sistema operacional.
     pub app_state_path: Option<PathBuf>,
-    /// Wine prefix utilizado no Linux para localizar o launcher da Legacy Games.
-    /// Ignorado no Windows.
+    /// Wine prefix utilizado no Linux para localizar o launcher da Legacy Games. Ignorado no Windows.
     pub wine_prefix: Option<PathBuf>,
 }
 
@@ -212,19 +228,23 @@ impl LegacySource {
 
     /// Verifica se um jogo está instalado no diretório da biblioteca.
     ///
-    /// A Legacy Games instala cada jogo em `<gameLibraryPath>/<game_name>/`,
-    /// e o executável principal costuma ter o mesmo nome que a pasta.
+    /// A Legacy Games instala cada jogo em `<gameLibraryPath>/<game_name>/`, onde `<game_name>` é o
+    /// nome do catálogo com os caracteres inválidos de caminho removidos (o `:` de "Nome: Subtítulo",
+    /// por exemplo) — mas com sufixos de edição como "CE" preservados. O executável principal costuma
+    /// ter o mesmo nome, sem espaços.
     fn resolve_install_info(
         library_paths: &[String],
         game_name: &str,
     ) -> (bool, Option<String>, Option<String>) {
+        let sanitized_name = sanitize_path_component(game_name);
+
         for base in library_paths {
-            let game_dir = Path::new(base).join(game_name);
+            let game_dir = Path::new(base).join(&sanitized_name);
             if game_dir.is_dir() {
                 let install_path = game_dir.to_string_lossy().to_string();
 
                 // Tenta localizar o executável com o mesmo nome do jogo
-                let exe_path = Self::find_executable(&game_dir, game_name);
+                let exe_path = Self::find_executable(&game_dir, &sanitized_name);
 
                 return (true, Some(install_path), exe_path);
             }
@@ -234,11 +254,11 @@ impl LegacySource {
 
     /// Procura o executável `.exe` dentro do diretório de instalação.
     ///
-    /// Estratégia: primeiro tenta `<game_name>.exe`, depois qualquer `.exe`
-    /// que não seja desinstalador ou redistributível.
+    /// Estratégia: primeiro tenta `<game_name>.exe` (sem espaços nem caracteres inválidos, como a
+    /// Legacy Games nomeia o binário), depois qualquer `.exe` que não seja desinstalador ou redistributível.
     fn find_executable(game_dir: &Path, game_name: &str) -> Option<String> {
-        // 1. Tenta o executável com o mesmo nome do jogo
-        let sanitized = game_name.replace([':', '/', '\\', '*', '?', '"', '<', '>', '|'], "");
+        // 1. Tenta o executável com o mesmo nome do jogo (sem espaços)
+        let sanitized = sanitize_path_component(game_name).replace(' ', "");
         let candidate = game_dir.join(format!("{}.exe", sanitized));
         if candidate.is_file() {
             return Some(candidate.to_string_lossy().to_string());
@@ -276,9 +296,7 @@ impl LegacySource {
 
     /// Busca os jogos adquiridos com metadados completos.
     ///
-    /// Retorna [`LegacyGame`] ao invés de [`SourceGame`] puro, permitindo
-    /// persistir `cover_url` e `description_raw`.
-    ///
+    /// Retorna [`LegacyGame`] ao invés de [`SourceGame`] puro, permitindo persistir `cover_url` e `description_raw`.
     pub async fn fetch_games_detailed(&self) -> Result<Vec<LegacyGame>, AppError> {
         // Resolve o caminho do arquivo de estado
         let state_path = self
@@ -327,6 +345,10 @@ impl LegacySource {
                 continue;
             };
 
+            // IMPORTANTE: usa o nome cru do catálogo (com sufixo de edição, ex. "CE")para resolver
+            // a pasta de instalação, pois é assim que a Legacy Games nomeia o diretório no disco.
+            // `normalize_game_name` só deve ser aplicado ao nome exibido ao usuário, não ao caminho
+            // no sistema de arquivos.
             let (installed, install_path, executable_path) =
                 Self::resolve_install_info(library_paths, &catalog_game.game_name);
 

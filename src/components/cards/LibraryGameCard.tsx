@@ -3,8 +3,8 @@ import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ActionButton, GameActionsMenu } from '@/components/common';
+import { useLaunchGame } from '@/hooks/library';
 import { Game, PlatformDisplayNames } from '@/types';
-import { launchGame } from '@/utils/launcher';
 
 import StandardGameCard from './StandardGameCard';
 
@@ -45,6 +45,7 @@ export const LibraryGameCard = memo(function LibraryGameCard({
   isInPlaylist,
 }: Readonly<LibraryGameCardProps>) {
   const { t } = useTranslation('library');
+  const { launchGame } = useLaunchGame();
 
   const subtitle =
     [game.genres?.split(',')[0]?.trim(), game.developer]
@@ -53,7 +54,7 @@ export const LibraryGameCard = memo(function LibraryGameCard({
 
   const handleClick = useCallback(() => onGameClick(game), [onGameClick, game]);
 
-  const handlePlay = useCallback(() => launchGame(game), [game]);
+  const handlePlay = useCallback(() => launchGame(game), [launchGame, game]);
 
   const handleToggleFavorite = useCallback(
     () => onToggleFavorite(game.id),

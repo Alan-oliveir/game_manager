@@ -15,11 +15,16 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { PlaylistCard, Recommendation, StandardGameCard } from '@/components';
-import { usePagination, usePlaylist, useRecommendation } from '@/hooks';
+import {
+  useLaunchGame,
+  usePagination,
+  usePlaylist,
+  useRecommendation,
+} from '@/hooks';
 import { useConfirm } from '@/providers/ConfirmProvider';
 import { Game, traduzirType, UserPreferenceVector } from '@/types';
 import { Button } from '@/ui/button';
-import { getFavoriteSeries, launchGame, toast } from '@/utils';
+import { getFavoriteSeries, toast } from '@/utils';
 
 interface PlaylistProps {
   allGames: Game[];
@@ -33,6 +38,8 @@ export default function Playlist({
   profileCache,
 }: Readonly<PlaylistProps>) {
   const { t } = useTranslation('playlist');
+
+  const { launchGame } = useLaunchGame();
 
   const {
     playlistGames,

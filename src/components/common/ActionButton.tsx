@@ -1,5 +1,5 @@
 import { LucideIcon } from 'lucide-react';
-import { memo, MouseEvent } from 'react';
+import React, { memo, MouseEvent } from 'react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/button';
@@ -82,13 +82,12 @@ export const ActionButton = memo(function ActionButton({
       title={tooltip}
       {...props}
     >
-      <Icon
-        size={size}
-        className={cn(
-          // Se for glass-destructive, força o fill vermelho
-          variant === 'glass-destructive' ? 'fill-red-500' : ''
-        )}
-      />
+      {
+        <Icon
+          size={size}
+          className={cn(variant === 'glass-destructive' ? 'fill-red-500' : '')}
+        />
+      }
     </Button>
   );
 });

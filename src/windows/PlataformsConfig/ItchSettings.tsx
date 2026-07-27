@@ -10,6 +10,7 @@ import {
   DetectedPathsBox,
   ImportedItemsBox,
   ImportProgressIndicator,
+  LauncherPathSection,
   PlatformActionButton,
   PlatformActionsFooter,
   PlatformHeader,
@@ -63,6 +64,12 @@ export function ItchSettings({
             ]}
           />
         </SettingsRow>
+
+        <LauncherPathSection
+          platform="Itch"
+          title={t('itch_launcher_path_title')}
+          description={t('launcher_path_description')}
+        />
 
         <SettingsRow
           icon={isFull ? Library : HardDrive}

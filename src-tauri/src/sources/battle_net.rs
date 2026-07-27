@@ -42,13 +42,6 @@ struct CatalogEntry {
     name: String,
 }
 
-/// Jogo Battle.net com metadado extra (capa) que não faz parte do `SourceGame` genérico.
-/// Usado para preencher `games.cover_url` como fallback se não encontrar uma capa na RAWG.
-pub struct BattleNetGame {
-    pub source: SourceGame,
-    pub cover_url: Option<String>,
-}
-
 // === HELPERS ===
 
 static BATTLE_NET_CATALOG: Lazy<HashMap<String, String>> = Lazy::new(
@@ -77,8 +70,6 @@ struct AggregateGame {
     product_id: Option<String>,
     icon_path: Option<String>,
     last_played_timestamp: Option<i64>,
-    box_art_uri: Option<String>,
-    logo_art_uri: Option<String>,
 }
 
 // === PRODUCT.DB (protobuf, fonte primária) ===
@@ -115,30 +106,22 @@ impl BattleNetSource {
 
     /// Importa todos os jogos instalados detectados via `product.db`, enriquecidos com `aggregate.json` quando disponível.
     pub async fn import_installed(&self) -> Result<Vec<SourceGame>, AppError> {
-        let detailed = self.fetch_games_detailed().await?;
-        Ok(detailed.into_iter().map(|game| game.source).collect())
-    }
-
-    /// Importa todos os jogos instalados com metadados extras como capa.
-    pub async fn fetch_games_detailed(&self) -> Result<Vec<BattleNetGame>, AppError> {
         let Some(agent_dir) = self.resolve_agent_dir() else {
-            return Ok(vec![]); // Battle.net não instalado
+            return Ok(vec![]);
         };
 
         let product_db_path = agent_dir.join("product.db");
         if !product_db_path.exists() {
-            return Ok(vec![]); // Agent instalado, mas nenhum jogo ainda
+            return Ok(vec![]);
         }
 
         let db_bytes = fs::read(&product_db_path)?;
         let entries = parse_product_db(&db_bytes);
-
         let aggregate_map = Self::load_aggregate_map(&agent_dir.join("aggregate.json"));
 
         let mut games = Vec::with_capacity(entries.len());
 
         for entry in entries {
-            // Pseudo-produtos internos do client (Agent, Desktop App) não são jogos.
             if BATTLE_NET_INTERNAL_PRODUCT_IDS
                 .iter()
                 .any(|id| entry.product_id.eq_ignore_ascii_case(id))
@@ -154,7 +137,6 @@ impl BattleNetSource {
                 continue;
             };
 
-            // Descarta registros obsoletos (jogo removido manualmente, sem passar pelo Agent).
             if !Path::new(install_path).is_dir() {
                 log::warn!(
                     "product.db: pasta de instalação de '{}' não existe mais ({}), ignorando",
@@ -166,7 +148,6 @@ impl BattleNetSource {
 
             let enrichment = aggregate_map.get(&entry.product_id.to_lowercase());
 
-            // Sem tabela ProductId -> Nome própria (como a que o Playnite mantém manualmente), usa o próprio código do produto quando aggregate.json não tem o nome.
             let name = enrichment
                 .and_then(|g| g.name.clone())
                 .or_else(|| {
@@ -180,24 +161,18 @@ impl BattleNetSource {
 
             let last_played = enrichment
                 .and_then(|g| g.last_played_timestamp)
-                .filter(|&ms| ms > 0) // 0 = nunca jogado, não um timestamp válido
-                .map(|ms| ms / 1000); // aggregate.json usa ms; SourceGame espera segundos
+                .filter(|&ms| ms > 0)
+                .map(|ms| ms / 1000);
 
-            let cover_url =
-                enrichment.and_then(|g| g.box_art_uri.clone().or_else(|| g.logo_art_uri.clone()));
-
-            games.push(BattleNetGame {
-                source: SourceGame {
-                    platform: "BattleNet".to_string(),
-                    platform_game_id: entry.product_id,
-                    name: Some(name),
-                    installed: true,
-                    executable_path,
-                    install_path: Some(install_path.clone()),
-                    playtime_minutes: None, // Battle.net não expõe tempo jogado localmente
-                    last_played,
-                },
-                cover_url,
+            games.push(SourceGame {
+                platform: "BattleNet".to_string(),
+                platform_game_id: entry.product_id,
+                name: Some(name),
+                installed: true,
+                executable_path,
+                install_path: Some(install_path.clone()),
+                playtime_minutes: None,
+                last_played,
             });
         }
 

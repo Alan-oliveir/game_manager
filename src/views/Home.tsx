@@ -29,11 +29,11 @@ import {
   UbisoftPlusSection,
 } from '@/components/subscriptions';
 import { Recommendation } from '@/components/tooltips';
-import { useHeroCarousel, useHome } from '@/hooks';
+import { useHeroCarousel, useHome, useLaunchGame } from '@/hooks';
 import { Game, RawgGame, UserPreferenceVector } from '@/types';
 import { Button } from '@/ui/button';
 import { Separator } from '@/ui/separator';
-import { formatTime, launchGame, openExternalLink } from '@/utils';
+import { formatTime, openExternalLink } from '@/utils';
 
 interface HomeProps {
   onChangeTab: (tab: string) => void;
@@ -49,6 +49,9 @@ interface HomeProps {
 
 export default function Home(props: Readonly<HomeProps>) {
   const { t } = useTranslation('common');
+
+  const { launchGame } = useLaunchGame();
+
   const {
     stats,
     continuePlaying,

@@ -10,6 +10,7 @@ import {
   DetectedPathsBox,
   ImportedItemsBox,
   ImportProgressIndicator,
+  LauncherPathSection,
   PlatformActionButton,
   PlatformActionsFooter,
   PlatformHeader,
@@ -64,6 +65,12 @@ export function IndiegalaSettings({
             note={t('indiegala_windows_only_note')}
           />
         </SettingsRow>
+
+        <LauncherPathSection
+          platform="Indiegala"
+          title={t('indiegala_launcher_path_title')}
+          description={t('launcher_path_description')}
+        />
 
         {/* Modo de importação */}
         <SettingsRow

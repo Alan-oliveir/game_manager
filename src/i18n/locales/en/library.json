@@ -25,5 +25,11 @@
   "context_load_error": "Failed to load library",
   "context_game_updated": "Game updated!",
   "context_game_added": "Game added!",
-  "context_favorite_error": "Failed to favorite game"
+  "context_favorite_error": "Failed to favorite game",
+  "launch_starting": "Starting {{name}}...",
+  "launch_opening_launcher": "Opening {{platform}} launcher...",
+  "launch_opening_store": "{{name}} is not installed. Opening store page...",
+  "launch_opening_launcher_not_installed": "{{name}} is not installed. Opening {{platform}} launcher...",
+  "launch_unavailable": "Couldn't launch {{name}}: launcher not found.",
+  "launch_error": "Failed to launch game"
 }

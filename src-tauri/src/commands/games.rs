@@ -21,26 +21,20 @@ use uuid::Uuid;
 ///
 /// Reflete os campos da ‘interface’ de adição/edição de jogos.
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GameInput {
     pub id: String,
     pub name: String,
     pub platform: Platform,
-    #[serde(rename = "platformGameId")]
     pub platform_game_id: String,
-    #[serde(rename = "coverUrl")]
     pub cover_url: Option<String>,
     pub installed: bool,
-    #[serde(rename = "importConfidence")]
     pub import_confidence: Option<String>,
     pub playtime: Option<i32>,
-    #[serde(rename = "userRating")]
     pub user_rating: Option<i32>,
     pub status: Option<String>,
-    #[serde(rename = "installPath")]
     pub install_path: Option<String>,
-    #[serde(rename = "executablePath")]
     pub executable_path: Option<String>,
-    #[serde(rename = "launchArgs")]
     pub launch_args: Option<String>,
 }
 
@@ -340,6 +334,57 @@ pub fn get_library_game_details(
     } else {
         Ok(None)
     }
+}
+
+/// Recupera um único jogo da biblioteca pelo ID.
+///
+/// Retorna `None` se o ID não existir — não é considerado erro.
+#[tauri::command]
+pub fn get_game_by_id(
+    state: State<AppState>,
+    id: String,
+) -> Result<Option<models::Game>, AppError> {
+    let conn = state.games_db.lock()?;
+
+    let mut stmt = conn.prepare(
+        "SELECT
+            g.id, g.name, g.cover_url, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
+            g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.last_played, g.added_at,
+            gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult
+         FROM games g
+         LEFT JOIN game_details gd ON g.id = gd.game_id
+         WHERE g.id = ?1",
+    )?;
+
+    let game = stmt
+        .query_row(params![id], |row| {
+            Ok(models::Game {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                cover_url: row.get(2)?,
+                platform: row.get::<_, String>(3)?.parse().unwrap_or(Platform::Outra),
+                platform_game_id: row.get(4)?,
+                installed: row.get(5)?,
+                import_confidence: row
+                    .get::<_, Option<String>>(6)?
+                    .and_then(|s| s.parse().ok()),
+                install_path: row.get(7)?,
+                executable_path: row.get(8)?,
+                launch_args: row.get(9)?,
+                user_rating: row.get(10)?,
+                favorite: row.get(11)?,
+                status: row.get(12)?,
+                playtime: row.get(13)?,
+                last_played: row.get(14)?,
+                added_at: row.get(15)?,
+                genres: row.get(16)?,
+                developer: row.get(17)?,
+                is_adult: row.get(18)?,
+            })
+        })
+        .optional()?;
+
+    Ok(game)
 }
 
 /// Alterna o status de favorito de um jogo.

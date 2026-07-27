@@ -1,5 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
+import { LaunchOutcome } from '@/types';
+
 export const platformsService = {
   /**
    * Importa a biblioteca completa de jogos Steam do usuário.
@@ -237,6 +239,24 @@ export const platformsService = {
     return await invoke<string>('import_itch_games', {
       full,
       butlerDbPath: null,
+    });
+  },
+
+  /**
+   * Inicia o jogo especificado pelo ID, resolvendo automaticamente a melhor estratégia disponível:
+   * protocolo do launcher (Steam, Battle.net), executável direto (Epic, GOG), ou abre o launcher/loja da plataforma
+   * caso o jogo não esteja instalado.
+   *
+   * @param gameId
+   * @param launcherPathOverride
+   */
+  launchGame: async (
+    gameId: string,
+    launcherPathOverride?: string
+  ): Promise<LaunchOutcome> => {
+    return await invoke<LaunchOutcome>('launch_game', {
+      gameId,
+      launcherPathOverride: launcherPathOverride ?? null,
     });
   },
 };

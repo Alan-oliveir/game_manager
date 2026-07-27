@@ -1,6 +1,5 @@
 export * from './errorHandler';
 export * from './formatTime';
-export * from './launcher';
 export * from './navigation';
 export * from './openLink';
 export * from './pcgw';
