@@ -81,6 +81,7 @@ pub const STEAM_REVIEWS_TIMEOUT_SECS: u64 = 5;
 // === USER AGENTS ===
 pub const USER_AGENT_DEFAULT: &str = "GameManager/0.1.0";
 pub const USER_AGENT_STEAM: &str = "Valve/Steam HTTP Client 1.0";
+pub const USER_AGENT_BROWSER: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 // === TIMEOUTS DE AUTENTICAÇÃO OAuth (em segundos) ===
 pub const OAUTH_CALLBACK_TIMEOUT_SECS: u64 = 120;
@@ -91,6 +92,7 @@ pub const BACKGROUND_TASK_INTERVAL_SECS: u64 = 2;
 
 // === TTL DE CACHE (Time To Live em dias) ===
 pub const CACHE_STEAM_RESOLVE_TTL_DAYS: i64 = 90;
+pub const CACHE_PROTON_DB_TTL_DAYS: i64 = 30;
 pub const CACHE_RAWG_GAME_TTL_DAYS: i64 = 30;
 pub const CACHE_RAWG_LIST_TTL_DAYS: i64 = 1; // Trending/Upcoming/Giveaways
 pub const CACHE_GAMEBRAIN_ID_TTL_DAYS: i64 = 30;

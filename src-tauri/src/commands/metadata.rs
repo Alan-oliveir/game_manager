@@ -16,6 +16,7 @@ pub mod covers;
 pub mod enrichment;
 pub mod get_metadata;
 pub mod pcgamingwiki;
+pub mod protondb;
 pub mod refresh;
 pub mod search;
 pub mod shared;

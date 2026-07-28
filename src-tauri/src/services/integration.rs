@@ -23,3 +23,4 @@ pub mod pcgamingwiki;
 pub mod rawg;
 pub mod steam_api;
 pub mod steamspy;
+pub mod protondb;

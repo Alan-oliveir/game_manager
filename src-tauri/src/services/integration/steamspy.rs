@@ -3,11 +3,12 @@
 //! Usado para obter dados públicos de playtime para estima a duração de um jogo.
 
 use crate::constants::{
-    MINUTES_PER_HOUR, STEAMSPY_API_URL, STEAM_REVIEWS_TIMEOUT_SECS, USER_AGENT_STEAM,
+    MINUTES_PER_HOUR, STEAMSPY_API_URL, STEAM_REVIEWS_TIMEOUT_SECS, USER_AGENT_BROWSER,
 };
 use crate::utils::http_client::HTTP_CLIENT;
 use serde::Deserialize;
 use std::time::Duration;
+use tracing::warn;
 
 #[derive(Debug, Deserialize)]
 struct SteamSpyResponse {
@@ -20,13 +21,18 @@ pub async fn get_median_playtime(app_id: &str) -> Result<Option<u32>, String> {
 
     let response = HTTP_CLIENT
         .get(&url)
-        .header("User-Agent", USER_AGENT_STEAM)
+        .header("User-Agent", USER_AGENT_BROWSER)
         .timeout(Duration::from_secs(STEAM_REVIEWS_TIMEOUT_SECS))
         .send()
         .await
         .map_err(|e| e.to_string())?;
 
     if !response.status().is_success() {
+        warn!(
+            "SteamSpy respondeu status {} para app_id '{}'",
+            response.status(),
+            app_id
+        );
         return Ok(None);
     }
 
@@ -42,6 +48,12 @@ pub async fn get_median_playtime(app_id: &str) -> Result<Option<u32>, String> {
                 Ok(None)
             }
         }
-        Err(_) => Ok(None),
+        Err(e) => {
+            warn!(
+                "Falha ao parsear resposta SteamSpy para app_id '{}': {}",
+                app_id, e
+            );
+            Ok(None)
+        }
     }
 }

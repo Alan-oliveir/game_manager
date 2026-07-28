@@ -154,6 +154,7 @@ pub fn run() {
             commands::metadata::pcgamingwiki::refresh_pcgw_data,
             commands::metadata::pcgamingwiki::search_pcgw_games,
             commands::metadata::pcgamingwiki::get_pcgw_scraped_data,
+            commands::metadata::protondb::fetch_protondb_data,
             // Comandos de Configuração (Secrets)
             commands::settings::set_secret,
             commands::settings::get_secret,

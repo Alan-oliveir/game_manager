@@ -152,3 +152,15 @@ export interface LangRow {
   audio: boolean;
   subtitles: boolean;
 }
+
+/**
+ * Dados estruturados retornados pela API do ProtonDB.
+ */
+export interface ProtonDbSummary {
+  tier: string;
+  trendingTier: string;
+  bestReportedTier: string;
+  confidence: string;
+  score: number;
+  total: number;
+}

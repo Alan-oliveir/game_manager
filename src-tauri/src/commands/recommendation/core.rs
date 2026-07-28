@@ -8,6 +8,7 @@
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::models::{Game, Platform};
+use crate::services::cf_aggregator::build_cf_candidates;
 use crate::services::recommendation::{
     calculate_user_profile, parse_release_year, rank_games_collaborative, rank_games_content_based,
     rank_games_hybrid, GameWithDetails, RecommendationConfig, RecommendationReason, SeriesLimit,
@@ -51,7 +52,7 @@ pub async fn recommend_hybrid_library(
     let games_with_details = fetch_all_games_with_details(&state)?;
     let ignored_ids = create_ignored_set(options.ignored_game_ids.clone());
     let profile = calculate_user_profile(&games_with_details, &ignored_ids);
-    let (cf_scores, _) = crate::services::cf_aggregator::build_cf_candidates(&games_with_details);
+    let (cf_scores, _) = build_cf_candidates(&games_with_details);
     let candidates = filter_candidates_by_playtime(games_with_details, &options);
     let config = options.config.unwrap_or_default();
     let user_settings = load_user_settings(&app);
@@ -95,7 +96,7 @@ pub async fn recommend_collaborative_library(
 ) -> Result<Vec<GameRecommendation>, AppError> {
     let games_with_details = fetch_all_games_with_details(&state)?;
     let ignored_ids = create_ignored_set(options.ignored_game_ids.clone());
-    let (cf_scores, _) = crate::services::cf_aggregator::build_cf_candidates(&games_with_details);
+    let (cf_scores, _) = build_cf_candidates(&games_with_details);
     let candidates = filter_candidates_by_playtime(games_with_details, &options);
     let user_settings = load_user_settings(&app);
     let ranked = rank_games_collaborative(&candidates, &cf_scores, &ignored_ids, &user_settings);

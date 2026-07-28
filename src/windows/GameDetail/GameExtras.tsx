@@ -18,6 +18,7 @@ import {
   BoolBadge,
   LanguageTable,
   PathRow,
+  ProtonSection,
   SystemRequirements,
 } from '@/windows';
 
@@ -105,7 +106,13 @@ export function GameExtras({ game, details }: GameExtrasProps) {
 
   if (status === 'no_steam_id') return <ExtrasNoSteamId gameName={game.name} />;
 
-  if (status === 'not_found') return <ExtrasNotFound gameName={game.name} />;
+  if (status === 'not_found')
+    return (
+      <div className="space-y-8">
+        <ExtrasNotFound gameName={game.name} />
+        <ProtonSection game={game} details={details} />
+      </div>
+    );
 
   if (status === 'error') return <ContentError onRetry={retry} />;
 
@@ -230,6 +237,9 @@ export function GameExtras({ game, details }: GameExtrasProps) {
           </div>
         </>
       )}
+
+      {/* ---- Compatibilidade Linux / ProtonDB ---- */}
+      <ProtonSection game={game} details={details} />
 
       {/* ---- Idiomas ---- */}
       {hasLangs && (

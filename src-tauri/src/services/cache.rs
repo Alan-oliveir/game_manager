@@ -6,9 +6,10 @@
 use crate::constants::{
     CACHE_AMAZON_LUNA_TTL_DAYS, CACHE_DEFAULT_TTL_DAYS, CACHE_EA_PLAY_TTL_DAYS,
     CACHE_GAMEBRAIN_ID_TTL_DAYS, CACHE_GAMEBRAIN_MEDIA_TTL_DAYS, CACHE_GAMEBRAIN_SIMILAR_TTL_DAYS,
-    CACHE_GAMERPOWER_TTL_DAYS, CACHE_GAME_PASS_FULL_TTL_DAYS, CACHE_RAWG_GAME_TTL_DAYS,
-    CACHE_RAWG_LIST_TTL_DAYS, CACHE_STEAM_PLAYTIME_TTL_DAYS, CACHE_STEAM_RESOLVE_TTL_DAYS,
-    CACHE_STEAM_REVIEWS_TTL_DAYS, CACHE_STEAM_STORE_TTL_DAYS, CACHE_UBISOFT_PLUS_TTL_DAYS,
+    CACHE_GAMERPOWER_TTL_DAYS, CACHE_GAME_PASS_FULL_TTL_DAYS, CACHE_PROTON_DB_TTL_DAYS,
+    CACHE_RAWG_GAME_TTL_DAYS, CACHE_RAWG_LIST_TTL_DAYS, CACHE_STEAM_PLAYTIME_TTL_DAYS,
+    CACHE_STEAM_RESOLVE_TTL_DAYS, CACHE_STEAM_REVIEWS_TTL_DAYS, CACHE_STEAM_STORE_TTL_DAYS,
+    CACHE_UBISOFT_PLUS_TTL_DAYS,
 };
 use crate::errors::AppError;
 use rusqlite::{params, Connection};
@@ -65,6 +66,8 @@ fn get_ttl_for_cache_type(cache_key: &str) -> i64 {
         CACHE_RAWG_LIST_TTL_DAYS * 24 * 60 * 60
     } else if cache_key.starts_with("resolve_") {
         CACHE_STEAM_RESOLVE_TTL_DAYS * 24 * 60 * 60
+    } else if cache_key.starts_with("protondb_") {
+        CACHE_PROTON_DB_TTL_DAYS * 24 * 60 * 60
     } else if cache_key.starts_with("gamebrain_id:") {
         CACHE_GAMEBRAIN_ID_TTL_DAYS * 24 * 60 * 60
     } else if cache_key.starts_with("gamebrain_similar:") {
@@ -158,7 +161,6 @@ pub fn cleanup_expired_cache(conn: &Connection) -> Result<usize, String> {
 
     // Diferentes cutoffs para diferentes tipos
     let rawg_cutoff = now - (CACHE_RAWG_GAME_TTL_DAYS * 24 * 60 * 60);
-
     let gamebrain_id_cutoff = now - (CACHE_GAMEBRAIN_ID_TTL_DAYS * 24 * 60 * 60);
     let gamebrain_similar_cutoff = now - (CACHE_GAMEBRAIN_SIMILAR_TTL_DAYS * 24 * 60 * 60);
     let gamebrain_media_cutoff = now - (CACHE_GAMEBRAIN_MEDIA_TTL_DAYS * 24 * 60 * 60);
@@ -171,6 +173,7 @@ pub fn cleanup_expired_cache(conn: &Connection) -> Result<usize, String> {
     let reviews_cutoff = now - (CACHE_STEAM_REVIEWS_TTL_DAYS * 24 * 60 * 60);
     let playtime_cutoff = now - (CACHE_STEAM_PLAYTIME_TTL_DAYS * 24 * 60 * 60);
     let steam_resolve_cutoff = now - (CACHE_STEAM_RESOLVE_TTL_DAYS * 24 * 60 * 60);
+    let protondb_cutoff = now - (CACHE_PROTON_DB_TTL_DAYS * 24 * 60 * 60);
 
     let deleted = conn
         .execute(
@@ -187,7 +190,8 @@ pub fn cleanup_expired_cache(conn: &Connection) -> Result<usize, String> {
                 OR (source = 'steam' AND external_id LIKE 'store_%' AND updated_at < ?10)
                 OR (source = 'steam' AND external_id LIKE 'reviews_%' AND updated_at < ?11)
                 OR (source = 'steam' AND external_id LIKE 'playtime_%' AND updated_at < ?12)
-                OR (source = 'steam_resolve' AND updated_at < ?13)",
+                OR (source = 'steam_resolve' AND updated_at < ?13)
+                OR (source = 'protondb' AND updated_at < ?14)",
             params![
                 rawg_cutoff,
                 gamebrain_id_cutoff,
@@ -202,6 +206,7 @@ pub fn cleanup_expired_cache(conn: &Connection) -> Result<usize, String> {
                 reviews_cutoff,
                 playtime_cutoff,
                 steam_resolve_cutoff,
+                protondb_cutoff,
             ],
         )
         .map_err(|e| AppError::CacheCleanupError(e.to_string()).to_string())?;
@@ -271,6 +276,7 @@ pub fn get_cache_stats(conn: &Connection) -> Result<CacheStats, String> {
     let reviews_cutoff = now - (CACHE_STEAM_REVIEWS_TTL_DAYS * 24 * 60 * 60);
     let playtime_cutoff = now - (CACHE_STEAM_PLAYTIME_TTL_DAYS * 24 * 60 * 60);
     let steam_resolve_cutoff = now - (CACHE_STEAM_RESOLVE_TTL_DAYS * 24 * 60 * 60);
+    let protondb_cutoff = now - (CACHE_PROTON_DB_TTL_DAYS * 24 * 60 * 60);
 
     let expired: i32 = conn
         .query_row(
@@ -287,7 +293,8 @@ pub fn get_cache_stats(conn: &Connection) -> Result<CacheStats, String> {
                 OR (source = 'steam' AND external_id LIKE 'store_%' AND updated_at < ?10)
                 OR (source = 'steam' AND external_id LIKE 'reviews_%' AND updated_at < ?11)
                 OR (source = 'steam' AND external_id LIKE 'playtime_%' AND updated_at < ?12)
-                OR (source = 'steam_resolve' AND updated_at < ?13)",
+                OR (source = 'steam_resolve' AND updated_at < ?13)
+                OR (source = 'protondb' AND updated_at < ?14)",
             params![
                 rawg_cutoff,
                 gamebrain_id_cutoff,
@@ -302,6 +309,7 @@ pub fn get_cache_stats(conn: &Connection) -> Result<CacheStats, String> {
                 reviews_cutoff,
                 playtime_cutoff,
                 steam_resolve_cutoff,
+                protondb_cutoff,
             ],
             |row| row.get(0),
         )

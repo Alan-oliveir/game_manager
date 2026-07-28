@@ -304,8 +304,7 @@ async fn enrich_game_metadata(
 
 // === PERSISTÊNCIA ===
 
-/// Salva detalhes do jogo no banco
-/// Aceita tanto Connection quanto Transaction (via Deref trait)
+/// Salva detalhes do jogo no banco. Aceita tanto Connection quanto Transaction (via Deref trait)
 pub(in crate::commands::metadata) fn save_game_details<C>(
     conn: &C,
     d: ProcessedGameDetails,

@@ -89,7 +89,7 @@
   "extras_not_found_suffix": "no PCGamingWiki.",
   "extras_manual_search": "Buscar manualmente",
   "extras_no_steam_id_title": "Steam AppID não disponível",
-  "extras_no_steam_id_description1": "Os dados do PCGamingWiki requerem um Steam AppID.",
+  "extras_no_steam_id_description1": "Os dados do PCGamingWiki e ProtonDB requerem um Steam AppID.",
   "extras_no_steam_id_description2": "não possui este identificador.",
   "extras_loading_message": "Buscando dados técnicos…",
   "extras_source_label": "Fonte:",
@@ -110,6 +110,9 @@
   "extras_section_system_requirements": "Requisitos de Sistema",
   "extras_section_save_paths": "Localização dos Saves",
   "extras_section_config_paths": "Arquivos de Configuração",
+  "extras_section_proton": "Compatibilidade Linux (ProtonDB)",
+  "extras_proton_status": "Status no ProtonDB",
+  "extras_proton_based_on": "Baseado em {{count}} avaliações (Confiança: {{confidence}})",
 
   "media_label_screenshot": "Screenshot",
   "media_label_trailer": "Trailer",

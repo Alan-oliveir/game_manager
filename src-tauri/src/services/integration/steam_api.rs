@@ -5,6 +5,7 @@
 
 use crate::constants::{
     REVIEW_API_URL, STEAM_STORE_API_URL, STEAM_STORE_SEARCH_URL, STEAM_STORE_TIMEOUT_SECS,
+    USER_AGENT_BROWSER, USER_AGENT_STEAM,
 };
 use crate::utils::http_client::HTTP_CLIENT;
 use serde::{Deserialize, Serialize};
@@ -222,13 +223,14 @@ struct SteamSearchResponse {
 /// a desambiguação desses casos é responsabilidade de quem chama esta função.
 pub async fn search_app_by_name(name: &str) -> Result<Vec<SteamSearchItem>, String> {
     let url = format!(
-        "{}?term={}&l=english&",
+        "{}?term={}&l=english&cc=BR",
         STEAM_STORE_SEARCH_URL,
         urlencoding::encode(name)
     );
 
     let res = HTTP_CLIENT
         .get(&url)
+        .header("User-Agent", USER_AGENT_BROWSER)
         .timeout(Duration::from_secs(STEAM_STORE_TIMEOUT_SECS))
         .send()
         .await
@@ -360,7 +362,7 @@ pub async fn get_app_reviews(app_id: &str) -> Result<Option<SteamReviewSummary>,
 
     let response = HTTP_CLIENT
         .get(&url)
-        .header("User-Agent", "Valve/Steam HTTP Client 1.0")
+        .header("User-Agent", USER_AGENT_STEAM)
         .send()
         .await
         .map_err(|e| e.to_string())?;

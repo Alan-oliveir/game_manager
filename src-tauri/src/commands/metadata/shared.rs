@@ -7,6 +7,7 @@ use crate::models::ImportConfidence;
 use crate::services::cache;
 use crate::services::integration::{rawg, steam_api, steamspy};
 use crate::utils::text::{is_likely_non_base_game, normalize_for_matching, strip_edition_suffix};
+use tracing::warn;
 
 // === ESTRUTURAS COMPARTILHADAS ===
 
@@ -141,7 +142,14 @@ pub async fn resolve_steam_app_id(
         return None;
     }
 
-    let candidates = steam_api::search_app_by_name(name).await.ok()?;
+    let candidates = match steam_api::search_app_by_name(name).await {
+        Ok(c) => c,
+        Err(e) => {
+            warn!("search_app_by_name falhou para '{}': {}", name, e);
+            return None;
+        }
+    };
+
     let target = normalize_for_matching(name);
 
     // 1. Match exato de nome normalizado → confiança alta
