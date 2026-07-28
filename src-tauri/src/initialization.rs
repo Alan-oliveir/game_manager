@@ -60,7 +60,7 @@ fn handle_version_update(
 ) -> Result<(), AppError> {
     // 1. Backup automático se major version mudou
     if let Some(backup_path) =
-        database::backup::backup_if_major_update(app, previous_version, current_version)?
+        database::backup::auto::backup_if_major_update(app, previous_version, current_version)?
     {
         tracing::info!("Backup automático criado em: {:?}", backup_path);
 

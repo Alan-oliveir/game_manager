@@ -92,8 +92,8 @@ pub fn run() {
             // Comando de Inicialização do Banco de Dados
             database::init_db,
             // Comandos de Backup e Restauração
-            database::backup::export_database,
-            database::backup::import_database,
+            database::backup::core::export_database,
+            database::backup::core::import_database,
             // Comandos de Jogos (CRUD)
             commands::games::add_game,
             commands::games::get_games,

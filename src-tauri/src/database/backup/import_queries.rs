@@ -1,0 +1,259 @@
+//! Módulo responsável por restaurar os dados do backup no banco de dados SQLite.
+//!
+//! Este módulo isola toda a lógica pesada de inserção/restauração dentro de uma transação ACID atômica,
+//! garantindo que o banco de dados permaneça consistente mesmo em caso de falhas durante a operação.
+
+use crate::database::backup::models::BackupData;
+use crate::errors::AppError;
+use chrono::Utc;
+use rusqlite::{params, Connection};
+
+/// Restaura todos os dados do backup no banco de dados usando uma transação única
+pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<String, AppError> {
+    // Transação única para todas as operações
+    conn.execute("BEGIN IMMEDIATE TRANSACTION", [])?;
+
+    // Prepared statements para melhor desempenho
+    let mut game_stmt = conn.prepare(
+        "INSERT OR REPLACE INTO games (id, name, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, last_played, added_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)"
+    )?;
+
+    let mut details_stmt = conn.prepare(
+        "INSERT OR REPLACE INTO game_details (
+        game_id, steam_app_id, developer, publisher, release_date, genres, tags, series,
+        description_raw, description_ptbr, background_image, critic_score, steam_review_label,
+        steam_review_count, steam_review_score, steam_review_updated_at, esrb_rating, is_adult,
+        adult_tags, external_links, median_playtime, estimated_playtime
+    )
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)"
+    )?;
+
+    let mut wishlist_stmt = conn.prepare(
+        "INSERT OR REPLACE INTO wishlist (id, name, cover_url, store_url, store_platform, current_price, normal_price, lowest_price, currency, on_sale, voucher, added_at, itad_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)"
+    )?;
+
+    for game in &backup.games {
+        game_stmt.execute(params![
+            game.id,
+            game.name,
+            game.cover_url,
+            game.platform.to_string(),
+            game.platform_game_id,
+            game.installed,
+            game.import_confidence.as_ref().map(|ic| ic.to_string()),
+            game.install_path,
+            game.executable_path,
+            game.launch_args,
+            game.user_rating,
+            game.favorite,
+            game.status,
+            game.playtime,
+            game.last_played,
+            game.added_at
+        ])?;
+    }
+
+    for detail in &backup.game_details {
+        let links_json = detail
+            .external_links
+            .as_ref()
+            .and_then(|links| serde_json::to_string(links).ok());
+
+        let tags_json = detail
+            .tags
+            .as_ref()
+            .and_then(|tags| crate::database::serialize_tags(tags).ok());
+
+        details_stmt.execute(params![
+            detail.game_id,
+            detail.steam_app_id,
+            detail.developer,
+            detail.publisher,
+            detail.release_date,
+            detail.genres,
+            tags_json,
+            detail.series,
+            detail.description_raw,
+            detail.description_ptbr,
+            detail.background_image,
+            detail.critic_score,
+            detail.steam_review_label,
+            detail.steam_review_count,
+            detail.steam_review_score,
+            detail.steam_review_updated_at,
+            detail.esrb_rating,
+            detail.is_adult,
+            detail.adult_tags,
+            links_json,
+            detail.median_playtime,
+            detail.estimated_playtime
+        ])?;
+    }
+
+    for item in &backup.wishlist_game {
+        wishlist_stmt.execute(params![
+            item.id,
+            item.name,
+            item.cover_url,
+            item.store_url,
+            item.store_platform,
+            item.current_price,
+            item.normal_price,
+            item.lowest_price,
+            item.currency,
+            item.on_sale,
+            item.voucher,
+            item.added_at,
+            item.itad_id
+        ])?;
+    }
+
+    let mut extras_stmt = conn.prepare(
+        "INSERT OR REPLACE INTO game_extras (
+        steam_app_id, pcgw_page_id, pcgw_page_name, engine,
+        available_on,
+        dx_versions, vulkan_versions, opengl_versions,
+        win64, linux64, macos_arm, macos_intel64,
+        ray_tracing, upscaling, frame_gen,
+        ultrawidescreen, four_k_support, hdr, high_fps, fov, borderless_windowed, color_blind,
+        controller_support, full_controller, playstation_controllers, xinput_controllers,
+        surround_sound, subtitles, closed_captions,
+        has_save_data, has_config_data,
+        languages_interface, languages_audio, languages_subtitles,
+        fetched_at
+    ) VALUES (
+        ?1,  ?2,  ?3,  ?4,
+        ?5,
+        ?6,  ?7,  ?8,
+        ?9,  ?10, ?11, ?12,
+        ?13, ?14, ?15,
+        ?16, ?17, ?18, ?19, ?20, ?21, ?22,
+        ?23, ?24, ?25, ?26,
+        ?27, ?28, ?29,
+        ?30, ?31,
+        ?32, ?33, ?34,
+        ?35
+    )",
+    )?;
+
+    let mut sysreq_stmt = conn.prepare(
+        "INSERT INTO system_requirements (
+            steam_app_id, os_family, tier_title, target,
+            min_os, min_cpu, min_cpu2, min_ram, min_gpu, min_gpu2, min_vram, min_dx, min_storage,
+            rec_os, rec_cpu, rec_cpu2, rec_ram, rec_gpu, rec_gpu2, rec_vram, rec_dx, rec_storage,
+            fetched_at
+        ) VALUES (
+            ?1,  ?2,  ?3,  ?4,
+            ?5,  ?6,  ?7,  ?8,  ?9,  ?10, ?11, ?12, ?13,
+            ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22,
+            ?23
+        )",
+    )?;
+
+    let mut paths_stmt = conn.prepare(
+        "INSERT INTO game_data_paths (steam_app_id, kind, os, raw_path, fetched_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+    )?;
+
+    let serialize_vec = |v: &Option<Vec<String>>| -> Option<String> {
+        v.as_ref().and_then(|list| serde_json::to_string(list).ok())
+    };
+
+    let now = Utc::now().to_rfc3339();
+
+    // Limpa dados anteriores das tabelas com múltiplas linhas por jogo antes de reinserir
+    conn.execute("DELETE FROM system_requirements", [])?;
+    conn.execute("DELETE FROM game_data_paths", [])?;
+
+    for extras in &backup.game_extras {
+        extras_stmt.execute(params![
+            extras.steam_app_id,
+            extras.pcgw_page_id,
+            extras.pcgw_page_name,
+            extras.engine,
+            extras.available_on,
+            extras.dx_versions,
+            extras.vulkan_versions,
+            extras.opengl_versions,
+            extras.win64,
+            extras.linux64,
+            extras.macos_arm,
+            extras.macos_intel64,
+            extras.ray_tracing,
+            extras.upscaling,
+            extras.frame_gen,
+            extras.ultrawidescreen,
+            extras.four_k_support,
+            extras.hdr,
+            extras.high_fps,
+            extras.fov,
+            extras.borderless_windowed,
+            extras.color_blind,
+            extras.controller_support,
+            extras.full_controller,
+            extras.playstation_controllers,
+            extras.xinput_controllers,
+            extras.surround_sound,
+            extras.subtitles,
+            extras.closed_captions,
+            extras.has_save_data,
+            extras.has_config_data,
+            serialize_vec(&extras.languages_interface),
+            serialize_vec(&extras.languages_audio),
+            serialize_vec(&extras.languages_subtitles),
+            extras.fetched_at,
+        ])?;
+    }
+
+    for req in &backup.system_requirements {
+        sysreq_stmt.execute(params![
+            req.steam_app_id,
+            req.os_family,
+            req.tier_title,
+            req.target,
+            req.min_os,
+            req.min_cpu,
+            req.min_cpu2,
+            req.min_ram,
+            req.min_gpu,
+            req.min_gpu2,
+            req.min_vram,
+            req.min_dx,
+            req.min_storage,
+            req.rec_os,
+            req.rec_cpu,
+            req.rec_cpu2,
+            req.rec_ram,
+            req.rec_gpu,
+            req.rec_gpu2,
+            req.rec_vram,
+            req.rec_dx,
+            req.rec_storage,
+            now,
+        ])?;
+    }
+
+    for path in &backup.game_data_paths {
+        paths_stmt.execute(params![
+            path.steam_app_id,
+            path.kind,
+            path.os,
+            path.raw_path,
+            now,
+        ])?;
+    }
+
+    conn.execute("COMMIT", [])?;
+
+    Ok(format!(
+        "Backup restaurado! {} jogos, {} detalhes, {} itens da wishlist, {} dados técnicos, {} requisitos de sistema e {} caminhos.",
+        backup.games.len(),
+        backup.game_details.len(),
+        backup.wishlist_game.len(),
+        backup.game_extras.len(),
+        backup.system_requirements.len(),
+        backup.game_data_paths.len(),
+    ))
+}
