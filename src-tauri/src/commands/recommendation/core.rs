@@ -8,7 +8,7 @@
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::models::{Game, Platform};
-use crate::services::cf_aggregator::build_cf_candidates;
+use crate::services::recommendation::cf_aggregator::build_cf_candidates;
 use crate::services::recommendation::{
     calculate_user_profile, parse_release_year, rank_games_collaborative, rank_games_content_based,
     rank_games_hybrid, GameWithDetails, RecommendationConfig, RecommendationReason, SeriesLimit,

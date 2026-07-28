@@ -5,6 +5,7 @@
 //!
 //! **Organização dos Módulos:**
 //! - `core`: Estruturas e tipos fundamentais
+//! - `cf_aggregator`: Collaborative-filtering (CF) pré-computado
 //! - `profile`: Cálculo de perfil de usuário
 //! - `scoring`: Lógica de cálculo de scores
 //! - `filtering`: Filtros e regras de diversidade
@@ -22,6 +23,7 @@
 //! - Aumento de peso dos gêneros
 
 pub mod analysis;
+pub mod cf_aggregator;
 pub mod core;
 pub mod filtering;
 pub mod profile;
@@ -42,6 +44,4 @@ pub use filtering::{apply_diversity_rules, apply_hard_filters};
 pub use profile::calculate_user_profile;
 pub use ranking::{rank_games_collaborative, rank_games_content_based, rank_games_hybrid};
 pub use reports::{export_games_csv, export_report_json, export_report_txt};
-pub use scoring::{
-    normalize_score, score_game_cb, score_game_cb_detailed, DetailedScoreComponents,
-};
+pub use scoring::{normalize_score, score_game_cb, score_game_cb_detailed, DetailedScoreComponents};

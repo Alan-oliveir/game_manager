@@ -25,6 +25,7 @@ pub mod utils;
 
 use crate::initialization::initialize_app;
 use crate::utils::logger;
+use services::recommendation;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -78,7 +79,7 @@ pub fn run() {
 
             // === COLLABORATIVE FILTERING ===
 
-            if let Err(e) = services::cf_aggregator::init_cf_index() {
+            if let Err(e) = recommendation::cf_aggregator::init_cf_index() {
                 tracing::warn!("CF desativado (fallback CB ativo): {}", e);
             }
 

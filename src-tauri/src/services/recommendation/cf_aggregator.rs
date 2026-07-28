@@ -13,7 +13,7 @@ use once_cell::sync::OnceCell;
 use crate::services::recommendation::{calculate_game_weight, GameWithDetails};
 
 // Incluir JSON em compile-time
-const COLLABORATIVE_INDEX_JSON: &str = include_str!("../../data/collaborative_index.json");
+const COLLABORATIVE_INDEX_JSON: &str = include_str!("../../../data/collaborative_index.json");
 
 // === Estruturas de leitura do JSON ===
 

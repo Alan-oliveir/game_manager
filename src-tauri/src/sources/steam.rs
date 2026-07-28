@@ -4,6 +4,7 @@
 //! não instalados (via librarycache). Buscar via API Steam como fallback e faz merge de múltiplas
 //! fontes, preservando jogos grátis não instalados.
 
+use crate::constants::STEAM_STORE_TIMEOUT_SECS;
 use crate::errors::AppError;
 use crate::sources::providers::{GameSource, SourceGame};
 use async_trait::async_trait;
@@ -362,7 +363,7 @@ async fn fetch_steam_game_name(app_id: &str) -> Option<String> {
 
     let resp = HTTP_CLIENT
         .get(&url)
-        .timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(STEAM_STORE_TIMEOUT_SECS))
         .send()
         .await
         .ok()?;

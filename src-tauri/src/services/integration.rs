@@ -13,7 +13,7 @@
 //! - `pcgamingwiki`: Integração com a API PCGamingWiki para busca de informações sobre jogos.
 //! - `rawg`: Integração com a API RAWG para busca de jogos e tendências.
 //! - `steam`: Integração com a API Steam para obter detalhes e conquistas dos jogos.
-//! - `steamspy`: Integração com a API SteamSpy para estatísticas de jogos (median playtime).
+//! - `protondb`: Integração com a API ProtonDB para verificar compatibilidade de jogos no Linux.
 
 pub mod gamebrain;
 pub mod gamerpower;
@@ -22,5 +22,4 @@ pub mod itad;
 pub mod pcgamingwiki;
 pub mod rawg;
 pub mod steam_api;
-pub mod steamspy;
 pub mod protondb;

@@ -11,7 +11,7 @@
 
 use super::enrichment::{save_game_details, ProcessedGameDetails};
 use super::shared::{
-    fetch_rawg_metadata_fresh, fetch_steam_playtime, fetch_steam_reviews, fetch_steam_store_data,
+    fetch_rawg_metadata_fresh, fetch_steam_reviews, fetch_steam_store_data,
     resolve_steam_app_id, EnrichProgress,
 };
 use crate::constants::{RAWG_RATE_LIMIT_MS, RAWG_REQUISITIONS_PER_BATCH};
@@ -19,7 +19,6 @@ use crate::database;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::services::integration::steam_api;
-use crate::services::playtime;
 use crate::utils::series;
 use rusqlite::params;
 use std::collections::{HashMap, HashSet};
@@ -106,9 +105,9 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                     stmt.query_map(params![limit_val], |row| {
                         Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
                     })
-                    .unwrap()
-                    .flatten()
-                    .collect::<Vec<_>>()
+                        .unwrap()
+                        .flatten()
+                        .collect::<Vec<_>>()
                 } else {
                     use rusqlite::types::ToSql;
                     let mut bind: Vec<Box<dyn ToSql>> = vec![Box::new(limit_val)];
@@ -119,9 +118,9 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                     stmt.query_map(refs.as_slice(), |row| {
                         Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
                     })
-                    .unwrap()
-                    .flatten()
-                    .collect::<Vec<_>>()
+                        .unwrap()
+                        .flatten()
+                        .collect::<Vec<_>>()
                 };
 
                 result
@@ -289,24 +288,6 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                                     }
                                     details.steam_review_updated_at =
                                         Some(chrono::Utc::now().to_rfc3339());
-                                }
-
-                                if let Some(hours) =
-                                    fetch_steam_playtime(steam_id, &cache_conn).await
-                                {
-                                    details.median_playtime = Some(hours as i32);
-                                    let genre_list: Vec<String> = details
-                                        .genres
-                                        .split(',')
-                                        .map(|s| s.trim().to_lowercase())
-                                        .collect();
-                                    if let Some(estimated) = playtime::estimate_playtime(
-                                        Some(hours),
-                                        &genre_list,
-                                        &details.tags,
-                                    ) {
-                                        details.estimated_playtime = Some(estimated as f32);
-                                    }
                                 }
                             }
 

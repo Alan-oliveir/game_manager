@@ -17,7 +17,6 @@ import { Game, GameDetails, GamePlatformLink, GameTag } from '@/types/game';
 import { Badge } from '@/ui/badge';
 import { Button } from '@/ui/button';
 import { formatTime } from '@/utils/formatTime';
-import { getPlaytimeCategory } from '@/utils/playtime';
 import { AgeRatingBadge, GameLinks, SteamReviewBadge } from '@/windows';
 
 interface GameSidebarProps {
@@ -213,14 +212,6 @@ export function GameSidebar({
           label={t('sidebar_mode')}
           value={gameModes ?? undefined}
         />
-
-        {details?.estimatedPlaytime && details.estimatedPlaytime > 0 && (
-          <DetailRow
-            icon={Clock}
-            label={t('sidebar_duration')}
-            value={getPlaytimeCategory(details.estimatedPlaytime).label} // Ex: "Longo (30h - 80h)"
-          />
-        )}
       </div>
 
       {/* 4. LINKS */}

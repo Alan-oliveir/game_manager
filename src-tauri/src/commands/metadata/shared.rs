@@ -5,7 +5,7 @@
 use crate::constants::NOT_FOUND_MARKER;
 use crate::models::ImportConfidence;
 use crate::services::cache;
-use crate::services::integration::{rawg, steam_api, steamspy};
+use crate::services::integration::{rawg, steam_api};
 use crate::utils::text::{is_likely_non_base_game, normalize_for_matching, strip_edition_suffix};
 use tracing::warn;
 
@@ -238,29 +238,6 @@ pub(crate) async fn fetch_steam_reviews(
                 let _ = cache::save_cached_api_data(cache_conn, "steam", &cache_key, &json);
             }
             Some(reviews)
-        }
-        _ => None,
-    }
-}
-
-/// Busca median playtime com cache
-pub(crate) async fn fetch_steam_playtime(
-    steam_id: &str,
-    cache_conn: &rusqlite::Connection,
-) -> Option<u32> {
-    let cache_key = format!("playtime_{}", steam_id);
-
-    if let Some(cached) = cache::get_cached_api_data(cache_conn, "steam", &cache_key) {
-        if let Ok(hours) = cached.parse::<u32>() {
-            return Some(hours);
-        }
-    }
-
-    match steamspy::get_median_playtime(steam_id).await {
-        Ok(Some(hours)) => {
-            let _ =
-                cache::save_cached_api_data(cache_conn, "steam", &cache_key, &hours.to_string());
-            Some(hours)
         }
         _ => None,
     }

@@ -53,7 +53,7 @@ pub async fn generate_recommendation_analysis(
 
     let profile = calculate_user_profile(&all_games_with_details, &HashSet::new());
     let (cf_scores, _) =
-        crate::services::cf_aggregator::build_cf_candidates(&all_games_with_details);
+        crate::services::recommendation::cf_aggregator::build_cf_candidates(&all_games_with_details);
 
     let config = RecommendationConfig::default();
     let user_settings = UserSettings::default();

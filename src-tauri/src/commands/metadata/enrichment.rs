@@ -10,7 +10,7 @@
 //! - Itens compartilhados com covers estão no módulo shared
 
 use super::shared::{
-    fetch_rawg_metadata, fetch_steam_playtime, fetch_steam_reviews, fetch_steam_store_data,
+    fetch_rawg_metadata, fetch_steam_reviews, fetch_steam_store_data,
     resolve_steam_app_id, EnrichProgress,
 };
 use crate::commands::platforms::core::NewlyImportedGame;
@@ -19,7 +19,7 @@ use crate::database;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::services::integration::steam_api;
-use crate::services::{cache, playtime};
+use crate::services::cache;
 use crate::utils::series;
 use rusqlite::params;
 use std::collections::{HashMap, HashSet};
@@ -126,7 +126,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                         Some(game.platform_game_id.clone()),
                         &cache_conn,
                     )
-                    .await
+                        .await
                 })
             })
         };
@@ -279,20 +279,6 @@ async fn enrich_game_metadata(
             }
             details.steam_review_updated_at = Some(chrono::Utc::now().to_rfc3339());
         }
-
-        if let Some(hours) = fetch_steam_playtime(steam_id, cache_conn).await {
-            details.median_playtime = Some(hours as i32);
-            let genre_list: Vec<String> = details
-                .genres
-                .split(',')
-                .map(|s| s.trim().to_lowercase())
-                .collect();
-            if let Some(estimated_hours) =
-                playtime::estimate_playtime(Some(hours), &genre_list, &details.tags)
-            {
-                details.estimated_playtime = Some(estimated_hours as f32);
-            }
-        }
     }
 
     if !links_map.is_empty() {
@@ -310,7 +296,7 @@ pub(in crate::commands::metadata) fn save_game_details<C>(
     d: ProcessedGameDetails,
 ) -> Result<(), rusqlite::Error>
 where
-    C: std::ops::Deref<Target = rusqlite::Connection>,
+    C: std::ops::Deref<Target=rusqlite::Connection>,
 {
     let tags_json = database::serialize_tags(&d.tags).unwrap_or_else(|_| "[]".to_string());
 
@@ -438,9 +424,9 @@ pub async fn update_metadata(app: AppHandle) -> Result<(), AppError> {
                 stmt.query_map(params![RAWG_REQUISITIONS_PER_BATCH], |row| {
                     Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
                 })
-                .unwrap()
-                .flatten()
-                .collect()
+                    .unwrap()
+                    .flatten()
+                    .collect()
             };
 
             if games_to_update.is_empty() {
@@ -515,7 +501,7 @@ pub async fn update_metadata(app: AppHandle) -> Result<(), AppError> {
                                 platform_game_id.clone(),
                                 &cache_conn,
                             )
-                            .await
+                                .await
                         })
                     });
                     result
@@ -523,8 +509,8 @@ pub async fn update_metadata(app: AppHandle) -> Result<(), AppError> {
 
                 let should_skip = !rawg_found
                     || (processed_data.genres.is_empty()
-                        && processed_data.developer.is_none()
-                        && processed_data.tags.is_empty());
+                    && processed_data.developer.is_none()
+                    && processed_data.tags.is_empty());
 
                 if should_skip {
                     if let Ok(cache_conn) = state.cache_db.lock() {

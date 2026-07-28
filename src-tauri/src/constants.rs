@@ -7,7 +7,6 @@ pub const STEAM_STORE_URL: &str = "https://store.steampowered.com";
 pub const STEAM_STORE_API_URL: &str = "https://store.steampowered.com/api/appdetails";
 pub const STEAM_STORE_SEARCH_URL: &str = "https://store.steampowered.com/api/storesearch/";
 pub(crate) const REVIEW_API_URL: &str = "https://store.steampowered.com/appreviews";
-pub(crate) const STEAMSPY_API_URL: &str = "https://steamspy.com/api.php";
 pub const ITAD_API_URL: &str = "https://api.isthereanydeal.com";
 pub(crate) const GEMINI_API_URL: &str =
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
@@ -76,7 +75,6 @@ pub const REQUEST_PCGW_DELAY_MS: u64 = 250; // Delay (ms) devido ao rate limit d
 pub const HTTP_REQUEST_TIMEOUT_SECS: u64 = 30;
 pub const HTTP_CONNECT_TIMEOUT_SECS: u64 = 10;
 pub const STEAM_STORE_TIMEOUT_SECS: u64 = 10;
-pub const STEAM_REVIEWS_TIMEOUT_SECS: u64 = 5;
 
 // === USER AGENTS ===
 pub const USER_AGENT_DEFAULT: &str = "GameManager/0.1.0";
