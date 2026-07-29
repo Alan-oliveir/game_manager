@@ -1,6 +1,8 @@
 //! IndieGala - Importa jogos instalados ou biblioteca completa via IGClient
 
-use crate::commands::platforms::core::format_import_summary;
+use crate::commands::platforms::core::{
+    format_import_summary, trigger_enrichment_if_needed, NewlyImportedGame,
+};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::indiegala::IndiegalaSource;
@@ -23,7 +25,8 @@ use uuid::Uuid;
 async fn persist_indiegala_games(
     state: &AppState,
     games: Vec<crate::sources::indiegala::IndiegalaGame>,
-) -> Result<(u32, u32), AppError> {
+) -> Result<(u32, u32, Vec<NewlyImportedGame>), AppError> {
+    let mut newly_imported = Vec::new();
     let mut conn = state.games_db.lock().map_err(|_| AppError::MutexError)?;
     let tx = conn
         .transaction()
@@ -48,6 +51,7 @@ async fn persist_indiegala_games(
 
         if !exists {
             let new_id = Uuid::new_v4().to_string();
+            let display_name = game.name.clone().unwrap_or_else(|| "Unknown".to_string());
 
             tx.execute(
                 "INSERT INTO games (
@@ -57,7 +61,7 @@ async fn persist_indiegala_games(
                 ) VALUES (?1, ?2, NULL, ?3, ?4, ?5, ?6, ?7, NULL, ?8, 0, NULL, ?9, ?10)",
                 params![
                     new_id,
-                    game.name.as_deref().unwrap_or("Unknown"),
+                    display_name,
                     game.platform,
                     game.platform_game_id,
                     game.installed,
@@ -68,7 +72,7 @@ async fn persist_indiegala_games(
                     game.executable_path,
                 ],
             )
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
             let tags_json = indiegala_game
                 .tags
@@ -81,8 +85,15 @@ async fn persist_indiegala_games(
                      VALUES (?1, ?2, ?3)",
                     params![new_id, indiegala_game.description_raw, tags_json],
                 )
-                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+                    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
             }
+
+            newly_imported.push(NewlyImportedGame {
+                game_id: new_id,
+                name: display_name,
+                platform: game.platform.clone(),
+                platform_game_id: game.platform_game_id.clone(),
+            });
 
             inserted += 1;
         } else {
@@ -104,7 +115,7 @@ async fn persist_indiegala_games(
                     game.platform_game_id,
                 ],
             )
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
             updated += 1;
         }
@@ -113,7 +124,7 @@ async fn persist_indiegala_games(
     tx.commit()
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-    Ok((inserted, updated))
+    Ok((inserted, updated, newly_imported))
 }
 
 /// Importa jogos da IndieGala via IGClient.
@@ -158,11 +169,13 @@ pub async fn import_indiegala_games(
         return Ok(msg.to_string());
     }
 
-    let (inserted, updated) = persist_indiegala_games(&state, games).await?;
+    let (inserted, updated, newly_imported) = persist_indiegala_games(&state, games).await?;
     let message = format_import_summary("IndieGala", inserted, updated);
     info!("{}", message);
 
     let _ = app.emit("library_updated", ());
+
+    trigger_enrichment_if_needed(&app, newly_imported);
 
     Ok(message)
 }

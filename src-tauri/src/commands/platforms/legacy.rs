@@ -1,6 +1,6 @@
 //! Legacy - Importa jogos de Legacy Games Launcher
 
-use crate::commands::platforms::core::{format_import_empty, format_import_summary};
+use crate::commands::platforms::core::{format_import_empty, format_import_summary, trigger_enrichment_if_needed, NewlyImportedGame};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::legacy::LegacySource;
@@ -18,7 +18,8 @@ use uuid::Uuid;
 async fn persist_legacy_games(
     state: &AppState,
     games: Vec<crate::sources::legacy::LegacyGame>,
-) -> Result<(u32, u32), AppError> {
+) -> Result<(u32, u32, Vec<NewlyImportedGame>), AppError> {
+    let mut newly_imported = Vec::new();
     let mut conn = state.games_db.lock().map_err(|_| AppError::MutexError)?;
     let tx = conn
         .transaction()
@@ -43,6 +44,7 @@ async fn persist_legacy_games(
 
         if !exists {
             let new_id = Uuid::new_v4().to_string();
+            let display_name = game.name.clone().unwrap_or_else(|| "Unknown".to_string());
 
             tx.execute(
                 "INSERT INTO games (
@@ -52,7 +54,7 @@ async fn persist_legacy_games(
                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, NULL, ?9, 0, NULL, ?10, ?11)",
                 params![
                     new_id,
-                    game.name.as_deref().unwrap_or("Unknown"),
+                    display_name,
                     legacy_game.cover_url, // cover_url vem do catálogo da Legacy
                     game.platform,
                     game.platform_game_id,
@@ -64,7 +66,7 @@ async fn persist_legacy_games(
                     game.executable_path,
                 ],
             )
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
             // Insere metadados na tabela game_details
             if legacy_game.description_raw.is_some() {
@@ -73,8 +75,15 @@ async fn persist_legacy_games(
                      VALUES (?1, ?2)",
                     params![new_id, legacy_game.description_raw],
                 )
-                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+                    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
             }
+
+            newly_imported.push(NewlyImportedGame {
+                game_id: new_id,
+                name: display_name,
+                platform: game.platform.clone(),
+                platform_game_id: game.platform_game_id.clone(),
+            });
 
             inserted += 1;
         } else {
@@ -94,7 +103,7 @@ async fn persist_legacy_games(
                     game.platform_game_id,
                 ],
             )
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
             updated += 1;
         }
@@ -103,7 +112,7 @@ async fn persist_legacy_games(
     tx.commit()
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-    Ok((inserted, updated))
+    Ok((inserted, updated, newly_imported))
 }
 
 /// Importa a biblioteca de jogos da Legacy Games.
@@ -138,11 +147,13 @@ pub async fn import_legacy_games(
         return Ok(format_import_empty("Legacy Games"));
     }
 
-    let (inserted, updated) = persist_legacy_games(&state, games).await?;
+    let (inserted, updated, newly_imported) = persist_legacy_games(&state, games).await?;
     let message = format_import_summary("Legacy Games", inserted, updated);
     info!("{}", message);
 
     let _ = app.emit("library_updated", ());
+
+    trigger_enrichment_if_needed(&app, newly_imported);
 
     Ok(message)
 }

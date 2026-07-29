@@ -38,9 +38,9 @@ pub async fn import_ubisoft_games(
     let message = format_import_summary("Ubisoft", inserted, updated);
     info!("{}", message);
 
-    trigger_enrichment_if_needed(&app, newly_imported);
-
     let _ = app.emit("library_updated", ());
+
+    trigger_enrichment_if_needed(&app, newly_imported);
 
     Ok(message)
 }

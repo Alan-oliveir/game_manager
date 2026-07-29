@@ -40,12 +40,11 @@ pub async fn import_steam_library(
     let (inserted, updated, newly_imported) = persist_source_games(&state, games).await?;
     let message = format_import_summary("Steam", inserted, updated);
     info!("{}", message);
+    
+    let _ = app.emit("library_updated", ()); // Notifica o frontend
 
     // 4. Inicia a enriquecimento com metadados (RAWG)
     trigger_enrichment_if_needed(&app, newly_imported);
-
-    // Notifica o frontend
-    let _ = app.emit("library_updated", ());
 
     Ok(message)
 }
