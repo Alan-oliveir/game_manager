@@ -7,7 +7,7 @@
 //! No Windows o parâmetro é ignorado.
 
 use crate::commands::platforms::core::{
-    format_import_empty, format_import_summary, persist_source_games,
+    format_import_empty, format_import_summary, persist_source_games, trigger_enrichment_if_needed,
 };
 use crate::database::AppState;
 use crate::errors::AppError;
@@ -38,13 +38,7 @@ pub async fn import_ubisoft_games(
     let message = format_import_summary("Ubisoft", inserted, updated);
     info!("{}", message);
 
-    if !newly_imported.is_empty() {
-        let app_clone = app.clone();
-        tauri::async_runtime::spawn(async move {
-            crate::commands::metadata::enrichment::enrich_newly_imported(app_clone, newly_imported)
-                .await;
-        });
-    }
+    trigger_enrichment_if_needed(&app, newly_imported);
 
     let _ = app.emit("library_updated", ());
 

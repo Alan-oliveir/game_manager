@@ -3,7 +3,8 @@
 //! Retorna uma lista de descobertas encontradas.
 
 use crate::commands::platforms::core::{
-    format_import_summary, persist_source_games, ScanGameInput, ScanResult,
+    format_import_summary, persist_source_games, trigger_enrichment_if_needed, ScanGameInput,
+    ScanResult,
 };
 use crate::database::AppState;
 use crate::errors::AppError;
@@ -71,13 +72,15 @@ pub async fn add_game_from_scan(
         last_played: None,
     };
 
-    let (inserted, _, _) = persist_source_games(&state, vec![game]).await?;
+    let (inserted, _, newly_imported) = persist_source_games(&state, vec![game]).await?;
 
     if inserted == 0 {
         return Err(AppError::ValidationError(
             "Este jogo já foi adicionado anteriormente.".to_string(),
         ));
     }
+
+    trigger_enrichment_if_needed(&app, newly_imported);
 
     let _ = app.emit("library_updated", ());
 
@@ -107,9 +110,11 @@ pub async fn add_games_from_scan(
         })
         .collect();
 
-    let (inserted, updated, _newly_imported) = persist_source_games(&state, source_games).await?;
+    let (inserted, updated, newly_imported) = persist_source_games(&state, source_games).await?;
     let message = format_import_summary("Local", inserted, updated);
     info!("{}", message);
+
+    trigger_enrichment_if_needed(&app, newly_imported);
 
     let _ = app.emit("library_updated", ());
 

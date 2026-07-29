@@ -10,6 +10,7 @@ use crate::utils::status_logic;
 use chrono::{TimeZone, Utc};
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
+use tauri::AppHandle;
 use uuid::Uuid;
 
 // === Estruturas de Dados ===
@@ -115,7 +116,7 @@ pub(crate) async fn persist_source_games(
                     game.executable_path,
                 ],
             )
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
             newly_imported.push(NewlyImportedGame {
                 game_id: new_id,
@@ -146,7 +147,7 @@ pub(crate) async fn persist_source_games(
                     game.platform_game_id
                 ],
             )
-            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
             updated += 1;
         }
@@ -157,6 +158,17 @@ pub(crate) async fn persist_source_games(
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
     Ok((inserted, updated, newly_imported))
+}
+
+/// Dispara o enriquecimento de metadados em background para jogos recém-importados, se houver algum.
+pub fn trigger_enrichment_if_needed(app: &AppHandle, newly_imported: Vec<NewlyImportedGame>) {
+    if !newly_imported.is_empty() {
+        let app_clone = app.clone();
+        tauri::async_runtime::spawn(async move {
+            crate::commands::metadata::enrichment::enrich_newly_imported(app_clone, newly_imported)
+                .await;
+        });
+    }
 }
 
 // === Funções padronizadas para mensagens ===

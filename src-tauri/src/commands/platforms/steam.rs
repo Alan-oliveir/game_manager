@@ -4,7 +4,7 @@
 //! via librarycache do Steam e usa como fallback a API para jogos não encontrados localmente.
 
 use crate::commands::platforms::core::{
-    format_import_empty, format_import_summary, persist_source_games,
+    format_import_empty, format_import_summary, persist_source_games, trigger_enrichment_if_needed,
 };
 use crate::database::AppState;
 use crate::errors::AppError;
@@ -37,9 +37,12 @@ pub async fn import_steam_library(
     }
 
     // 3. Persiste usando a função genérica otimizada
-    let (inserted, updated, _newly_imported) = persist_source_games(&state, games).await?;
+    let (inserted, updated, newly_imported) = persist_source_games(&state, games).await?;
     let message = format_import_summary("Steam", inserted, updated);
     info!("{}", message);
+
+    // 4. Inicia a enriquecimento com metadados (RAWG)
+    trigger_enrichment_if_needed(&app, newly_imported);
 
     // Notifica o frontend
     let _ = app.emit("library_updated", ());

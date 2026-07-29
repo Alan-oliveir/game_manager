@@ -1,7 +1,10 @@
-//! EA - Importa jogos instalados via EA Desktop (Electronic Arts)
+//! EA - Importa jogos instalados via EA Desktop (Electronic Arts) escaneando a pasta de instalação.
+//!
+//! - `ea_install_dir` — pasta onde o EA App instala os jogos (configurável no client EA Desktop).
+//! **Observação:** Sem esse caminho, não há detecção possível.
 
 use crate::commands::platforms::core::{
-    format_import_empty, format_import_summary, persist_source_games,
+    format_import_empty, format_import_summary, persist_source_games, trigger_enrichment_if_needed,
 };
 use crate::database::AppState;
 use crate::errors::AppError;
@@ -9,10 +12,6 @@ use crate::sources::ea::EaSource;
 use tauri::{AppHandle, Emitter, State};
 use tracing::info;
 
-/// Importa jogos instalados via EA App, escaneando a pasta de instalação informada.
-///
-/// - `ea_install_dir` — pasta onde o EA App instala os jogos (configurável no client EA Desktop).
-/// **Observação:** Sem esse caminho, não há detecção possível.
 #[tauri::command]
 pub async fn import_ea_games(
     app: AppHandle,
@@ -30,9 +29,11 @@ pub async fn import_ea_games(
         return Ok(format_import_empty("EA"));
     }
 
-    let (inserted, updated, _newly_imported) = persist_source_games(&state, games).await?;
+    let (inserted, updated, newly_imported) = persist_source_games(&state, games).await?;
     let message = format_import_summary("EA", inserted, updated);
     info!("{}", message);
+
+    trigger_enrichment_if_needed(&app, newly_imported);
 
     let _ = app.emit("library_updated", ());
 

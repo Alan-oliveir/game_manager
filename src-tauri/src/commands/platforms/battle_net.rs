@@ -1,7 +1,7 @@
 //! Battle.net - Importa jogos instalados via Battle.net (Blizzard/Activision)
 
 use crate::commands::platforms::core::{
-    format_import_empty, format_import_summary, persist_source_games,
+    format_import_empty, format_import_summary, persist_source_games, trigger_enrichment_if_needed,
 };
 use crate::database::AppState;
 use crate::errors::AppError;
@@ -21,9 +21,11 @@ pub async fn import_battle_net_games(
         return Ok(format_import_empty("Battle.net"));
     }
 
-    let (inserted, updated, _newly_imported) = persist_source_games(&state, games).await?;
+    let (inserted, updated, newly_imported) = persist_source_games(&state, games).await?;
     let message = format_import_summary("Battle.net", inserted, updated);
     info!("{}", message);
+
+    trigger_enrichment_if_needed(&app, newly_imported);
 
     let _ = app.emit("library_updated", ());
 

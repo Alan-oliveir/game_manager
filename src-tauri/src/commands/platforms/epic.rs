@@ -1,8 +1,6 @@
 //! Epic Games - Login OAuth e importação (biblioteca completa + instalados)
 
-use crate::commands::platforms::core::{
-    format_import_empty, format_import_summary, format_login_success, persist_source_games,
-};
+use crate::commands::platforms::core::{format_import_empty, format_import_summary, format_login_success, persist_source_games, trigger_enrichment_if_needed};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::epic::{merge_local_install_status, EpicSource};
@@ -56,9 +54,11 @@ pub async fn import_epic_games(
         return Ok(format_import_empty("Epic"));
     }
 
-    let (inserted, updated, _newly_imported) = persist_source_games(&state, games).await?;
+    let (inserted, updated, newly_imported) = persist_source_games(&state, games).await?;
     let message = format_import_summary("Epic", inserted, updated);
     info!("{}", message);
+
+    trigger_enrichment_if_needed(&app, newly_imported);
 
     let _ = app.emit("library_updated", ());
 
