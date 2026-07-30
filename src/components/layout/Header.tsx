@@ -1,9 +1,6 @@
 import {
-  Copy,
-  CopySlash,
-  Eye,
-  EyeOff,
   Gamepad2,
+  LayoutGrid,
   Moon,
   Search,
   Settings,
@@ -13,100 +10,29 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Kofi } from '@/components';
+import { Kofi, ViewFiltersDropdown } from '@/components';
 import { QuickSettings } from '@/dialogs/QuickSettings';
-import { useHeaderState, useRecommendationAnalysis, useTheme } from '@/hooks';
+import {
+  useHeaderState,
+  useRecommendationAnalysis,
+  useTheme,
+  type ViewFilters,
+} from '@/hooks';
 import { Game } from '@/types';
 import { Button } from '@/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { openExternalLink } from '@/utils/openLink.ts';
 import { PlataformsConfig } from '@/windows/PlataformsConfig';
 
-interface AdultFilterToggleProps {
-  hideAdult: boolean;
-  onToggle: () => void;
-}
-
-function AdultFilterToggle({
-  hideAdult,
-  onToggle,
-}: Readonly<AdultFilterToggleProps>) {
-  const { t } = useTranslation('common');
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggle}
-          className={`shrink-0 transition-colors ${
-            hideAdult
-              ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:text-green-600'
-              : 'text-muted-foreground hover:bg-red-500/10 hover:text-red-500'
-          }`}
-        >
-          {hideAdult ? <EyeOff size={18} /> : <Eye size={18} />}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">
-        <p>
-          {hideAdult
-            ? t('header_adult_content_hidden_tooltip')
-            : t('header_hide_adult_content_tooltip')}
-        </p>
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-interface DuplicatesFilterToggleProps {
-  hideDuplicates: boolean;
-  onToggle: () => void;
-}
-
-function DuplicatesFilterToggle({
-  hideDuplicates,
-  onToggle,
-}: Readonly<DuplicatesFilterToggleProps>) {
-  const { t } = useTranslation('common');
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggle}
-          className={`shrink-0 transition-colors ${
-            hideDuplicates
-              ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 hover:text-amber-600'
-              : 'text-muted-foreground hover:bg-amber-500/10 hover:text-amber-500'
-          }`}
-        >
-          {hideDuplicates ? <CopySlash size={18} /> : <Copy size={18} />}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">
-        <p>
-          {hideDuplicates
-            ? t('header_duplicates_hidden_tooltip')
-            : t('header_hide_duplicate_games_tooltip')}
-        </p>
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
 interface HeaderProps {
   onAddGame: () => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
   activeSection: string;
-  hideAdult: boolean;
-  onToggleAdultFilter: () => void;
-  hideDuplicates: boolean;
-  onToggleDuplicatesFilter: () => void;
+  viewFilters: ViewFilters;
+  onViewFiltersChange: (filters: ViewFilters) => void;
+  groupByPlatform: boolean;
+  onToggleGroupByPlatform: () => void;
   onCheckUpdates: () => void;
   onLibraryUpdate: () => void;
   userGames: Game[];
@@ -117,10 +43,10 @@ export default function Header({
   searchTerm,
   onSearchChange,
   activeSection,
-  hideAdult,
-  onToggleAdultFilter,
-  hideDuplicates,
-  onToggleDuplicatesFilter,
+  viewFilters,
+  onViewFiltersChange,
+  groupByPlatform,
+  onToggleGroupByPlatform,
   onCheckUpdates,
   onLibraryUpdate,
   userGames,
@@ -128,13 +54,12 @@ export default function Header({
   const { t } = useTranslation('common');
 
   const { isDark, toggleTheme } = useTheme();
-  const { isSearchable, searchPlaceholder, searchAriaLabel } =
+  const { isSearchable, isFilterable, searchPlaceholder, searchAriaLabel } =
     useHeaderState(activeSection);
 
   const [isQuickSettingsOpen, setIsQuickSettingsOpen] = useState(false);
   const [isStoresConfigOpen, setIsStoresConfigOpen] = useState(false);
 
-  // Hook para gerenciar análises de recomendação
   const { analysisStatus, generateRecommendationAnalysis } =
     useRecommendationAnalysis();
 
@@ -167,16 +92,13 @@ export default function Header({
         </div>
       </div>
 
-      {/* Status de Análise */}
       {analysisStatus && (
         <div className="text-muted-foreground animate-pulse text-xs">
           {analysisStatus}
         </div>
       )}
 
-      {/* Actions */}
       <div className="ml-auto flex items-center gap-2">
-        {/* Botão de Adicionar Jogo */}
         <Button
           onClick={onAddGame}
           size="sm"
@@ -190,7 +112,6 @@ export default function Header({
           </span>
         </Button>
 
-        {/* Botão de Configurar Lojas (Steam, Scanner, etc) */}
         <Button
           onClick={() => setIsStoresConfigOpen(true)}
           size="sm"
@@ -204,23 +125,33 @@ export default function Header({
           </span>
         </Button>
 
-        {/* Botão de Filtro Adulto (Só aparece em telas de listagem) */}
-        {isSearchable && (
-          <AdultFilterToggle
-            hideAdult={hideAdult}
-            onToggle={onToggleAdultFilter}
+        {/* Filter toggle (adulto/duplicatas/não-instalados) */}
+        {isFilterable && (
+          <ViewFiltersDropdown
+            filters={viewFilters}
+            onChange={onViewFiltersChange}
           />
         )}
 
-        {/* Botão de Ocultar Duplicatas (Só aparece em telas de listagem) */}
-        {isSearchable && (
-          <DuplicatesFilterToggle
-            hideDuplicates={hideDuplicates}
-            onToggle={onToggleDuplicatesFilter}
-          />
+        {/* Toggle de agrupar por plataforma — modo de view, não filtro de conteúdo */}
+        {isFilterable && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={groupByPlatform ? 'secondary' : 'ghost'}
+                size="icon"
+                onClick={onToggleGroupByPlatform}
+                className="shrink-0"
+              >
+                <LayoutGrid size={18} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p>{t('header_group_by_platform_title')}</p>
+            </TooltipContent>
+          </Tooltip>
         )}
 
-        {/* Botão de Doação Ko-fi */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -239,7 +170,6 @@ export default function Header({
           </TooltipContent>
         </Tooltip>
 
-        {/* Quick Settings */}
         <Button
           onClick={() => setIsQuickSettingsOpen(true)}
           variant="ghost"
@@ -250,7 +180,6 @@ export default function Header({
           <Settings size={18} />
         </Button>
 
-        {/* Theme Toggle */}
         <Button
           onClick={toggleTheme}
           variant="ghost"

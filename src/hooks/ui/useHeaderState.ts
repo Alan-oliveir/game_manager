@@ -1,4 +1,4 @@
-import { SEARCHABLE_SECTIONS } from '@/utils/navigation';
+import { FILTERABLE_SECTIONS, SEARCHABLE_SECTIONS } from '@/utils/navigation';
 
 /**
  * Hook para gerenciar o estado do Header baseado na seção ativa.
@@ -12,6 +12,7 @@ import { SEARCHABLE_SECTIONS } from '@/utils/navigation';
  * @returns Estado e configurações do header
  */
 export function useHeaderState(activeSection: string) {
+  const isFilterable = FILTERABLE_SECTIONS.has(activeSection);
   const isSearchable = SEARCHABLE_SECTIONS.includes(activeSection);
   const searchPlaceholder = isSearchable
     ? 'Buscar jogos por nome, gênero ou plataforma...'
@@ -24,5 +25,6 @@ export function useHeaderState(activeSection: string) {
     isSearchable,
     searchPlaceholder,
     searchAriaLabel,
+    isFilterable,
   };
 }

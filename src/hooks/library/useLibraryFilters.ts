@@ -2,11 +2,18 @@ import { useMemo } from 'react';
 
 import { Game } from '@/types';
 
+export interface ViewFilters {
+  hideAdult: boolean;
+  hideDuplicates: boolean;
+  hideNotInstalled: boolean;
+}
+
 interface UseLibraryFilterOptions {
   games: Game[];
   searchTerm: string;
   hideAdult?: boolean;
   hideDuplicates?: boolean;
+  hideNotInstalled?: boolean;
 }
 
 /**
@@ -30,6 +37,7 @@ function pickBestGame(group: Game[]): Game {
  * @param searchTerm - Termo de busca
  * @param hideAdult - Se true, oculta jogos marcados como adultos
  * @param hideDuplicates - Se true, mantém apenas uma entrada por nome de jogo
+ * @param hideNotInstalled
  * @returns Jogos filtrados
  */
 export function useLibraryFilter({
@@ -37,12 +45,18 @@ export function useLibraryFilter({
   searchTerm,
   hideAdult,
   hideDuplicates,
+  hideNotInstalled,
 }: UseLibraryFilterOptions) {
   return useMemo(() => {
-    // 1. Aplica filtro de conteúdo adulto
+    // 1. Filtro de conteúdo adulto
     let result = hideAdult ? games.filter(game => !game.isAdult) : games;
 
-    // 2. Oculta duplicatas (mesmo nome, plataformas diferentes)
+    // 2. Filtro de não-instalados
+    if (hideNotInstalled) {
+      result = result.filter(game => game.installed);
+    }
+
+    // 3. Oculta duplicatas (mesmo nome, plataformas diferentes)
     if (hideDuplicates) {
       const groups = new Map<string, Game[]>();
 
@@ -56,10 +70,9 @@ export function useLibraryFilter({
       result = Array.from(groups.values()).map(pickBestGame);
     }
 
-    // 3. Se não há busca, retorna games já filtrados
+    // 4. Busca
     if (!searchTerm) return result;
 
-    // 4. Aplica filtro de busca
     const term = searchTerm.toLowerCase();
 
     return result.filter(
@@ -68,5 +81,5 @@ export function useLibraryFilter({
         game.genres?.toLowerCase().includes(term) ||
         game.platform?.toLowerCase().includes(term)
     );
-  }, [games, hideAdult, hideDuplicates, searchTerm]);
+  }, [games, hideAdult, hideDuplicates, hideNotInstalled, searchTerm]);
 }

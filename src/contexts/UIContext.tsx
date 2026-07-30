@@ -7,24 +7,21 @@ import {
   useState,
 } from 'react';
 
+import { ViewFilters } from '@/hooks';
 import { Game, Giveaway, RawgGame, UserPreferenceVector } from '@/types';
 
 interface UIContextType {
-  // Navegação
   activeSection: string;
   setActiveSection: (section: string) => void;
 
-  // Search
   searchTerm: string;
   setSearchTerm: (term: string) => void;
 
-  // Modals
   isAddModalOpen: boolean;
   setIsAddModalOpen: (open: boolean) => void;
   gameToEdit: Game | null;
   setGameToEdit: (game: Game | null) => void;
 
-  // Game Details
   selectedGameId: string | null;
   setSelectedGameId: (id: string | null) => void;
 
@@ -33,8 +30,15 @@ interface UIContextType {
   toggleAdultFilter: () => void;
   hideDuplicates: boolean;
   toggleDuplicatesFilter: () => void;
+  hideNotInstalled: boolean;
+  toggleNotInstalledFilter: () => void;
+  groupByPlatform: boolean;
+  toggleGroupByPlatform: () => void;
 
-  // Cache (Trending e Profile)
+  // Agregado para consumo direto pelo dropdown de filtros
+  viewFilters: ViewFilters;
+  onViewFiltersChange: (next: ViewFilters) => void;
+
   trendingCache: RawgGame[];
   setTrendingCache: (games: RawgGame[]) => void;
   trendingKey: number;
@@ -42,7 +46,6 @@ interface UIContextType {
   profileCache: UserPreferenceVector | null;
   setProfileCache: (profile: UserPreferenceVector | null) => void;
 
-  // Cache de sessao (offline-first no backend)
   trendingFetchedAt: number | null;
   setTrendingFetchedAt: (value: number | null) => void;
   upcomingCache: RawgGame[];
@@ -54,11 +57,9 @@ interface UIContextType {
   giveawaysFetchedAt: number | null;
   setGiveawaysFetchedAt: (value: number | null) => void;
 
-  // Updater
   enableUpdaterChecks: boolean;
   setEnableUpdaterChecks: (value: boolean) => void;
 
-  // Helpers
   openAddModal: () => void;
   openEditModal: (game: Game) => void;
   closeAddModal: () => void;
@@ -67,29 +68,25 @@ interface UIContextType {
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
-  // Navegação
   const [activeSection, setActiveSection] = useState('home');
-
-  // Search
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
-
-  // Game Details
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
-  // Filtros
-  const [hideAdult, setHideAdult] = useState(() => {
-    return localStorage.getItem('playlite_hide_adult') === 'true';
-  });
+  const [hideAdult, setHideAdult] = useState(
+    () => localStorage.getItem('playlite_hide_adult') === 'true'
+  );
+  const [hideDuplicates, setHideDuplicates] = useState(
+    () => localStorage.getItem('playlite_hide_duplicates') === 'true'
+  );
+  const [hideNotInstalled, setHideNotInstalled] = useState(
+    () => localStorage.getItem('playlite_hide_not_installed') === 'true'
+  );
+  const [groupByPlatform, setGroupByPlatform] = useState(
+    () => localStorage.getItem('playlite_group_by_platform') === 'true'
+  );
 
-  const [hideDuplicates, setHideDuplicates] = useState(() => {
-    return localStorage.getItem('playlite_hide_duplicates') === 'true';
-  });
-
-  // Cache
   const [trendingCache, setTrendingCache] = useState<RawgGame[]>([]);
   const [trendingKey, setTrendingKey] = useState(0);
   const [profileCache, setProfileCache] = useState<UserPreferenceVector | null>(
@@ -128,6 +125,48 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
     });
   }, []);
 
+  const toggleNotInstalledFilter = useCallback(() => {
+    setHideNotInstalled(prev => {
+      const newValue = !prev;
+      localStorage.setItem('playlite_hide_not_installed', String(newValue));
+
+      return newValue;
+    });
+  }, []);
+
+  const toggleGroupByPlatform = useCallback(() => {
+    setGroupByPlatform(prev => {
+      const newValue = !prev;
+      localStorage.setItem('playlite_group_by_platform', String(newValue));
+
+      return newValue;
+    });
+  }, []);
+
+  const viewFilters: ViewFilters = useMemo(
+    () => ({ hideAdult, hideDuplicates, hideNotInstalled }),
+    [hideAdult, hideDuplicates, hideNotInstalled]
+  );
+
+  const onViewFiltersChange = useCallback(
+    (next: ViewFilters) => {
+      if (next.hideAdult !== hideAdult) toggleAdultFilter();
+
+      if (next.hideDuplicates !== hideDuplicates) toggleDuplicatesFilter();
+
+      if (next.hideNotInstalled !== hideNotInstalled)
+        toggleNotInstalledFilter();
+    },
+    [
+      hideAdult,
+      hideDuplicates,
+      hideNotInstalled,
+      toggleAdultFilter,
+      toggleDuplicatesFilter,
+      toggleNotInstalledFilter,
+    ]
+  );
+
   const openAddModal = useCallback(() => {
     setGameToEdit(null);
     setIsAddModalOpen(true);
@@ -159,6 +198,12 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
       toggleAdultFilter,
       hideDuplicates,
       toggleDuplicatesFilter,
+      hideNotInstalled,
+      toggleNotInstalledFilter,
+      groupByPlatform,
+      toggleGroupByPlatform,
+      viewFilters,
+      onViewFiltersChange,
       trendingCache,
       setTrendingCache,
       trendingKey,
@@ -188,7 +233,15 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
       gameToEdit,
       selectedGameId,
       hideAdult,
+      toggleAdultFilter,
       hideDuplicates,
+      toggleDuplicatesFilter,
+      hideNotInstalled,
+      toggleNotInstalledFilter,
+      groupByPlatform,
+      toggleGroupByPlatform,
+      viewFilters,
+      onViewFiltersChange,
       trendingCache,
       trendingKey,
       profileCache,
@@ -198,6 +251,9 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
       giveawaysCache,
       giveawaysFetchedAt,
       enableUpdaterChecks,
+      openAddModal,
+      openEditModal,
+      closeAddModal,
     ]
   );
 

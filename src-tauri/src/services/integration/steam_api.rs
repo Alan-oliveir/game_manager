@@ -222,182 +222,190 @@ struct SteamSearchResponse {
 /// `"app"` ainda podem incluir DLCs, trilhas sonoras e edições especiais —
 /// a desambiguação desses casos é responsabilidade de quem chama esta função.
 pub async fn search_app_by_name(name: &str) -> Result<Vec<SteamSearchItem>, String> {
-    let url = format!(
-        "{}?term={}&l=english&cc=BR",
-        STEAM_STORE_SEARCH_URL,
-        urlencoding::encode(name)
-    );
+    crate::services::rate_limiter::STEAM_LIMITER
+        .run(|| async {
+            let url = format!(
+                "{}?term={}&l=english&cc=BR",
+                STEAM_STORE_SEARCH_URL,
+                urlencoding::encode(name)
+            );
 
-    let res = HTTP_CLIENT
-        .get(&url)
-        .header("User-Agent", USER_AGENT_BROWSER)
-        .timeout(Duration::from_secs(STEAM_STORE_TIMEOUT_SECS))
-        .send()
+            let res = HTTP_CLIENT
+                .get(&url)
+                .header("User-Agent", USER_AGENT_BROWSER)
+                .timeout(Duration::from_secs(STEAM_STORE_TIMEOUT_SECS))
+                .send()
+                .await
+                .map_err(|e| format!("Erro requisição Steam Store Search: {}", e))?;
+
+            if !res.status().is_success() {
+                return Err(format!("Steam Store Search API Error: {}", res.status()));
+            }
+
+            let data: SteamSearchResponse = res
+                .json()
+                .await
+                .map_err(|e| format!("Erro ao parsear resposta Steam Store Search: {}", e))?;
+
+            Ok(data
+                .items
+                .into_iter()
+                .filter(|item| item.item_type != "sub")
+                .collect())
+        })
         .await
-        .map_err(|e| format!("Erro requisição Steam Store Search: {}", e))?;
-
-    if !res.status().is_success() {
-        return Err(format!("Steam Store Search API Error: {}", res.status()));
-    }
-
-    let data: SteamSearchResponse = res
-        .json()
-        .await
-        .map_err(|e| format!("Erro ao parsear resposta Steam Store Search: {}", e))?;
-
-    Ok(data
-        .items
-        .into_iter()
-        .filter(|item| item.item_type != "sub")
-        .collect())
 }
 
 /// Busca detalhes da loja (Conteúdo adulto, descrição, imagens).
 /// Retorna Option porque o jogo pode não existir na loja (removido/banido).
 pub async fn get_app_details(app_id: &str) -> Result<Option<SteamStoreData>, String> {
-    // Filtra apenas os campos necessários
-    let url = format!(
-        "{}?appids={}&filters=basic,content_descriptors,categories,genres,release_date",
-        STEAM_STORE_API_URL, app_id
-    );
+    crate::services::rate_limiter::STEAM_LIMITER.run(|| async {
+        // Filtra apenas os campos necessários
+        let url = format!(
+            "{}?appids={}&filters=basic,content_descriptors,categories,genres,release_date",
+            STEAM_STORE_API_URL, app_id
+        );
 
-    let response = HTTP_CLIENT
-        .get(&url)
-        .timeout(Duration::from_secs(STEAM_STORE_TIMEOUT_SECS))
-        .send()
-        .await
-        .map_err(|e| format!("Erro requisição Steam Store: {}", e))?;
+        let response = HTTP_CLIENT
+            .get(&url)
+            .timeout(Duration::from_secs(STEAM_STORE_TIMEOUT_SECS))
+            .send()
+            .await
+            .map_err(|e| format!("Erro requisição Steam Store: {}", e))?;
 
-    if !response.status().is_success() {
-        return Err(format!("Steam Store API Error: {}", response.status()));
-    }
+        if !response.status().is_success() {
+            return Err(format!("Steam Store API Error: {}", response.status()));
+        }
 
-    let json: Value = response.json().await.map_err(|e| e.to_string())?;
+        let json: Value = response.json().await.map_err(|e| e.to_string())?;
 
-    // Navega no JSON dinâmico (Chave é o AppID)
-    if let Some(app_wrapper) = json.get(app_id) {
-        if let Some(success) = app_wrapper.get("success").and_then(|v| v.as_bool()) {
-            if success {
-                if let Some(data) = app_wrapper.get("data") {
-                    let name = data
-                        .get("name")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("")
-                        .to_string();
-                    let is_free = data
-                        .get("is_free")
-                        .and_then(|v| v.as_bool())
-                        .unwrap_or(false);
-                    let short_description = data
-                        .get("short_description")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("")
-                        .to_string();
-                    let header_image = data
-                        .get("header_image")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("")
-                        .to_string();
-                    let website = data
-                        .get("website")
-                        .and_then(|v| v.as_str())
-                        .map(|s| s.to_string());
-                    let release_date = data
-                        .get("release_date")
-                        .and_then(|v| v.get("date"))
-                        .and_then(|v| v.as_str())
-                        .map(|s| s.to_string());
-                    let required_age = data
-                        .get("required_age")
-                        .and_then(|v| v.as_u64())
-                        .unwrap_or(0) as u32;
-                    let content_descriptors: ContentDescriptors = serde_json::from_value(
-                        data.get("content_descriptors")
-                            .cloned()
-                            .unwrap_or(json!({"ids": [], "notes": null})),
-                    )
-                    .unwrap_or(ContentDescriptors {
-                        ids: vec![],
-                        notes: None,
-                    });
-                    let categories: Vec<Category> = serde_json::from_value(
-                        data.get("categories").cloned().unwrap_or(json!([])),
-                    )
-                    .unwrap_or_default();
-                    let genres: Vec<Genre> =
-                        serde_json::from_value(data.get("genres").cloned().unwrap_or(json!([])))
+        // Navega no JSON dinâmico (Chave é o AppID)
+        if let Some(app_wrapper) = json.get(app_id) {
+            if let Some(success) = app_wrapper.get("success").and_then(|v| v.as_bool()) {
+                if success {
+                    if let Some(data) = app_wrapper.get("data") {
+                        let name = data
+                            .get("name")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let is_free = data
+                            .get("is_free")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(false);
+                        let short_description = data
+                            .get("short_description")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let header_image = data
+                            .get("header_image")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let website = data
+                            .get("website")
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string());
+                        let release_date = data
+                            .get("release_date")
+                            .and_then(|v| v.get("date"))
+                            .and_then(|v| v.as_str())
+                            .map(|s| s.to_string());
+                        let required_age = data
+                            .get("required_age")
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(0) as u32;
+                        let content_descriptors: ContentDescriptors = serde_json::from_value(
+                            data.get("content_descriptors")
+                                .cloned()
+                                .unwrap_or(json!({"ids": [], "notes": null})),
+                        )
+                            .unwrap_or(ContentDescriptors {
+                                ids: vec![],
+                                notes: None,
+                            });
+                        let categories: Vec<Category> = serde_json::from_value(
+                            data.get("categories").cloned().unwrap_or(json!([])),
+                        )
                             .unwrap_or_default();
+                        let genres: Vec<Genre> =
+                            serde_json::from_value(data.get("genres").cloned().unwrap_or(json!([])))
+                                .unwrap_or_default();
 
-                    return Ok(Some(SteamStoreData {
-                        name,
-                        is_free,
-                        short_description,
-                        header_image,
-                        website,
-                        release_date,
-                        content_descriptors,
-                        categories,
-                        genres,
-                        required_age,
-                    }));
+                        return Ok(Some(SteamStoreData {
+                            name,
+                            is_free,
+                            short_description,
+                            header_image,
+                            website,
+                            release_date,
+                            content_descriptors,
+                            categories,
+                            genres,
+                            required_age,
+                        }));
+                    }
                 }
             }
         }
-    }
 
-    Ok(None)
+        Ok(None)
+    }).await
 }
 
 /// Busca o resumo das avaliações (Reviews)
 pub async fn get_app_reviews(app_id: &str) -> Result<Option<SteamReviewSummary>, String> {
-    let url = format!(
-        "{}/{}?json=1&language=all&purchase_type=all",
-        REVIEW_API_URL, app_id
-    );
+    crate::services::rate_limiter::STEAM_LIMITER.run(|| async {
+        let url = format!(
+            "{}/{}?json=1&language=all&purchase_type=all",
+            REVIEW_API_URL, app_id
+        );
 
-    let response = HTTP_CLIENT
-        .get(&url)
-        .header("User-Agent", USER_AGENT_STEAM)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
+        let response = HTTP_CLIENT
+            .get(&url)
+            .header("User-Agent", USER_AGENT_STEAM)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
 
-    let json: Value = response.json().await.map_err(|e| e.to_string())?;
+        let json: Value = response.json().await.map_err(|e| e.to_string())?;
 
-    if let Some(success) = json.get("success").and_then(|v| v.as_i64()) {
-        if success == 1 {
-            if let Some(summary) = json.get("query_summary") {
-                let total_reviews = summary
-                    .get("total_reviews")
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(0) as u32;
-                let review_score_desc = summary
-                    .get("review_score_desc")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("No Reviews")
-                    .to_string();
-
-                return Ok(Some(SteamReviewSummary {
-                    review_score: summary
-                        .get("review_score")
+        if let Some(success) = json.get("success").and_then(|v| v.as_i64()) {
+            if success == 1 {
+                if let Some(summary) = json.get("query_summary") {
+                    let total_reviews = summary
+                        .get("total_reviews")
                         .and_then(|v| v.as_u64())
-                        .unwrap_or(0) as u32,
-                    review_score_desc,
-                    total_positive: summary
-                        .get("total_positive")
-                        .and_then(|v| v.as_u64())
-                        .unwrap_or(0) as u32,
-                    total_negative: summary
-                        .get("total_negative")
-                        .and_then(|v| v.as_u64())
-                        .unwrap_or(0) as u32,
-                    total_reviews,
-                }));
+                        .unwrap_or(0) as u32;
+                    let review_score_desc = summary
+                        .get("review_score_desc")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("No Reviews")
+                        .to_string();
+
+                    return Ok(Some(SteamReviewSummary {
+                        review_score: summary
+                            .get("review_score")
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(0) as u32,
+                        review_score_desc,
+                        total_positive: summary
+                            .get("total_positive")
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(0) as u32,
+                        total_negative: summary
+                            .get("total_negative")
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(0) as u32,
+                        total_reviews,
+                    }));
+                }
             }
         }
-    }
 
-    Ok(None)
+        Ok(None)
+    }).await
 }
 
 /// Detecta conteúdo explícito (sexual) baseado exclusivamente em critérios da Steam

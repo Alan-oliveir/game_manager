@@ -12,6 +12,8 @@ interface LibraryProps extends GameActions {
   searchTerm: string;
   hideAdult?: boolean;
   hideDuplicates?: boolean;
+  hideNotInstalled?: boolean;
+  groupByPlatform?: boolean;
 }
 
 export default function Libraries({
@@ -19,6 +21,8 @@ export default function Libraries({
   searchTerm,
   hideAdult,
   hideDuplicates,
+  hideNotInstalled,
+  groupByPlatform = false,
   ...actions
 }: Readonly<LibraryProps>) {
   const { t } = useTranslation('library');
@@ -46,6 +50,7 @@ export default function Libraries({
     searchTerm,
     hideAdult,
     hideDuplicates,
+    hideNotInstalled,
   });
 
   // Empty state
@@ -83,6 +88,7 @@ export default function Libraries({
       <div className="min-h-0 flex-1">
         <LibraryGameGrid
           games={displayedGames}
+          groupByPlatform={groupByPlatform}
           onGameClick={actions.onGameClick}
           onToggleFavorite={actions.onToggleFavorite}
           onAddToPlaylist={handleAddToPlaylist}

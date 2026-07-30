@@ -36,3 +36,8 @@ export const MENU_ITEMS: MenuItem[] = [
  * IDs das seções que possuem funcionalidade de busca
  */
 export const SEARCHABLE_SECTIONS = ['libraries', 'favorites', 'wishlist'];
+
+/**
+ * IDs das seções que possuem funcionalidade de filtro (adulto, duplicatas, não-instalados) e agrupamento
+ */
+export const FILTERABLE_SECTIONS = new Set(['libraries', 'favorites']);

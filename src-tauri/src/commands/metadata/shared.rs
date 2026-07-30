@@ -60,10 +60,18 @@ async fn fetch_rawg_metadata_inner(
         }
     }
 
-    match rawg::search_games(api_key, name).await {
+    let search_result = crate::services::rate_limiter::RAWG_LIMITER
+        .run(|| rawg::search_games(api_key, name))
+        .await;
+
+    match search_result {
         Ok(results) => {
             if let Some(best_match) = results.first() {
-                match rawg::fetch_game_details(api_key, best_match.id.to_string()).await {
+                let details_result = crate::services::rate_limiter::RAWG_LIMITER
+                    .run(|| rawg::fetch_game_details(api_key, best_match.id.to_string()))
+                    .await;
+
+                match details_result {
                     Ok(details) => {
                         if let Ok(json) = serde_json::to_string(&details) {
                             let _ =
@@ -72,12 +80,19 @@ async fn fetch_rawg_metadata_inner(
                         Some(details)
                     }
                     Err(err) => {
+                        // Só marca como NOT_FOUND em 404 real — 429 já foi
+                        // tentado via backoff e não deve ser confundido com ausência.
                         if err.contains("não encontrado") || err.contains("404") {
                             let _ = cache::save_cached_api_data(
                                 cache_conn,
                                 "rawg",
                                 &cache_key,
                                 NOT_FOUND_MARKER,
+                            );
+                        } else {
+                            warn!(
+                                "RAWG fetch_game_details falhou (não-404) para '{}': {}",
+                                name, err
                             );
                         }
                         None
@@ -89,7 +104,10 @@ async fn fetch_rawg_metadata_inner(
                 None
             }
         }
-        Err(_) => None,
+        Err(e) => {
+            warn!("RAWG search_games falhou para '{}': {}", name, e);
+            None // erro de rede/429 esgotado — NÃO cacheia como not-found
+        }
     }
 }
 

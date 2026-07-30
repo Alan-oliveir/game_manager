@@ -41,9 +41,12 @@ function AppContent() {
     selectedGameId,
     setSelectedGameId,
     hideAdult,
-    toggleAdultFilter,
     hideDuplicates,
-    toggleDuplicatesFilter,
+    hideNotInstalled,
+    groupByPlatform,
+    toggleGroupByPlatform,
+    viewFilters,
+    onViewFiltersChange,
     trendingCache,
     setTrendingCache,
     trendingKey,
@@ -213,6 +216,8 @@ function AppContent() {
             searchTerm={debouncedSearchTerm}
             hideAdult={hideAdult}
             hideDuplicates={hideDuplicates}
+            hideNotInstalled={hideNotInstalled}
+            groupByPlatform={groupByPlatform}
             {...commonGameActions}
           />
         );
@@ -223,6 +228,8 @@ function AppContent() {
             searchTerm={debouncedSearchTerm}
             hideAdult={hideAdult}
             hideDuplicates={hideDuplicates}
+            hideNotInstalled={hideNotInstalled}
+            groupByPlatform={groupByPlatform}
             {...commonGameActions}
           />
         );
@@ -276,10 +283,10 @@ function AppContent() {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           activeSection={activeSection}
-          hideAdult={hideAdult}
-          onToggleAdultFilter={toggleAdultFilter}
-          hideDuplicates={hideDuplicates}
-          onToggleDuplicatesFilter={toggleDuplicatesFilter}
+          viewFilters={viewFilters}
+          onViewFiltersChange={onViewFiltersChange}
+          groupByPlatform={groupByPlatform}
+          onToggleGroupByPlatform={toggleGroupByPlatform}
           onCheckUpdates={handleCheckUpdates}
           onLibraryUpdate={refreshGames}
           userGames={games}

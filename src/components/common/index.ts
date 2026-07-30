@@ -11,3 +11,4 @@ export { default as Hero } from './Hero';
 export { LibraryGameGrid } from './LibraryGameGrid';
 export { SettingsRow } from './SettingsRow';
 export { StatusBadge } from './StatusBadge';
+export { ViewFiltersDropdown } from './ViewFiltersDropdown';

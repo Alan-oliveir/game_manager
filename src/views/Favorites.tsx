@@ -12,6 +12,8 @@ interface FavoritesProps extends GameActions {
   searchTerm: string;
   hideAdult?: boolean;
   hideDuplicates?: boolean;
+  hideNotInstalled?: boolean;
+  groupByPlatform?: boolean;
 }
 
 export default function Favorites({
@@ -19,6 +21,8 @@ export default function Favorites({
   searchTerm,
   hideAdult,
   hideDuplicates,
+  hideNotInstalled,
+  groupByPlatform = false,
   ...actions
 }: Readonly<FavoritesProps>) {
   const { t } = useTranslation('library');
@@ -48,6 +52,7 @@ export default function Favorites({
     searchTerm,
     hideAdult,
     hideDuplicates,
+    hideNotInstalled,
   });
 
   // Empty state
@@ -87,6 +92,7 @@ export default function Favorites({
       <div className="min-h-0 flex-1">
         <LibraryGameGrid
           games={displayedGames}
+          groupByPlatform={groupByPlatform}
           onGameClick={actions.onGameClick}
           onToggleFavorite={actions.onToggleFavorite}
           onAddToPlaylist={handleAddToPlaylist}

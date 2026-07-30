@@ -12,6 +12,7 @@ export function useElementWidth<T extends HTMLElement = HTMLDivElement>() {
 
   useEffect(() => {
     const el = ref.current;
+
     if (!el) return;
 
     const updateWidth = () => setWidth(el.getBoundingClientRect().width);
