@@ -257,7 +257,7 @@ pub async fn search_app_by_name(name: &str) -> Result<Vec<SteamSearchItem>, Stri
 pub async fn get_app_details(app_id: &str) -> Result<Option<SteamStoreData>, String> {
     // Filtra apenas os campos necessários
     let url = format!(
-        "{}?appids={}&l=brazilian&filters=basic,content_descriptors,categories,genres,release_date",
+        "{}?appids={}&filters=basic,content_descriptors,categories,genres,release_date",
         STEAM_STORE_API_URL, app_id
     );
 
@@ -302,18 +302,15 @@ pub async fn get_app_details(app_id: &str) -> Result<Option<SteamStoreData>, Str
                         .get("website")
                         .and_then(|v| v.as_str())
                         .map(|s| s.to_string());
-
                     let release_date = data
                         .get("release_date")
                         .and_then(|v| v.get("date"))
                         .and_then(|v| v.as_str())
                         .map(|s| s.to_string());
-
                     let required_age = data
                         .get("required_age")
                         .and_then(|v| v.as_u64())
                         .unwrap_or(0) as u32;
-
                     let content_descriptors: ContentDescriptors = serde_json::from_value(
                         data.get("content_descriptors")
                             .cloned()
@@ -323,12 +320,10 @@ pub async fn get_app_details(app_id: &str) -> Result<Option<SteamStoreData>, Str
                         ids: vec![],
                         notes: None,
                     });
-
                     let categories: Vec<Category> = serde_json::from_value(
                         data.get("categories").cloned().unwrap_or(json!([])),
                     )
                     .unwrap_or_default();
-
                     let genres: Vec<Genre> =
                         serde_json::from_value(data.get("genres").cloned().unwrap_or(json!([])))
                             .unwrap_or_default();
@@ -376,7 +371,6 @@ pub async fn get_app_reviews(app_id: &str) -> Result<Option<SteamReviewSummary>,
                     .get("total_reviews")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(0) as u32;
-
                 let review_score_desc = summary
                     .get("review_score_desc")
                     .and_then(|v| v.as_str())
@@ -442,7 +436,6 @@ pub fn detect_adult_content(data: &SteamStoreData) -> (bool, Vec<String>) {
     // 2. Notes (geralmente usadas para Adult Only Sexual Content)
     if let Some(notes) = &data.content_descriptors.notes {
         let notes_lower = notes.to_lowercase();
-
         let explicit_keywords = [
             "adult only sexual content",
             "explicit sexual",
@@ -462,7 +455,6 @@ pub fn detect_adult_content(data: &SteamStoreData) -> (bool, Vec<String>) {
     // 3. Tags / gêneros como fallback fraco
     for genre in &data.genres {
         let desc = genre.description.to_lowercase();
-
         let explicit_genre_keywords = [
             "hentai",
             "nsfw",

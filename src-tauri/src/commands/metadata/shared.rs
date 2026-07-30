@@ -193,8 +193,6 @@ pub async fn resolve_steam_app_id(
     resolution
 }
 
-// === ENRIQUECIMENTO COM CACHE ===
-
 /// Busca dados Steam Store com cache
 pub(crate) async fn fetch_steam_store_data(
     steam_id: &str,

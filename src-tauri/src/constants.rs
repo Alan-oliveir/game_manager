@@ -62,10 +62,13 @@ pub const RECOMMENDATION_DEFAULT_AGE_DECAY: f32 = 0.98;
 pub const DEFAULT_CURRENCY: &str = "BRL";
 
 // === LIMITES DE REQUISIÇÕES A SERVIÇOS EXTERNOS ===
-pub const RAWG_RATE_LIMIT_MS: u64 = 1000;
+pub const RAWG_RATE_LIMIT_MS: u64 = 200; // 10 req/s
+pub const RAWG_MAX_CONCURRENT_REQUESTS: usize = 4;
 pub const RAWG_REQUISITIONS_PER_BATCH: u32 = 20;
+pub const RAWG_BACKOFF_BASE_MS: u64 = 2000; // espera inicial após 429
+pub const RAWG_BACKOFF_MAX_RETRIES: u32 = 3; // 2s, 4s, 6s antes de desistir
 pub const RAWG_SEARCH_PAGE_SIZE: u32 = 10;
-pub const RAWG_TRENDING_PAGE_SIZE: u32 = 20;
+pub const RAWG_TRENDING_PAGE_SIZE: u32 = 15;
 pub const RAWG_UPCOMING_PAGE_SIZE: u32 = 10;
 pub const GAME_PASS_BATCH_SIZE: usize = 20;
 pub const GAMEBRAIN_SIMILAR_REQUEST_LIMIT: u32 = 12;
