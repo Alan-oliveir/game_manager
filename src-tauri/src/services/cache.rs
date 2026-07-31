@@ -3,16 +3,10 @@
 //! Gerencia cache persistente em SQLite para respostas de RAWG e Steam,
 //! reduzindo chamadas desnecessárias e melhorando performance.
 
-use crate::constants::{
-    CACHE_AMAZON_LUNA_TTL_DAYS, CACHE_DEFAULT_TTL_DAYS, CACHE_EA_PLAY_TTL_DAYS,
-    CACHE_GAMEBRAIN_ID_TTL_DAYS, CACHE_GAMEBRAIN_MEDIA_TTL_DAYS, CACHE_GAMEBRAIN_SIMILAR_TTL_DAYS,
-    CACHE_GAMERPOWER_TTL_DAYS, CACHE_GAME_PASS_FULL_TTL_DAYS, CACHE_PROTON_DB_TTL_DAYS,
-    CACHE_RAWG_GAME_TTL_DAYS, CACHE_RAWG_LIST_TTL_DAYS, CACHE_STEAM_PLAYTIME_TTL_DAYS,
-    CACHE_STEAM_RESOLVE_TTL_DAYS, CACHE_STEAM_REVIEWS_TTL_DAYS, CACHE_STEAM_STORE_TTL_DAYS,
-    CACHE_UBISOFT_PLUS_TTL_DAYS,
-};
+use crate::constants::{CACHE_AMAZON_LUNA_TTL_DAYS, CACHE_DEFAULT_TTL_DAYS, CACHE_EA_PLAY_TTL_DAYS, CACHE_GAMEBRAIN_ID_TTL_DAYS, CACHE_GAMEBRAIN_MEDIA_TTL_DAYS, CACHE_GAMEBRAIN_SIMILAR_TTL_DAYS, CACHE_GAMERPOWER_TTL_DAYS, CACHE_GAME_PASS_FULL_TTL_DAYS, CACHE_PROTON_DB_TTL_DAYS, CACHE_RAWG_GAME_TTL_DAYS, CACHE_RAWG_LIST_TTL_DAYS, CACHE_STEAM_PLAYTIME_TTL_DAYS, CACHE_STEAM_RESOLVE_TTL_DAYS, CACHE_STEAM_REVIEWS_TTL_DAYS, CACHE_STEAM_STORE_TTL_DAYS, CACHE_UBISOFT_PLUS_TTL_DAYS, NEXUS_CACHE_TTL_DAYS};
 use crate::errors::AppError;
-use rusqlite::{params, Connection};
+use crate::services::integration::nexus::NexusGame;
+use rusqlite::{params, Connection, OptionalExtension};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
@@ -34,6 +28,8 @@ fn current_timestamp() -> i64 {
         .as_secs() as i64
 }
 
+// === INICIALIZAÇÃO DB ===
+
 /// Inicializa o banco de cache e cria o schema
 pub fn initialize_cache_db(conn: &Connection) -> Result<(), String> {
     conn.execute(
@@ -46,7 +42,7 @@ pub fn initialize_cache_db(conn: &Connection) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| format!("Erro ao criar tabela api_cache: {}", e))?;
+        .map_err(|e| format!("Erro ao criar tabela api_cache: {}", e))?;
 
     // Índice para facilitar queries de limpeza por data
     conn.execute(
@@ -54,10 +50,40 @@ pub fn initialize_cache_db(conn: &Connection) -> Result<(), String> {
          ON api_cache(source, updated_at)",
         [],
     )
-    .map_err(|e| format!("Erro ao criar índice: {}", e))?;
+        .map_err(|e| format!("Erro ao criar índice: {}", e))?;
+
+    // Tabelas para o cache de jogos do Nexus
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS nexus_games (
+        domain_name TEXT PRIMARY KEY,
+        nexus_id    INTEGER NOT NULL,
+        name        TEXT NOT NULL,
+        genre       TEXT,
+        approved_date INTEGER
+    )",
+        [],
+    )
+        .map_err(|e| format!("Erro ao criar tabela nexus_games: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_nexus_games_name ON nexus_games(name)",
+        [],
+    )
+        .map_err(|e| format!("Erro ao criar índice: {}", e))?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS nexus_games_cache_meta (
+            id         INTEGER PRIMARY KEY CHECK (id = 1), -- singleton row
+            fetched_at INTEGER NOT NULL
+        )",
+        [],
+    )
+        .map_err(|e| format!("Erro ao criar tabela nexus_games_cache_meta: {}", e))?;
 
     Ok(())
 }
+
+// === FUNÇÕES DE GERENCIAMENTO DE CACHE ===
 
 /// Determina o TTL baseado no tipo de dado armazenado em cache.
 fn get_ttl_for_cache_type(cache_key: &str) -> i64 {
@@ -150,7 +176,7 @@ pub fn save_cached_api_data(
          VALUES (?1, ?2, ?3, ?4)",
         params![source, external_id, payload, now],
     )
-    .map_err(|e| format!("Erro ao salvar cache: {}", e))?;
+        .map_err(|e| format!("Erro ao salvar cache: {}", e))?;
 
     Ok(())
 }
@@ -322,4 +348,79 @@ pub fn get_cache_stats(conn: &Connection) -> Result<CacheStats, String> {
         steam_entries: steam,
         expired_entries: expired,
     })
+}
+
+// === NEXUS MODS (Cache) ===
+
+pub fn save_nexus_games_cache(
+    conn: &Connection,
+    games: &[NexusGame],
+) -> Result<(), rusqlite::Error> {
+    let tx = conn.unchecked_transaction()?;
+
+    tx.execute("DELETE FROM nexus_games", [])?;
+
+    {
+        let mut stmt = tx.prepare(
+            "INSERT OR REPLACE INTO nexus_games (domain_name, nexus_id, name, genre, approved_date)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+        )?;
+
+        for game in games {
+            stmt.execute(params![
+                game.domain_name,
+                game.id,
+                game.name,
+                game.genre,
+                game.approved_date,
+            ])?;
+        }
+    }
+
+    let now = chrono::Utc::now().timestamp();
+    tx.execute(
+        "INSERT OR REPLACE INTO nexus_games_cache_meta (id, fetched_at) VALUES (1, ?1)",
+        params![now],
+    )?;
+
+    tx.commit()
+}
+
+pub fn nexus_cache_is_stale(conn: &Connection) -> Result<bool, rusqlite::Error> {
+    let fetched_at: Option<i64> = conn
+        .query_row(
+            "SELECT fetched_at FROM nexus_games_cache_meta WHERE id = 1",
+            [],
+            |row| row.get(0),
+        )
+        .optional()?;
+
+    match fetched_at {
+        None => Ok(true),
+        Some(ts) => {
+            let now = chrono::Utc::now().timestamp();
+            Ok(now - ts > NEXUS_CACHE_TTL_DAYS * 24 * 60 * 60) // TTL expirado
+        }
+    }
+}
+
+/// Carrega todos os jogos do cache local do Nexus (tabela nexus_games)
+pub fn get_cached_nexus_games(conn: &Connection) -> Result<Vec<NexusGame>, rusqlite::Error> {
+    let mut stmt = conn.prepare(
+        "SELECT nexus_id, name, domain_name, genre, approved_date FROM nexus_games",
+    )?;
+
+    let games = stmt
+        .query_map([], |row| {
+            Ok(NexusGame {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                domain_name: row.get(2)?,
+                genre: row.get(3)?,
+                approved_date: row.get(4)?,
+            })
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(games)
 }

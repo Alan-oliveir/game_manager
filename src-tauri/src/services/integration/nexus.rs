@@ -1,0 +1,66 @@
+use crate::utils::text::{normalize_for_matching, strip_edition_suffix};
+
+use serde::Deserialize;
+
+// === STRUCTS ===
+
+#[derive(Debug, Deserialize)]
+pub struct NexusGame {
+    pub id: i64,
+    pub name: String,
+    pub domain_name: String,
+    pub genre: Option<String>,
+    pub approved_date: Option<i64>,
+}
+
+// === NEXUS - CLIENTE ===
+
+pub async fn fetch_nexus_games(api_key: &str) -> Result<Vec<NexusGame>, reqwest::Error> {
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get("https://api.nexusmods.com/v1/games.json")
+        .header("accept", "application/json")
+        .header("apikey", api_key)
+        .header("User-Agent", "Playlite/1.0.0 (Windows_NT 10.0; x64)")
+        .send()
+        .await?
+        .error_for_status()?;
+
+    response.json::<Vec<NexusGame>>().await
+}
+
+// === NEXUS - MATCHING ===
+
+/// Normaliza nome de jogo para matching com o catálogo do Nexus, com as mesmas regras de usadas em séries/tags.
+fn normalize_title(name: &str) -> String {
+    normalize_for_matching(&strip_edition_suffix(name))
+}
+
+pub fn find_best_nexus_match<'a>(
+    game_name: &str,
+    nexus_games: &'a [NexusGame],
+) -> Option<&'a NexusGame> {
+    let normalized_target = normalize_title(game_name);
+
+    // 1. Match exato normalizado primeiro
+    if let Some(exact) = nexus_games
+        .iter()
+        .find(|g| normalize_title(&g.name) == normalized_target)
+    {
+        return Some(exact);
+    }
+
+    // 2. Fallback fuzzy — só aceita acima de um limiar alto
+    const SIMILARITY_THRESHOLD: f64 = 0.92;
+
+    nexus_games
+        .iter()
+        .map(|g| {
+            let score = strsim::jaro_winkler(&normalized_target, &normalize_title(&g.name));
+            (g, score)
+        })
+        .filter(|(_, score)| *score >= SIMILARITY_THRESHOLD)
+        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+        .map(|(g, _)| g)
+}

@@ -163,6 +163,8 @@ pub fn run() {
             commands::settings::list_secrets,
             commands::settings::get_secrets,
             commands::settings::set_secrets,
+            // Comandos de Debug
+            commands::debug::debug_populate_nexus_cache,
             // Comandos de Recomendação
             commands::recommendation::core::get_user_profile,
             commands::recommendation::core::recommend_hybrid_library,

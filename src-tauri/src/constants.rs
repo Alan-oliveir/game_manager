@@ -70,6 +70,7 @@ pub const RAWG_BACKOFF_MAX_RETRIES: u32 = 3; // 2s, 4s, 8s antes de desistir
 pub const RAWG_SEARCH_PAGE_SIZE: u32 = 10;
 pub const RAWG_TRENDING_PAGE_SIZE: u32 = 15;
 pub const RAWG_UPCOMING_PAGE_SIZE: u32 = 10;
+#[allow(dead_code)]
 pub const STEAM_RATE_LIMIT_MS: u64 = 200;
 pub const STEAM_MAX_CONCURRENT_REQUESTS: u32 = 3;
 pub const STEAM_BACKOFF_BASE_MS: u64 = 2000;
@@ -111,6 +112,7 @@ pub const CACHE_GAMERPOWER_TTL_DAYS: i64 = 1;
 pub const CACHE_GAME_PASS_FULL_TTL_DAYS: i64 = 15;
 pub const CACHE_UBISOFT_PLUS_TTL_DAYS: i64 = 30;
 pub const CACHE_EA_PLAY_TTL_DAYS: i64 = 30;
+pub const NEXUS_CACHE_TTL_DAYS: i64 = 20;
 pub const CACHE_DEFAULT_TTL_DAYS: i64 = 7;
 
 // === CHAVES DE CACHE DE ASSINATURAS ===

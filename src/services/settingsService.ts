@@ -26,6 +26,7 @@ export const settingsService = {
     rawgApiKey: string | null;
     geminiApiKey: string | null;
     gamebrainApiKey: string | null;
+    nexusApiKey: string | null;
   }): Promise<void> => {
     await invoke('set_secrets', keys);
   },

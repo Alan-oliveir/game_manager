@@ -15,6 +15,7 @@ export interface KeysBatch {
   rawgApiKey: string;
   geminiApiKey?: string;
   gamebrainApiKey?: string;
+  nexusApiKey?: string;
 }
 
 export interface ImportSummary {

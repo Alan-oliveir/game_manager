@@ -33,7 +33,7 @@ pub fn strip_trademark_symbols(name: &str) -> String {
 pub fn normalize_for_matching(name: &str) -> String {
     strip_trademark_symbols(name)
         .to_lowercase()
-        .replace(':', "")
+        .replace([':', ',', '\'', '\u{2019}'], "")
         .trim()
         .to_string()
 }

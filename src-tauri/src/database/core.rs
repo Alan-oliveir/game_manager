@@ -140,7 +140,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS game_details (
@@ -170,7 +170,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS wishlist (
@@ -190,7 +190,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         )",
         [],
     )
-    .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS subscriptions (
@@ -200,26 +200,26 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
     )",
         [],
     )
-    .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     // Índices
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_name ON games(name COLLATE NOCASE)",
         [],
     )
-    .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_platform ON games(platform)",
         [],
     )
-    .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_favorite ON games(favorite)",
         [],
     )
-    .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     conn.execute("CREATE INDEX IF NOT EXISTS idx_status ON games(status)", [])
         .map_err(|e| e.to_string())?;
@@ -317,7 +317,7 @@ fn get_secrets_connection<'a>(
         "#,
         [],
     )
-    .map_err(|e: rusqlite::Error| e.to_string())?;
+        .map_err(|e: rusqlite::Error| e.to_string())?;
 
     Ok(conn)
 }
@@ -379,5 +379,6 @@ pub fn list_supported_keys() -> Vec<&'static str> {
         "rawg_api_key",
         "gemini_api_key",
         "gamebrain_api_key",
+        "nexus_api_key",
     ]
 }

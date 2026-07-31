@@ -5,6 +5,7 @@ import {
   ExternalLink,
   FileJson,
   Gamepad2,
+  GamepadDirectional,
   HardDrive,
   History,
   ImageIcon,
@@ -198,6 +199,36 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
                 className="flex items-center gap-0.5 text-blue-400 hover:underline"
               >
                 {t('get_api_key_button_rawg')} <ExternalLink size={10} />
+              </a>
+            </div>
+          </div>
+        </SettingsRow>
+
+        {/* Configurações de API para mods na Nexus */}
+        <SettingsRow
+          icon={GamepadDirectional}
+          title={t('nexus_title')}
+          description={t('nexus_description')}
+        >
+          <div className="grid gap-2">
+            <Input
+              type="password"
+              placeholder={t('nexus_api_key_placeholder')}
+              value={keys.nexusApiKey}
+              onChange={e => setKeys({ ...keys, nexusApiKey: e.target.value })}
+              className="bg-background/50"
+            />
+
+            <div className="text-muted-foreground flex items-center gap-1 text-xs">
+              <span>{t('no_key_question')}</span>
+
+              <a
+                href="https://www.nexusmods.com/settings/api-keys"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-0.5 text-blue-400 hover:underline"
+              >
+                {t('get_api_key_button_nexus')} <ExternalLink size={10} />
               </a>
             </div>
           </div>

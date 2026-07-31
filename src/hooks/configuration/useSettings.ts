@@ -19,6 +19,7 @@ export function useSettings(onLibraryUpdate: () => void) {
     rawgApiKey: '',
     geminiApiKey: '',
     gamebrainApiKey: '',
+    nexusApiKey: '',
   });
 
   const [loading, setLoading] = useState({
@@ -69,6 +70,7 @@ export function useSettings(onLibraryUpdate: () => void) {
           rawgApiKey: data.rawgApiKey || '',
           geminiApiKey: data.geminiApiKey || '',
           gamebrainApiKey: data.gamebrainApiKey || '',
+          nexusApiKey: data.nexusApiKey || '',
         });
       })
       .catch(e => console.error('Erro ao carregar settings', e))
@@ -89,6 +91,7 @@ export function useSettings(onLibraryUpdate: () => void) {
         rawgApiKey: keys.rawgApiKey.trim() || null,
         geminiApiKey: keys.geminiApiKey.trim() || null,
         gamebrainApiKey: keys.gamebrainApiKey.trim() || null,
+        nexusApiKey: keys.nexusApiKey.trim() || null,
       });
       setStatus({
         type: 'success',

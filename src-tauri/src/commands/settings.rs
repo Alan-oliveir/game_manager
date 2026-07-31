@@ -14,17 +14,14 @@ use tauri::AppHandle;
 ///
 /// Usado para retornar múltiplos secrets de uma vez para o frontend.
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct KeysBatch {
-    #[serde(rename = "steamId")]
     pub steam_id: String,
-    #[serde(rename = "steamApiKey")]
     pub steam_api_key: String,
-    #[serde(rename = "rawgApiKey")]
     pub rawg_api_key: String,
-    #[serde(rename = "geminiApiKey")]
     pub gemini_api_key: String,
-    #[serde(rename = "gamebrainApiKey")]
     pub gamebrain_api_key: String,
+    pub nexus_api_key: String,
 }
 
 /// Recupera todos os secrets configurados em lote.
@@ -39,6 +36,7 @@ pub fn get_secrets(app: AppHandle) -> Result<KeysBatch, AppError> {
         rawg_api_key: database::get_secret(&app, "rawg_api_key")?,
         gemini_api_key: database::get_secret(&app, "gemini_api_key")?,
         gamebrain_api_key: database::get_secret(&app, "gamebrain_api_key")?,
+        nexus_api_key: database::get_secret(&app, "nexus_api_key")?,
     })
 }
 
@@ -54,6 +52,7 @@ pub fn set_secrets(
     rawg_api_key: Option<String>,
     gemini_api_key: Option<String>,
     gamebrain_api_key: Option<String>,
+    nexus_api_key: Option<String>,
 ) -> Result<(), AppError> {
     // Helper para salvar ou deletar baseado no valor
     let save_or_delete = |key: &str, value: Option<String>| -> Result<(), AppError> {
@@ -73,7 +72,7 @@ pub fn set_secrets(
     save_or_delete("rawg_api_key", rawg_api_key)?;
     save_or_delete("gemini_api_key", gemini_api_key)?;
     save_or_delete("gamebrain_api_key", gamebrain_api_key)?;
-
+    save_or_delete("nexus_api_key", nexus_api_key)?;
     Ok(())
 }
 

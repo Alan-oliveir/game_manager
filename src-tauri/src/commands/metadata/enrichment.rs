@@ -18,8 +18,9 @@ use crate::constants::{RAWG_RATE_LIMIT_MS, RAWG_REQUISITIONS_PER_BATCH};
 use crate::database;
 use crate::database::AppState;
 use crate::errors::AppError;
-use crate::services::integration::steam_api;
 use crate::services::cache;
+use crate::services::integration::nexus::{find_best_nexus_match, NexusGame};
+use crate::services::integration::steam_api;
 use crate::utils::series;
 use rusqlite::params;
 use std::collections::{HashMap, HashSet};
@@ -99,6 +100,14 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
     let mut all_session_tags: HashSet<String> = HashSet::new();
     let mut batch_results = Vec::new();
 
+    // Carrega o catálogo do Nexus uma única vez, direto do cache local
+    let nexus_games: Vec<NexusGame> = state
+        .cache_db
+        .lock()
+        .ok()
+        .and_then(|conn| cache::get_cached_nexus_games(&conn).ok())
+        .unwrap_or_default();
+
     for (index, game) in games.into_iter().enumerate() {
         let _ = app.emit(
             "enrich_progress",
@@ -125,6 +134,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                         &game.platform,
                         Some(game.platform_game_id.clone()),
                         &cache_conn,
+                        &nexus_games,
                     )
                         .await
                 })
@@ -170,6 +180,7 @@ async fn enrich_game_metadata(
     platform: &str,
     platform_game_id: Option<String>,
     cache_conn: &rusqlite::Connection,
+    nexus_games: &[NexusGame],
 ) -> (ProcessedGameDetails, Vec<String>, bool) {
     let series_name = series::infer_series(name);
     let mut details = ProcessedGameDetails {
@@ -198,6 +209,12 @@ async fn enrich_game_metadata(
     };
 
     let mut links_map: HashMap<String, String> = HashMap::new();
+
+    if let Some(nexus_match) = find_best_nexus_match(name, nexus_games) {
+        let url = format!("https://www.nexusmods.com/{}", nexus_match.domain_name);
+        links_map.insert("nexus".to_string(), url);
+    }
+
     let mut found_raw_tags: Vec<String> = Vec::new();
     let mut rawg_found = false;
 
@@ -388,11 +405,28 @@ pub async fn update_metadata(app: AppHandle) -> Result<(), AppError> {
         let state: State<AppState> = app_handle.state();
         let mut all_session_tags: HashSet<String> = HashSet::new();
 
-        // Limpeza de cache expirado no início
-        {
+        let nexus_api_key = database::get_secret(&app_handle, "nexus_api_key").unwrap_or_default();
+
+        let nexus_games: Vec<NexusGame> = {
+            let is_stale = {
+                let cache_conn = state.cache_db.lock().unwrap();
+                let _ = cache::cleanup_expired_cache(&cache_conn);
+                cache::nexus_cache_is_stale(&cache_conn).unwrap_or(true)
+            };
+
+            if is_stale && !nexus_api_key.is_empty() {
+                match crate::services::integration::nexus::fetch_nexus_games(&nexus_api_key).await {
+                    Ok(games) => {
+                        let cache_conn = state.cache_db.lock().unwrap();
+                        let _ = cache::save_nexus_games_cache(&cache_conn, &games);
+                    }
+                    Err(e) => warn!("Falha ao atualizar catálogo do Nexus: {}", e),
+                }
+            }
+
             let cache_conn = state.cache_db.lock().unwrap();
-            let _ = cache::cleanup_expired_cache(&cache_conn);
-        }
+            cache::get_cached_nexus_games(&cache_conn).unwrap_or_default()
+        };
 
         loop {
             // 1. Busca batch de jogos
@@ -500,6 +534,7 @@ pub async fn update_metadata(app: AppHandle) -> Result<(), AppError> {
                                 &platform,
                                 platform_game_id.clone(),
                                 &cache_conn,
+                                &nexus_games,
                             )
                                 .await
                         })

@@ -64,7 +64,7 @@ interface LibraryGameGridProps {
 interface CellProps {
   rows: GridRow[];
   gridWidth: number;
-  onTogglePlatform: (platform: Platform) => void; // era string
+  onTogglePlatform: (platform: Platform) => void;
   onGameClick: (game: Game) => void;
   onToggleFavorite: (id: string) => void;
   onAddToPlaylist: (id: string) => void;
