@@ -40,13 +40,14 @@ function AppContent() {
     gameToEdit,
     selectedGameId,
     setSelectedGameId,
-    hideAdult,
-    hideDuplicates,
-    hideNotInstalled,
-    groupByPlatform,
-    toggleGroupByPlatform,
-    viewFilters,
-    onViewFiltersChange,
+    libraryViewFilters,
+    onLibraryViewFiltersChange,
+    favoritesViewFilters,
+    onFavoritesViewFiltersChange,
+    libraryGroupByPlatform,
+    libraryToggleGroupByPlatform,
+    favoritesGroupByPlatform,
+    favoritesToggleGroupByPlatform,
     trendingCache,
     setTrendingCache,
     trendingKey,
@@ -133,6 +134,22 @@ function AppContent() {
     games
   );
 
+  const currentViewFilters =
+    activeSection === 'favorites' ? favoritesViewFilters : libraryViewFilters;
+  const currentOnViewFiltersChange =
+    activeSection === 'favorites'
+      ? onFavoritesViewFiltersChange
+      : onLibraryViewFiltersChange;
+
+  const currentGroupByPlatform =
+    activeSection === 'favorites'
+      ? favoritesGroupByPlatform
+      : libraryGroupByPlatform;
+  const currentToggleGroupByPlatform =
+    activeSection === 'favorites'
+      ? favoritesToggleGroupByPlatform
+      : libraryToggleGroupByPlatform;
+
   // Handlers
   const handleSettingsUpdate = () => {
     refreshGames();
@@ -214,10 +231,10 @@ function AppContent() {
           <Libraries
             games={games}
             searchTerm={debouncedSearchTerm}
-            hideAdult={hideAdult}
-            hideDuplicates={hideDuplicates}
-            hideNotInstalled={hideNotInstalled}
-            groupByPlatform={groupByPlatform}
+            hideAdult={libraryViewFilters.hideAdult}
+            hideDuplicates={libraryViewFilters.hideDuplicates}
+            hideNotInstalled={libraryViewFilters.hideNotInstalled}
+            groupByPlatform={libraryGroupByPlatform}
             {...commonGameActions}
           />
         );
@@ -226,10 +243,10 @@ function AppContent() {
           <Favorites
             games={games}
             searchTerm={debouncedSearchTerm}
-            hideAdult={hideAdult}
-            hideDuplicates={hideDuplicates}
-            hideNotInstalled={hideNotInstalled}
-            groupByPlatform={groupByPlatform}
+            hideAdult={favoritesViewFilters.hideAdult}
+            hideDuplicates={favoritesViewFilters.hideDuplicates}
+            hideNotInstalled={favoritesViewFilters.hideNotInstalled}
+            groupByPlatform={favoritesGroupByPlatform}
             {...commonGameActions}
           />
         );
@@ -283,10 +300,10 @@ function AppContent() {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           activeSection={activeSection}
-          viewFilters={viewFilters}
-          onViewFiltersChange={onViewFiltersChange}
-          groupByPlatform={groupByPlatform}
-          onToggleGroupByPlatform={toggleGroupByPlatform}
+          viewFilters={currentViewFilters}
+          onViewFiltersChange={currentOnViewFiltersChange}
+          groupByPlatform={currentGroupByPlatform}
+          onToggleGroupByPlatform={currentToggleGroupByPlatform}
           onCheckUpdates={handleCheckUpdates}
           onLibraryUpdate={refreshGames}
           userGames={games}

@@ -25,19 +25,15 @@ interface UIContextType {
   selectedGameId: string | null;
   setSelectedGameId: (id: string | null) => void;
 
-  // Filtros
-  hideAdult: boolean;
-  toggleAdultFilter: () => void;
-  hideDuplicates: boolean;
-  toggleDuplicatesFilter: () => void;
-  hideNotInstalled: boolean;
-  toggleNotInstalledFilter: () => void;
-  groupByPlatform: boolean;
-  toggleGroupByPlatform: () => void;
-
   // Agregado para consumo direto pelo dropdown de filtros
-  viewFilters: ViewFilters;
-  onViewFiltersChange: (next: ViewFilters) => void;
+  libraryViewFilters: ViewFilters;
+  onLibraryViewFiltersChange: (next: ViewFilters) => void;
+  favoritesViewFilters: ViewFilters;
+  onFavoritesViewFiltersChange: (next: ViewFilters) => void;
+  libraryGroupByPlatform: boolean;
+  libraryToggleGroupByPlatform: () => void;
+  favoritesGroupByPlatform: boolean;
+  favoritesToggleGroupByPlatform: () => void;
 
   trendingCache: RawgGame[];
   setTrendingCache: (games: RawgGame[]) => void;
@@ -67,26 +63,78 @@ interface UIContextType {
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
+function useSectionFilters(storageKeyPrefix: string) {
+  const [hideAdult, setHideAdult] = useState(
+    () => localStorage.getItem(`${storageKeyPrefix}_hide_adult`) === 'true'
+  );
+  const [hideDuplicates, setHideDuplicates] = useState(
+    () => localStorage.getItem(`${storageKeyPrefix}_hide_duplicates`) === 'true'
+  );
+  const [hideNotInstalled, setHideNotInstalled] = useState(
+    () =>
+      localStorage.getItem(`${storageKeyPrefix}_hide_not_installed`) === 'true'
+  );
+
+  const viewFilters: ViewFilters = useMemo(
+    () => ({ hideAdult, hideDuplicates, hideNotInstalled }),
+    [hideAdult, hideDuplicates, hideNotInstalled]
+  );
+
+  const onViewFiltersChange = useCallback(
+    (next: ViewFilters) => {
+      setHideAdult(next.hideAdult);
+      localStorage.setItem(
+        `${storageKeyPrefix}_hide_adult`,
+        String(next.hideAdult)
+      );
+
+      setHideDuplicates(next.hideDuplicates);
+      localStorage.setItem(
+        `${storageKeyPrefix}_hide_duplicates`,
+        String(next.hideDuplicates)
+      );
+
+      setHideNotInstalled(next.hideNotInstalled);
+      localStorage.setItem(
+        `${storageKeyPrefix}_hide_not_installed`,
+        String(next.hideNotInstalled)
+      );
+    },
+    [storageKeyPrefix]
+  );
+
+  const [groupByPlatform, setGroupByPlatform] = useState(
+    () =>
+      localStorage.getItem(`${storageKeyPrefix}_playlite_group_by_platform`) ===
+      'true'
+  );
+
+  const toggleGroupByPlatform = useCallback(() => {
+    setGroupByPlatform(prev => {
+      const newValue = !prev;
+      localStorage.setItem(
+        `${storageKeyPrefix}_playlite_group_by_platform`,
+        String(newValue)
+      );
+
+      return newValue;
+    });
+  }, []);
+
+  return {
+    viewFilters,
+    onViewFiltersChange,
+    groupByPlatform,
+    toggleGroupByPlatform,
+  };
+}
+
 export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [activeSection, setActiveSection] = useState('home');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-
-  const [hideAdult, setHideAdult] = useState(
-    () => localStorage.getItem('playlite_hide_adult') === 'true'
-  );
-  const [hideDuplicates, setHideDuplicates] = useState(
-    () => localStorage.getItem('playlite_hide_duplicates') === 'true'
-  );
-  const [hideNotInstalled, setHideNotInstalled] = useState(
-    () => localStorage.getItem('playlite_hide_not_installed') === 'true'
-  );
-  const [groupByPlatform, setGroupByPlatform] = useState(
-    () => localStorage.getItem('playlite_group_by_platform') === 'true'
-  );
-
   const [trendingCache, setTrendingCache] = useState<RawgGame[]>([]);
   const [trendingKey, setTrendingKey] = useState(0);
   const [profileCache, setProfileCache] = useState<UserPreferenceVector | null>(
@@ -107,65 +155,8 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const [enableUpdaterChecks, setEnableUpdaterChecks] = useState(true);
 
-  const toggleAdultFilter = useCallback(() => {
-    setHideAdult(prev => {
-      const newValue = !prev;
-      localStorage.setItem('playlite_hide_adult', String(newValue));
-
-      return newValue;
-    });
-  }, []);
-
-  const toggleDuplicatesFilter = useCallback(() => {
-    setHideDuplicates(prev => {
-      const newValue = !prev;
-      localStorage.setItem('playlite_hide_duplicates', String(newValue));
-
-      return newValue;
-    });
-  }, []);
-
-  const toggleNotInstalledFilter = useCallback(() => {
-    setHideNotInstalled(prev => {
-      const newValue = !prev;
-      localStorage.setItem('playlite_hide_not_installed', String(newValue));
-
-      return newValue;
-    });
-  }, []);
-
-  const toggleGroupByPlatform = useCallback(() => {
-    setGroupByPlatform(prev => {
-      const newValue = !prev;
-      localStorage.setItem('playlite_group_by_platform', String(newValue));
-
-      return newValue;
-    });
-  }, []);
-
-  const viewFilters: ViewFilters = useMemo(
-    () => ({ hideAdult, hideDuplicates, hideNotInstalled }),
-    [hideAdult, hideDuplicates, hideNotInstalled]
-  );
-
-  const onViewFiltersChange = useCallback(
-    (next: ViewFilters) => {
-      if (next.hideAdult !== hideAdult) toggleAdultFilter();
-
-      if (next.hideDuplicates !== hideDuplicates) toggleDuplicatesFilter();
-
-      if (next.hideNotInstalled !== hideNotInstalled)
-        toggleNotInstalledFilter();
-    },
-    [
-      hideAdult,
-      hideDuplicates,
-      hideNotInstalled,
-      toggleAdultFilter,
-      toggleDuplicatesFilter,
-      toggleNotInstalledFilter,
-    ]
-  );
+  const library = useSectionFilters('playlite_libraries');
+  const favorites = useSectionFilters('playlite_favorites');
 
   const openAddModal = useCallback(() => {
     setGameToEdit(null);
@@ -194,16 +185,14 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
       setGameToEdit,
       selectedGameId,
       setSelectedGameId,
-      hideAdult,
-      toggleAdultFilter,
-      hideDuplicates,
-      toggleDuplicatesFilter,
-      hideNotInstalled,
-      toggleNotInstalledFilter,
-      groupByPlatform,
-      toggleGroupByPlatform,
-      viewFilters,
-      onViewFiltersChange,
+      libraryViewFilters: library.viewFilters,
+      onLibraryViewFiltersChange: library.onViewFiltersChange,
+      favoritesViewFilters: favorites.viewFilters,
+      onFavoritesViewFiltersChange: favorites.onViewFiltersChange,
+      libraryGroupByPlatform: library.groupByPlatform,
+      libraryToggleGroupByPlatform: library.toggleGroupByPlatform,
+      favoritesGroupByPlatform: favorites.groupByPlatform,
+      favoritesToggleGroupByPlatform: favorites.toggleGroupByPlatform,
       trendingCache,
       setTrendingCache,
       trendingKey,
@@ -232,16 +221,14 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
       isAddModalOpen,
       gameToEdit,
       selectedGameId,
-      hideAdult,
-      toggleAdultFilter,
-      hideDuplicates,
-      toggleDuplicatesFilter,
-      hideNotInstalled,
-      toggleNotInstalledFilter,
-      groupByPlatform,
-      toggleGroupByPlatform,
-      viewFilters,
-      onViewFiltersChange,
+      library.viewFilters,
+      library.onViewFiltersChange,
+      favorites.viewFilters,
+      favorites.onViewFiltersChange,
+      library.groupByPlatform,
+      library.toggleGroupByPlatform,
+      favorites.groupByPlatform,
+      favorites.toggleGroupByPlatform,
       trendingCache,
       trendingKey,
       profileCache,
