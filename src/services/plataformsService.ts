@@ -13,8 +13,8 @@ export const platformsService = {
     steamId: string,
     apiKey: string,
     steamRoot: string
-  ): Promise<string> => {
-    return await invoke<string>('import_steam_library', {
+  ): Promise<void> => {
+    return await invoke<void>('import_steam_library', {
       steamId,
       apiKey,
       steamRoot,
@@ -42,10 +42,10 @@ export const platformsService = {
    *
    * @throws Se o Epic Games Launcher não estiver instalado ou não houver jogos
    */
-  importEpicGames: async (): Promise<string> => {
+  importEpicGames: async (): Promise<void> => {
     const winePrefix = localStorage.getItem('wine_prefix') || undefined;
 
-    return await invoke<string>('import_epic_games', {
+    return await invoke<void>('import_epic_games', {
       winePrefix: winePrefix ?? null,
     });
   },
@@ -75,10 +75,10 @@ export const platformsService = {
    *
    * @throws Se o Ubisoft Connect não estiver instalado ou não houver jogos
    */
-  importUbisoftGames: async (): Promise<string> => {
+  importUbisoftGames: async (): Promise<void> => {
     const winePrefix = localStorage.getItem('wine_prefix') || undefined;
 
-    return await invoke<string>('import_ubisoft_games', {
+    return await invoke<void>('import_ubisoft_games', {
       winePrefix: winePrefix ?? null,
     });
   },
@@ -132,10 +132,10 @@ export const platformsService = {
    *
    * @throws Se não houver conta conectada ou a API estiver indisponível
    */
-  importGogGames: async (): Promise<string> => {
+  importGogGames: async (): Promise<void> => {
     const gogGamesDir = localStorage.getItem('gog_games_dir') || undefined;
 
-    return await invoke<string>('import_gog_games', {
+    return await invoke<void>('import_gog_games', {
       gogGamesDir: gogGamesDir ?? null,
     });
   },
@@ -149,8 +149,8 @@ export const platformsService = {
    *
    * @throws Se o Battle.net não estiver instalado ou não houver jogos
    */
-  importBattleNetGames: async (): Promise<string> => {
-    return await invoke<string>('import_battle_net_games');
+  importBattleNetGames: async (): Promise<void> => {
+    return await invoke<void>('import_battle_net_games');
   },
 
   /**
@@ -161,10 +161,10 @@ export const platformsService = {
    *
    * @throws Se a pasta não estiver configurada ou não houver jogos
    */
-  importEaGames: async (): Promise<string> => {
+  importEaGames: async (): Promise<void> => {
     const eaInstallDir = localStorage.getItem('ea_install_dir') || undefined;
 
-    return await invoke<string>('import_ea_games', {
+    return await invoke<void>('import_ea_games', {
       eaInstallDir: eaInstallDir ?? null,
     });
   },
@@ -188,8 +188,8 @@ export const platformsService = {
    *
    * @throws Se a API estiver indisponível
    */
-  importAmazonGames: async (): Promise<string> => {
-    return await invoke<string>('import_amazon_games');
+  importAmazonGames: async (): Promise<void> => {
+    return await invoke<void>('import_amazon_games');
   },
 
   /**
@@ -203,8 +203,8 @@ export const platformsService = {
    *
    * @throws Se nenhum jogo for detectado
    */
-  importXboxGames: async (): Promise<string> => {
-    return await invoke<string>('import_xbox_games');
+  importXboxGames: async (): Promise<void> => {
+    return await invoke<void>('import_xbox_games');
   },
 
   /**

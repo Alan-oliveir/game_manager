@@ -1,8 +1,6 @@
-import { useTranslation } from 'react-i18next';
-
 import {
   useLocalStoragePlatformPath,
-  usePlatformImportAction,
+  usePlatformImportTrigger,
   usePlatformStatus,
 } from '@/hooks';
 import { platformsService } from '@/services/plataformsService';
@@ -13,16 +11,15 @@ import { platformsService } from '@/services/plataformsService';
  * A detecção depende inteiramente da pasta de instalação configurada pelo usuário.
  */
 export function useEaConfig(onLibraryUpdate?: () => void) {
-  const { t } = useTranslation('platforms');
   const { status, setStatus } = usePlatformStatus();
   const [installDir, setInstallDir] =
     useLocalStoragePlatformPath('ea_install_dir');
 
   const { isImporting: isImportingEa, run: importEaGames } =
-    usePlatformImportAction(() => platformsService.importEaGames(), {
+    usePlatformImportTrigger(() => platformsService.importEaGames(), {
+      platformLabel: 'EA',
       setStatus,
       onLibraryUpdate,
-      loadingMessage: t('ea_importing_status'),
     });
 
   return {

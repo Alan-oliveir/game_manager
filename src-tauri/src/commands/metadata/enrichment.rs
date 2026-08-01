@@ -9,10 +9,7 @@
 //! - block_in_place usado para manter conexão SQLite durante awaits
 //! - Itens compartilhados com covers estão no módulo shared
 
-use super::shared::{
-    fetch_rawg_metadata, fetch_steam_reviews, fetch_steam_store_data,
-    resolve_steam_app_id, EnrichProgress,
-};
+use super::shared::{fetch_rawg_metadata, fetch_steam_reviews, fetch_steam_store_data, resolve_steam_app_id, EnrichCompletePayload, EnrichProgress};
 use crate::commands::platforms::core::NewlyImportedGame;
 use crate::constants::{RAWG_RATE_LIMIT_MS, RAWG_REQUISITIONS_PER_BATCH};
 use crate::database;
@@ -95,6 +92,9 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
         }
     };
 
+    // Todos os jogos do lote vêm da mesma importação — extrai a plataforma antes de consumir a lista no loop.
+    let platform_label = games.first().map(|g| g.platform.clone());
+
     let state: State<AppState> = app.state();
     let total = games.len();
     let mut all_session_tags: HashSet<String> = HashSet::new();
@@ -108,6 +108,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
         .and_then(|conn| cache::get_cached_nexus_games(&conn).ok())
         .unwrap_or_default();
 
+    // loop de processamento
     for (index, game) in games.into_iter().enumerate() {
         let _ = app.emit(
             "enrich_progress",
@@ -149,6 +150,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
         sleep(Duration::from_millis(RAWG_RATE_LIMIT_MS)).await;
     }
 
+    // bloco de persistência/transação
     if let Ok(mut conn) = state.games_db.lock() {
         if let Ok(tx) = conn.transaction() {
             let mut success = 0;
@@ -169,7 +171,15 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
     }
 
     let _ = crate::services::tags::generate_analysis_report(&app, all_session_tags);
-    let _ = app.emit("enrich_complete", "Enriquecimento pós-import concluído.");
+
+    let message = match &platform_label {
+        Some(platform) => format!("{}: enriquecimento concluído.", platform),
+        None => "Enriquecimento pós-import concluído.".to_string(),
+    };
+    let _ = app.emit(
+        "enrich_complete",
+        EnrichCompletePayload { platform: platform_label, message },
+    );
 }
 
 /// Processa um único jogo com cache integrado (sem manter lock)
@@ -437,10 +447,9 @@ pub async fn update_metadata(app: AppHandle) -> Result<(), AppError> {
                 };
                 let mut stmt = conn
                     .prepare(
-                        // Inclui jogos sem nenhuma entrada em game_details
-                        // E também jogos da Legacy Games que já têm description_raw da
-                        // loja, mas ainda não foram enriquecidos pela RAWG (identificados
-                        // pela ausência de genres/developer/tags).
+                        // Inclui jogos sem nenhuma entrada em game_details E também jogos da Legacy
+                        // Games que já têm description_raw da loja, mas ainda não foram enriquecidos
+                        // pela RAWG (identificados pela ausência de genres/developer/tags).
                         "SELECT g.id, g.name, g.platform, g.platform_game_id
                          FROM games g
                          LEFT JOIN game_details gd ON g.id = gd.game_id
@@ -604,7 +613,11 @@ pub async fn update_metadata(app: AppHandle) -> Result<(), AppError> {
         }
 
         let _ = crate::services::tags::generate_analysis_report(&app_handle, all_session_tags);
-        let _ = app_handle.emit("enrich_complete", "Metadados atualizados!");
+        
+        let _ = app_handle.emit(
+            "enrich_complete",
+            EnrichCompletePayload { platform: None, message: "Metadados atualizados!".to_string() },
+        );
     });
 
     Ok(())

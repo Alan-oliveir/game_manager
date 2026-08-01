@@ -52,4 +52,5 @@ export * from './game_detail';
 export * from './plataforms';
 
 // Special hooks (na raiz)
+export * from './useEnrichmentNotifications';
 export * from './useHome';

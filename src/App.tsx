@@ -4,7 +4,11 @@ import { Toaster } from 'sonner';
 
 import { ErrorBoundary } from '@/components';
 import AddGame from '@/dialogs/AddGame';
-import { useDebounce, useGameDetails } from '@/hooks';
+import {
+  useDebounce,
+  useEnrichmentNotifications,
+  useGameDetails,
+} from '@/hooks';
 import { UpdateProvider } from '@/providers/UpdateProvider';
 import { Game } from '@/types';
 import { initializeToastRouting, toast } from '@/utils/toast';
@@ -82,6 +86,8 @@ function AppContent() {
   useEffect(() => {
     void initializeToastRouting();
   }, []);
+
+  useEnrichmentNotifications();
 
   // Updater manual: sob demanda apenas
   const handleCheckUpdates = async () => {

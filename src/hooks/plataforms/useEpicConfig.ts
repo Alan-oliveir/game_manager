@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { usePlatformImportAction, usePlatformStatus } from '@/hooks';
+import { usePlatformImportTrigger, usePlatformStatus } from '@/hooks';
 import { platformsService } from '@/services/plataformsService';
 
 /**
@@ -50,10 +50,10 @@ export function useEpicConfig(onLibraryUpdate?: () => void) {
   };
 
   const { isImporting: isImportingEpic, run: importEpicGames } =
-    usePlatformImportAction(() => platformsService.importEpicGames(), {
+    usePlatformImportTrigger(() => platformsService.importEpicGames(), {
+      platformLabel: 'Epic',
       setStatus,
       onLibraryUpdate,
-      loadingMessage: t('epic_importing_status'),
     });
 
   return {

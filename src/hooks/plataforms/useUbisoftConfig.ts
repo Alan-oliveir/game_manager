@@ -1,6 +1,4 @@
-import { useTranslation } from 'react-i18next';
-
-import { usePlatformImportAction, usePlatformStatus } from '@/hooks';
+import { usePlatformImportTrigger, usePlatformStatus } from '@/hooks';
 import { platformsService } from '@/services/plataformsService';
 
 /**
@@ -8,14 +6,13 @@ import { platformsService } from '@/services/plataformsService';
  * Detecção automática via %LOCALAPPDATA%\Ubisoft Game Launcher.
  */
 export function useUbisoftConfig(onLibraryUpdate?: () => void) {
-  const { t } = useTranslation('platforms');
   const { status, setStatus } = usePlatformStatus();
 
   const { isImporting: isImportingUbisoft, run: importUbisoftGames } =
-    usePlatformImportAction(() => platformsService.importUbisoftGames(), {
+    usePlatformImportTrigger(() => platformsService.importUbisoftGames(), {
+      platformLabel: 'Ubisoft',
       setStatus,
       onLibraryUpdate,
-      loadingMessage: t('ubisoft_importing_status'),
     });
 
   return {

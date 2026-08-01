@@ -1,12 +1,8 @@
-//! Epic Games - Login OAuth e importação (biblioteca completa + instalados)
-
-use crate::commands::platforms::core::{format_import_empty, format_import_summary, format_login_success, persist_source_games, trigger_enrichment_if_needed};
-use crate::database::AppState;
+use crate::commands::platforms::core::{format_login_success, spawn_import};
 use crate::errors::AppError;
-use crate::sources::epic::{merge_local_install_status, EpicSource};
+use crate::sources::epic::EpicSource;
 use crate::sources::providers::OAuthGameSource;
-use tauri::{AppHandle, Emitter, State};
-use tracing::info;
+use tauri::AppHandle;
 
 #[tauri::command]
 pub async fn epic_login(app: AppHandle) -> Result<String, AppError> {
@@ -30,37 +26,24 @@ pub fn epic_is_authenticated(app: AppHandle) -> Result<bool, AppError> {
 #[tauri::command]
 pub async fn import_epic_games(
     app: AppHandle,
-    state: State<'_, AppState>,
     wine_prefix: Option<String>,
-) -> Result<String, AppError> {
+) -> Result<(), AppError> {
     let prefix = wine_prefix
         .filter(|s| !s.trim().is_empty())
         .map(std::path::PathBuf::from);
 
-    let source = EpicSource::new(app.clone(), prefix);
+    spawn_import(app, "Epic", |app| async move {
+        let source = EpicSource::new(app, prefix);
+        let local_games = source.import_installed().await?;
 
-    let local_games = source.import_installed().await?;
+        let mut games = if source.is_authenticated().unwrap_or(false) {
+            source.fetch_library_detailed().await?
+        } else {
+            Vec::new()
+        };
 
-    // Sem login, mantém o comportamento atual: só jogos instalados.
-    let mut games = if source.is_authenticated().unwrap_or(false) {
-        source.fetch_library_detailed().await?
-    } else {
-        Vec::new()
-    };
-
-    merge_local_install_status(&mut games, local_games);
-
-    if games.is_empty() {
-        return Ok(format_import_empty("Epic"));
-    }
-
-    let (inserted, updated, newly_imported) = persist_source_games(&state, games).await?;
-    let message = format_import_summary("Epic", inserted, updated);
-    info!("{}", message);
-
-    let _ = app.emit("library_updated", ());
-
-    trigger_enrichment_if_needed(&app, newly_imported);
-
-    Ok(message)
+        crate::sources::epic::merge_local_install_status(&mut games, local_games);
+        Ok(games)
+    });
+    Ok(())
 }

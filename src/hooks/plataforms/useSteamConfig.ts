@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import {
   useNativePathPicker,
-  usePlatformImportAction,
+  usePlatformImportTrigger,
   usePlatformStatus,
 } from '@/hooks';
 import { platformsService } from '@/services/plataformsService';
@@ -68,6 +68,7 @@ export function useSteamConfig(onLibraryUpdate?: () => void) {
         rawgApiKey: currentSecrets.rawgApiKey || null,
         geminiApiKey: currentSecrets.geminiApiKey || null,
         gamebrainApiKey: currentSecrets.gamebrainApiKey || null,
+        nexusApiKey: currentSecrets.nexusApiKey || null,
       });
 
       const successMsg = t('steam_credentials_saved');
@@ -83,18 +84,14 @@ export function useSteamConfig(onLibraryUpdate?: () => void) {
   };
 
   const { isImporting: isImportingSteam, run: runImportSteamLibrary } =
-    usePlatformImportAction(
+    usePlatformImportTrigger(
       () =>
         platformsService.importSteamLibrary(
           steamConfig.steamId,
           steamConfig.steamApiKey,
           steamConfig.steamRoot
         ),
-      {
-        setStatus,
-        onLibraryUpdate,
-        loadingMessage: t('steam_importing_status'),
-      }
+      { platformLabel: 'Steam', setStatus, onLibraryUpdate }
     );
 
   /**

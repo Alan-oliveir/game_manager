@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { usePlatformImportAction, usePlatformStatus } from '@/hooks';
+import { usePlatformImportTrigger, usePlatformStatus } from '@/hooks';
 import { platformsService } from '@/services/plataformsService';
 
 /**
@@ -51,10 +51,10 @@ export function useAmazonConfig(onLibraryUpdate?: () => void) {
   };
 
   const { isImporting: isImportingAmazon, run: importAmazonGames } =
-    usePlatformImportAction(() => platformsService.importAmazonGames(), {
+    usePlatformImportTrigger(() => platformsService.importAmazonGames(), {
+      platformLabel: 'Amazon',
       setStatus,
       onLibraryUpdate,
-      loadingMessage: t('amazon_importing_status'),
     });
 
   return {

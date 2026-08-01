@@ -5,12 +5,14 @@
 use crate::constants;
 use crate::database::AppState;
 use crate::errors::AppError;
+use crate::sources::providers::SourceGame;
 use crate::sources::scanner::GameDiscovery;
 use crate::utils::status_logic;
 use chrono::{TimeZone, Utc};
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter, Manager};
+use tracing::{info, warn};
 use uuid::Uuid;
 
 // === Estruturas de Dados ===
@@ -169,6 +171,63 @@ pub fn trigger_enrichment_if_needed(app: &AppHandle, newly_imported: Vec<NewlyIm
                 .await;
         });
     }
+}
+
+/// Executa uma importação de plataforma em background, sem bloquear o comando Tauri.
+///
+/// `fetch` recebe uma cópia do `AppHandle` (necessário para fontes com OAuth, como Amazon/Epic/GOG)
+/// e deve conter toda a parte lenta (rede, fetch, merge de fontes), retornando a lista final de
+/// `SourceGame` pronta para persistência. O comando retorna imediatamente.
+///
+/// O resultado chega ao **frontend** via eventos:
+///
+/// - `import_started`   → payload: platform (string)
+/// - `import_complete`  → payload: (platform, message)
+/// - `import_error`     → payload: (platform, error)
+/// - `library_updated`  → (mantido, sem payload, para compatibilidade com listeners existentes)
+pub fn spawn_import<F, Fut>(app: AppHandle, platform: &'static str, fetch: F)
+where
+    F: FnOnce(AppHandle) -> Fut + Send + 'static,
+    Fut: std::future::Future<Output=Result<Vec<SourceGame>, AppError>> + Send + 'static,
+{
+    let _ = app.emit("import_started", platform);
+    let app_task = app.clone();
+    let app_for_fetch = app.clone();
+
+    tauri::async_runtime::spawn(async move {
+        let games = match fetch(app_for_fetch).await {
+            Ok(g) => g,
+            Err(e) => {
+                warn!("Import {} falhou: {}", platform, e);
+                let _ = app_task.emit("import_error", (platform, e.to_string()));
+                return;
+            }
+        };
+
+        if games.is_empty() {
+            let msg = format_import_empty(platform);
+            let _ = app_task.emit("import_complete", (platform, msg));
+            return;
+        }
+
+        let state: tauri::State<AppState> = app_task.state();
+        let (inserted, updated, newly_imported) = match persist_source_games(&state, games).await {
+            Ok(r) => r,
+            Err(e) => {
+                warn!("Persist {} falhou: {}", platform, e);
+                let _ = app_task.emit("import_error", (platform, e.to_string()));
+                return;
+            }
+        };
+
+        let message = format_import_summary(platform, inserted, updated);
+        info!("{}", message);
+
+        let _ = app_task.emit("library_updated", ());
+        let _ = app_task.emit("import_complete", (platform, message));
+
+        trigger_enrichment_if_needed(&app_task, newly_imported);
+    });
 }
 
 // === Funções padronizadas para mensagens ===

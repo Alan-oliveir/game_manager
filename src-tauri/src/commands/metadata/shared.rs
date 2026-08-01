@@ -20,6 +20,17 @@ pub struct EnrichProgress {
     pub status: String,
 }
 
+/// Payload do evento `enrich_complete`.
+///
+/// `platform` é `Some` quando o enrichment é escopado a uma importação
+/// específica (`enrich_newly_imported`), e `None` quando é uma varredura
+/// geral da biblioteca (`update_metadata`, `fill_missing_metadata`).
+#[derive(serde::Serialize, Clone)]
+pub struct EnrichCompletePayload {
+    pub platform: Option<String>,
+    pub message: String,
+}
+
 /// Resultado da resolução de `steam_app_id` a partir do nome de um jogo.
 pub struct SteamIdResolution {
     pub app_id: String,

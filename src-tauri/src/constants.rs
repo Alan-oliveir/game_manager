@@ -64,7 +64,7 @@ pub const DEFAULT_CURRENCY: &str = "BRL";
 // === LIMITES DE REQUISIÇÕES A SERVIÇOS EXTERNOS ===
 pub const RAWG_RATE_LIMIT_MS: u64 = 100; // 10 req/s
 pub const RAWG_MAX_CONCURRENT_REQUESTS: u32 = 4;
-pub const RAWG_REQUISITIONS_PER_BATCH: u32 = 20;
+pub const RAWG_REQUISITIONS_PER_BATCH: u32 = 25;
 pub const RAWG_BACKOFF_BASE_MS: u64 = 2000; // espera inicial após 429
 pub const RAWG_BACKOFF_MAX_RETRIES: u32 = 3; // 2s, 4s, 8s antes de desistir
 pub const RAWG_SEARCH_PAGE_SIZE: u32 = 10;

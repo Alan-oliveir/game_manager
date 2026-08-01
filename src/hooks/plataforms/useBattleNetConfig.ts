@@ -1,6 +1,4 @@
-import { useTranslation } from 'react-i18next';
-
-import { usePlatformImportAction, usePlatformStatus } from '@/hooks';
+import { usePlatformImportTrigger, usePlatformStatus } from '@/hooks';
 import { platformsService } from '@/services/plataformsService';
 
 /**
@@ -9,14 +7,13 @@ import { platformsService } from '@/services/plataformsService';
  * não há OAuth nem caminho manual configurável — Windows apenas.
  */
 export function useBattleNetConfig(onLibraryUpdate?: () => void) {
-  const { t } = useTranslation('platforms');
   const { status, setStatus } = usePlatformStatus();
 
   const { isImporting: isImportingBattleNet, run: importBattleNetGames } =
-    usePlatformImportAction(() => platformsService.importBattleNetGames(), {
+    usePlatformImportTrigger(() => platformsService.importBattleNetGames(), {
+      platformLabel: 'BattleNet',
       setStatus,
       onLibraryUpdate,
-      loadingMessage: t('battlenet_importing_status'),
     });
 
   return {

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { parsePlatformError } from '@/errors/errorMessages';
 import {
   useLocalStoragePlatformPath,
-  usePlatformImportAction,
+  usePlatformImportTrigger,
   usePlatformStatus,
 } from '@/hooks';
 import { platformsService } from '@/services/plataformsService';
@@ -37,13 +37,19 @@ export function useGogConfig(onLibraryUpdate?: () => void) {
     refreshAuthStatus().finally(() => setCheckingAuth(false));
   }, [refreshAuthStatus]);
 
-  const { isImporting: isLoggingIn, run: runLogin } = usePlatformImportAction(
-    () => platformsService.gogLogin(),
-    {
-      setStatus,
-      loadingMessage: t('gog_logging_in_status'),
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const runLogin = useCallback(async () => {
+    setIsLoggingIn(true);
+
+    try {
+      await platformsService.gogLogin();
+    } catch {
+      // erro tratado no catch do login() abaixo, via parsePlatformError
+    } finally {
+      setIsLoggingIn(false);
     }
-  );
+  }, []);
 
   // `run` engole erros internamente (só atualiza `status` e mostra toast),
   // então a Promise sempre resolve ao final do fluxo — usa isso apenas
@@ -68,10 +74,10 @@ export function useGogConfig(onLibraryUpdate?: () => void) {
   }, [setStatus, t]);
 
   const { isImporting: isImportingGog, run: importGogGames } =
-    usePlatformImportAction(() => platformsService.importGogGames(), {
+    usePlatformImportTrigger(() => platformsService.importGogGames(), {
+      platformLabel: 'GOG',
       setStatus,
       onLibraryUpdate,
-      loadingMessage: t('gog_importing_status'),
     });
 
   return {

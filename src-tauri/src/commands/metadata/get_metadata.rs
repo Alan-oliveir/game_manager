@@ -10,10 +10,7 @@
 //! - Reutiliza `ProcessedGameDetails` e `save_game_details` de `enrichment.rs`.
 
 use super::enrichment::{save_game_details, ProcessedGameDetails};
-use super::shared::{
-    fetch_rawg_metadata_fresh, fetch_steam_reviews, fetch_steam_store_data,
-    resolve_steam_app_id, EnrichProgress,
-};
+use super::shared::{fetch_rawg_metadata_fresh, fetch_steam_reviews, fetch_steam_store_data, resolve_steam_app_id, EnrichCompletePayload, EnrichProgress};
 use crate::constants::{RAWG_RATE_LIMIT_MS, RAWG_REQUISITIONS_PER_BATCH};
 use crate::database;
 use crate::database::AppState;
@@ -340,7 +337,11 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
         }
 
         let _ = crate::services::tags::generate_analysis_report(&app_handle, all_session_tags);
-        let _ = app_handle.emit("enrich_complete", "Campos vazios preenchidos!");
+
+        let _ = app_handle.emit(
+            "enrich_complete",
+            EnrichCompletePayload { platform: None, message: "Campos vazios preenchidos!".to_string() },
+        );
         info!("fill_missing_metadata concluído.");
     });
 
