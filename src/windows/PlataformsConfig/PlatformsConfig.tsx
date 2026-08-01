@@ -9,7 +9,6 @@ import {
   Ea,
   Epic,
   Gog,
-  Heroic,
   Indiegala,
   Itch,
   Legacy,
@@ -26,7 +25,7 @@ import {
   EaSettings,
   EpicGamesSettings,
   GogSettings,
-  HeroicSettings,
+  IndiegalaSettings,
   ItchSettings,
   LegacySettings,
   LocalScannerSettings,
@@ -35,12 +34,10 @@ import {
   WineSettings,
   XboxSettings,
 } from '@/windows';
-import { IndiegalaSettings } from '@/windows/PlataformsConfig/IndiegalaSettings.tsx';
 
 type SourceProvider =
   | 'steam'
   | 'epic'
-  | 'heroic'
   | 'ubisoft'
   | 'legacy'
   | 'gog'
@@ -81,12 +78,6 @@ export default function PlatformsConfig({
       connected: true,
     },
     { id: 'epic', name: t('config_store_epic'), Icon: Epic, connected: true },
-    {
-      id: 'heroic',
-      name: t('config_store_heroic'),
-      Icon: Heroic,
-      connected: true,
-    },
     {
       id: 'ubisoft',
       name: t('config_store_ubisoft'),
@@ -162,13 +153,6 @@ export default function PlatformsConfig({
       case 'epic':
         return (
           <EpicGamesSettings
-            onLibraryUpdate={onLibraryUpdate}
-            progress={progress}
-          />
-        );
-      case 'heroic':
-        return (
-          <HeroicSettings
             onLibraryUpdate={onLibraryUpdate}
             progress={progress}
           />

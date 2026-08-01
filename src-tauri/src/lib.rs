@@ -121,7 +121,6 @@ pub fn run() {
             commands::platforms::epic::epic_logout,
             commands::platforms::epic::epic_is_authenticated,
             commands::platforms::epic::import_epic_games,
-            commands::platforms::heroic::import_heroic_games,
             commands::platforms::ubisoft::import_ubisoft_games,
             commands::platforms::legacy::import_legacy_games,
             commands::platforms::gog::gog_login,

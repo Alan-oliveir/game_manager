@@ -4,7 +4,6 @@ export { useBattleNetConfig } from './useBattleNetConfig';
 export { useEaConfig } from './useEaConfig';
 export { useEpicConfig } from './useEpicConfig';
 export { useGogConfig } from './useGogConfig';
-export { useHeroicConfig } from './useHeroicConfig';
 export { useIndiegalaConfig } from './useIndiegalaConfig';
 export { useItchConfig } from './useItchConfig';
 export { useLauncherPathOverride } from './useLauncherPathOverride';

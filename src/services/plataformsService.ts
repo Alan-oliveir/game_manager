@@ -51,24 +51,6 @@ export const platformsService = {
   },
 
   /**
-   * Importa jogos instalados via Heroic Games Launcher.
-   * Detecta automaticamente via installed.json do Heroic.
-   *
-   * Linux: ~/.config/heroic ou ~/.var/app/com.heroicgameslauncher.hgl/config/heroic
-   * Windows: %APPDATA%\heroic
-   *
-   * `heroicConfigPath` — caminho manual para o diretório de configuração do Heroic.
-   * Quando omitido, a detecção automática é usada.
-   *
-   * @throws Se o Heroic não estiver instalado ou não houver jogos
-   */
-  importHeroicGames: async (heroicConfigPath?: string): Promise<string> => {
-    return await invoke<string>('import_heroic_games', {
-      heroicConfigPath: heroicConfigPath ?? null,
-    });
-  },
-
-  /**
    * Importa jogos da Ubisoft lendo o cache de configuração do Ubisoft Connect.
    * Detecta automaticamente via %LOCALAPPDATA%\Ubisoft Game Launcher (Windows)
    * ou via Wine prefix configurado (Linux).

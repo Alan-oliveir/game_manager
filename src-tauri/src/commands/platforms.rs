@@ -18,7 +18,6 @@ pub mod core;
 pub mod ea;
 pub mod epic;
 pub mod gog;
-pub mod heroic;
 pub mod indiegala;
 pub mod itch;
 pub mod legacy;
@@ -30,11 +29,12 @@ pub mod xbox;
 // === REEXPORTS ===
 
 // Mantêm o caminho `commands::platforms::X` estável para quem consome (lib.rs, frontend via invoke, etc.).
+pub use amazon::import_amazon_games;
 pub use battle_net::import_battle_net_games;
 pub use ea::import_ea_games;
 pub use epic::import_epic_games;
 pub use gog::{gog_is_authenticated, gog_login, gog_logout, import_gog_games};
-pub use heroic::import_heroic_games;
+pub use indiegala::import_indiegala_games;
 pub use itch::import_itch_games;
 pub use legacy::import_legacy_games;
 pub use scanner::{add_game_from_scan, add_games_from_scan, scan_games_folder};

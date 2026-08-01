@@ -7,7 +7,6 @@ export { BattleNetSettings } from './BattleNetSettings';
 export { EaSettings } from './EaSettings';
 export { EpicGamesSettings } from './EpicGamesSettings';
 export { GogSettings } from './GogSettings';
-export { HeroicSettings } from './HeroicSettings';
 export { IndiegalaSettings } from './IndiegalaSettings';
 export { ItchSettings } from './ItchSettings';
 export { LegacySettings } from './LegacySettings';
