@@ -2,12 +2,11 @@ import { Info, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import { ImportProgressPayload, useEpicConfig } from '@/hooks/plataforms';
+import { useEpicConfig } from '@/hooks/platforms';
 
 import {
   DetectedPathsBox,
   ImportedItemsBox,
-  ImportProgressIndicator,
   InfoNoteBox,
   LauncherPathSection,
   PlatformActionButton,
@@ -18,12 +17,10 @@ import { DETECTED_PATHS } from './constants';
 
 interface EpicGamesSettingsProps {
   onLibraryUpdate?: () => void;
-  progress: ImportProgressPayload | null;
 }
 
 export function EpicGamesSettings({
   onLibraryUpdate,
-  progress,
 }: Readonly<EpicGamesSettingsProps>) {
   const { t } = useTranslation('platforms');
   const { loading, status, actions, isAuthenticated } =
@@ -127,13 +124,6 @@ export function EpicGamesSettings({
           ]}
         />
       </div>
-
-      {loading.importingEpic && progress && (
-        <ImportProgressIndicator
-          label={t('epic_importing')}
-          progress={progress}
-        />
-      )}
 
       <PlatformActionsFooter>
         <PlatformActionButton

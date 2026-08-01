@@ -2,7 +2,7 @@ import { FolderOpen, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow } from '@/components/common';
-import { useLauncherPathOverride } from '@/hooks/plataforms';
+import { useLauncherPathOverride } from '@/hooks/platforms';
 import { Button } from '@/ui/button';
 
 import { PathPickerField } from './PathPickerField';

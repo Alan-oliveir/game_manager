@@ -17,7 +17,6 @@ import {
   Xbox,
 } from '@/components/icons/logos';
 import { WindowBase } from '@/components/wrappers/WindowBase';
-import { useImportProgress } from '@/hooks';
 import { cn } from '@/lib/utils';
 import {
   AmazonGamesSettings,
@@ -63,7 +62,6 @@ export default function PlatformsConfig({
 }>) {
   const { t } = useTranslation('platforms');
   const [activeStore, setActiveStore] = useState<SourceProvider>('steam');
-  const { progress } = useImportProgress();
 
   const stores: {
     id: SourceProvider;
@@ -144,70 +142,27 @@ export default function PlatformsConfig({
   const renderActiveStore = () => {
     switch (activeStore) {
       case 'steam':
-        return (
-          <SteamSettings
-            onLibraryUpdate={onLibraryUpdate}
-            progress={progress}
-          />
-        );
+        return <SteamSettings onLibraryUpdate={onLibraryUpdate} />;
       case 'epic':
-        return (
-          <EpicGamesSettings
-            onLibraryUpdate={onLibraryUpdate}
-            progress={progress}
-          />
-        );
+        return <EpicGamesSettings onLibraryUpdate={onLibraryUpdate} />;
       case 'ubisoft':
-        return (
-          <UbisoftSettings
-            onLibraryUpdate={onLibraryUpdate}
-            progress={progress}
-          />
-        );
+        return <UbisoftSettings onLibraryUpdate={onLibraryUpdate} />;
       case 'legacy':
-        return (
-          <LegacySettings
-            onLibraryUpdate={onLibraryUpdate}
-            progress={progress}
-          />
-        );
+        return <LegacySettings onLibraryUpdate={onLibraryUpdate} />;
       case 'gog':
-        return (
-          <GogSettings onLibraryUpdate={onLibraryUpdate} progress={progress} />
-        );
+        return <GogSettings onLibraryUpdate={onLibraryUpdate} />;
       case 'battlenet':
-        return (
-          <BattleNetSettings
-            onLibraryUpdate={onLibraryUpdate}
-            progress={progress}
-          />
-        );
+        return <BattleNetSettings onLibraryUpdate={onLibraryUpdate} />;
       case 'ea':
-        return (
-          <EaSettings onLibraryUpdate={onLibraryUpdate} progress={progress} />
-        );
+        return <EaSettings onLibraryUpdate={onLibraryUpdate} />;
       case 'amazon':
-        return (
-          <AmazonGamesSettings
-            onLibraryUpdate={onLibraryUpdate}
-            progress={progress}
-          />
-        );
+        return <AmazonGamesSettings onLibraryUpdate={onLibraryUpdate} />;
       case 'xbox':
-        return (
-          <XboxSettings onLibraryUpdate={onLibraryUpdate} progress={progress} />
-        );
+        return <XboxSettings onLibraryUpdate={onLibraryUpdate} />;
       case 'indiegala':
-        return (
-          <IndiegalaSettings
-            onLibraryUpdate={onLibraryUpdate}
-            progress={progress}
-          />
-        );
+        return <IndiegalaSettings onLibraryUpdate={onLibraryUpdate} />;
       case 'itch':
-        return (
-          <ItchSettings onLibraryUpdate={onLibraryUpdate} progress={progress} />
-        );
+        return <ItchSettings onLibraryUpdate={onLibraryUpdate} />;
       case 'local':
         return <LocalScannerSettings />;
       case 'wine':

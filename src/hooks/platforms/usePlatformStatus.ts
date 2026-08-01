@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { ImportStatus } from './types';
+import type { ImportStatus } from '@/types';
 
 const AUTO_DISMISS_MS = 5000;
 

@@ -57,7 +57,7 @@ async fn fetch_rawg_metadata_inner(
     name: &str,
     cache_conn: &rusqlite::Connection,
     bypass_cache: bool,
-) -> Option<rawg::GameDetails> {
+) -> Option<rawg::RawgGameDetails> {
     let cache_key = rawg_cache_key(name);
 
     if !bypass_cache {
@@ -65,7 +65,7 @@ async fn fetch_rawg_metadata_inner(
             if cached == NOT_FOUND_MARKER {
                 return None;
             }
-            if let Ok(details) = serde_json::from_str::<rawg::GameDetails>(&cached) {
+            if let Ok(details) = serde_json::from_str::<rawg::RawgGameDetails>(&cached) {
                 return Some(details);
             }
         }
@@ -132,7 +132,7 @@ pub async fn fetch_rawg_metadata(
     api_key: &str,
     name: &str,
     cache_conn: &rusqlite::Connection,
-) -> Option<rawg::GameDetails> {
+) -> Option<rawg::RawgGameDetails> {
     fetch_rawg_metadata_inner(api_key, name, cache_conn, false).await
 }
 
@@ -145,7 +145,7 @@ pub async fn fetch_rawg_metadata_fresh(
     api_key: &str,
     name: &str,
     cache_conn: &rusqlite::Connection,
-) -> Option<rawg::GameDetails> {
+) -> Option<rawg::RawgGameDetails> {
     fetch_rawg_metadata_inner(api_key, name, cache_conn, true).await
 }
 

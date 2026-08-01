@@ -1,7 +1,6 @@
 export { DetectedPathsBox } from './DetectedPathsBox';
 export { GameDiscoveryCard } from './GameDiscoveryCard';
 export { ImportedItemsBox } from './ImportedItemsBox';
-export { ImportProgressIndicator } from './ImportProgressIndicator';
 export { InfoNoteBox } from './InfoNoteBox';
 export { LauncherPathSection } from './LauncherPathSection';
 export { PathPickerField } from './PathPickerField';

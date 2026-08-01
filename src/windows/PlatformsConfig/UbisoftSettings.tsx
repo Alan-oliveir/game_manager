@@ -2,12 +2,11 @@ import { Info, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import { ImportProgressPayload, useUbisoftConfig } from '@/hooks/plataforms';
+import { useUbisoftConfig } from '@/hooks/platforms';
 
 import {
   DetectedPathsBox,
   ImportedItemsBox,
-  ImportProgressIndicator,
   InfoNoteBox,
   LauncherPathSection,
   PlatformActionButton,
@@ -18,12 +17,10 @@ import { DETECTED_PATHS } from './constants';
 
 interface UbisoftSettingsProps {
   onLibraryUpdate?: () => void;
-  progress: ImportProgressPayload | null;
 }
 
 export function UbisoftSettings({
   onLibraryUpdate,
-  progress,
 }: Readonly<UbisoftSettingsProps>) {
   const { t } = useTranslation('platforms');
   const { loading, status, actions } = useUbisoftConfig(onLibraryUpdate);
@@ -93,13 +90,6 @@ export function UbisoftSettings({
           note={t('ubisoft_import_note')}
         />
       </div>
-
-      {loading.importingUbisoft && progress && (
-        <ImportProgressIndicator
-          label={t('ubisoft_importing')}
-          progress={progress}
-        />
-      )}
 
       <PlatformActionsFooter>
         <PlatformActionButton

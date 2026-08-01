@@ -2,14 +2,13 @@ import { HardDrive, Info, Library, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import { ImportProgressPayload, useItchConfig } from '@/hooks/plataforms';
+import { useItchConfig } from '@/hooks/platforms';
 import { Switch } from '@/ui/toggle-switch';
-import { DETECTED_PATHS } from '@/windows/PlataformsConfig/constants';
+import { DETECTED_PATHS } from '@/windows/PlatformsConfig/constants';
 
 import {
   DetectedPathsBox,
   ImportedItemsBox,
-  ImportProgressIndicator,
   LauncherPathSection,
   PlatformActionButton,
   PlatformActionsFooter,
@@ -19,12 +18,10 @@ import {
 
 interface ItchioSettingsProps {
   onLibraryUpdate?: () => void;
-  progress: ImportProgressPayload | null;
 }
 
 export function ItchSettings({
   onLibraryUpdate,
-  progress,
 }: Readonly<ItchioSettingsProps>) {
   const { t } = useTranslation('platforms');
   const { mode, setMode, loading, status, actions } =
@@ -116,13 +113,6 @@ export function ItchSettings({
           </WarningBox>
         )}
       </div>
-
-      {loading.importingItch && progress && (
-        <ImportProgressIndicator
-          label={isFull ? t('itch_importing_full') : t('itch_importing')}
-          progress={progress}
-        />
-      )}
 
       <PlatformActionsFooter>
         <PlatformActionButton

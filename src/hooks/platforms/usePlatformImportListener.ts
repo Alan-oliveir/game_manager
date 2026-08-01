@@ -1,9 +1,8 @@
 import { listen } from '@tauri-apps/api/event';
 import { useEffect, useRef, useState } from 'react';
 
+import type { ImportStatus } from '@/types';
 import { toast } from '@/utils/toast';
-
-import type { ImportStatus } from './types';
 
 type ImportCompletePayload = [platform: string, message: string];
 type ImportErrorPayload = [platform: string, error: string];

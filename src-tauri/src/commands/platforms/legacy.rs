@@ -1,14 +1,13 @@
 //! Legacy - Importa jogos de Legacy Games Launcher
 
-use crate::commands::platforms::core::{format_import_empty, format_import_summary, trigger_enrichment_if_needed, NewlyImportedGame};
+use crate::commands::platforms::core::{spawn_import_custom, ImportOutcome, NewlyImportedGame};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::legacy::LegacySource;
 use crate::utils::status_logic;
 use chrono::Utc;
 use rusqlite::params;
-use tauri::{AppHandle, Emitter, State};
-use tracing::info;
+use tauri::{AppHandle, Manager};
 use uuid::Uuid;
 
 /// Persiste jogos da Legacy Games nas tabelas `games` e `game_details`.
@@ -128,32 +127,32 @@ async fn persist_legacy_games(
 #[tauri::command]
 pub async fn import_legacy_games(
     app: AppHandle,
-    state: State<'_, AppState>,
     app_state_path: Option<String>,
     wine_prefix: Option<String>,
-) -> Result<String, AppError> {
+) -> Result<(), AppError> {
     let path = app_state_path
         .filter(|s| !s.trim().is_empty())
         .map(std::path::PathBuf::from);
-
     let prefix = wine_prefix
         .filter(|s| !s.trim().is_empty())
         .map(std::path::PathBuf::from);
 
-    let source = LegacySource::new_with_wine(path, prefix);
-    let games = source.fetch_games_detailed().await?;
+    spawn_import_custom(app, "LegacyGames", |app| async move {
+        let state: tauri::State<crate::database::AppState> = app.state();
+        let source = LegacySource::new_with_wine(path, prefix);
+        let games = source.fetch_games_detailed().await?;
 
-    if games.is_empty() {
-        return Ok(format_import_empty("Legacy Games"));
-    }
+        if games.is_empty() {
+            return Ok(ImportOutcome::Empty);
+        }
 
-    let (inserted, updated, newly_imported) = persist_legacy_games(&state, games).await?;
-    let message = format_import_summary("Legacy Games", inserted, updated);
-    info!("{}", message);
+        let (inserted, updated, newly_imported) = persist_legacy_games(&state, games).await?;
+        Ok(ImportOutcome::Persisted {
+            inserted,
+            updated,
+            newly_imported,
+        })
+    });
 
-    let _ = app.emit("library_updated", ());
-
-    trigger_enrichment_if_needed(&app, newly_imported);
-
-    Ok(message)
+    Ok(())
 }

@@ -2,11 +2,10 @@ import { FolderOpen, Globe, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import { ImportProgressPayload, useSteamConfig } from '@/hooks/plataforms';
+import { useSteamConfig } from '@/hooks/platforms';
 import { Input } from '@/ui/input';
 
 import {
-  ImportProgressIndicator,
   LauncherPathSection,
   PathPickerField,
   PlatformActionButton,
@@ -18,12 +17,10 @@ import { EXTERNAL_LINKS } from './constants';
 
 interface SteamSettingsProps {
   onLibraryUpdate?: () => void;
-  progress: ImportProgressPayload | null;
 }
 
 export function SteamSettings({
   onLibraryUpdate,
-  progress,
 }: Readonly<SteamSettingsProps>) {
   const { t } = useTranslation('platforms');
   const {
@@ -129,13 +126,6 @@ export function SteamSettings({
           },
         ]}
       />
-
-      {loading.importingSteam && progress && (
-        <ImportProgressIndicator
-          label={t('steam_importing')}
-          progress={progress}
-        />
-      )}
 
       <PlatformActionsFooter>
         <PlatformActionButton

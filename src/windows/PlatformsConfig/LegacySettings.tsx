@@ -2,15 +2,10 @@ import { FolderOpen, Info, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import {
-  ImportProgressPayload,
-  useLegacyConfig,
-  useNativePathPicker,
-} from '@/hooks/plataforms';
+import { useLegacyConfig, useNativePathPicker } from '@/hooks/platforms';
 
 import {
   ImportedItemsBox,
-  ImportProgressIndicator,
   InfoNoteBox,
   LauncherPathSection,
   PathPickerField,
@@ -22,12 +17,10 @@ import { DETECTED_PATHS } from './constants';
 
 interface LegacySettingsProps {
   onLibraryUpdate?: () => void;
-  progress: ImportProgressPayload | null;
 }
 
 export function LegacySettings({
   onLibraryUpdate,
-  progress,
 }: Readonly<LegacySettingsProps>) {
   const { t } = useTranslation('platforms');
   const { appStatePath, setAppStatePath, loading, status, actions } =
@@ -137,13 +130,6 @@ export function LegacySettings({
           note={t('legacy_import_note')}
         />
       </div>
-
-      {loading.importingLegacy && progress && (
-        <ImportProgressIndicator
-          label={t('legacy_importing')}
-          progress={progress}
-        />
-      )}
 
       <PlatformActionsFooter>
         <PlatformActionButton

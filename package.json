@@ -16,7 +16,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "docs:rust": "cargo doc --no-deps --manifest-path src-tauri/Cargo.toml && mkdir -p .api-output/rust && cp -r src-tauri/target/doc/* .api-output/rust/",
-    "docs:ts": "typedoc"
+    "docs:ts": "typedoc",
+    "prune": "ts-prune -i \"src.ui|index\\.ts\""
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
@@ -75,6 +76,7 @@
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4.1.18",
+    "ts-prune": "^0.10.3",
     "typedoc": "^0.28.15",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.20.0",

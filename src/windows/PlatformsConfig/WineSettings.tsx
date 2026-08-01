@@ -9,7 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow } from '@/components/common';
-import { useWineConfig } from '@/hooks/plataforms';
+import { useWineConfig } from '@/hooks/platforms';
 import { Button } from '@/ui/button';
 
 import {

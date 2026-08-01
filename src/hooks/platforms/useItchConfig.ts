@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
-import { usePlatformImportAction, usePlatformStatus } from '@/hooks';
+import { usePlatformImportTrigger, usePlatformStatus } from '@/hooks';
 import { platformsService } from '@/services/plataformsService';
 
 export type ItchImportMode = 'installed' | 'full';
@@ -21,7 +20,6 @@ function readStoredMode(): ItchImportMode {
  * Detecção 100% automática baseada no butler.db.
  */
 export function useItchConfig(onLibraryUpdate?: () => void) {
-  const { t } = useTranslation('platforms');
   const { status, setStatus } = usePlatformStatus();
   const [mode, setModeState] = useState<ItchImportMode>(readStoredMode);
 
@@ -34,15 +32,12 @@ export function useItchConfig(onLibraryUpdate?: () => void) {
   }, []);
 
   const { isImporting: isImportingItch, run: importItchGames } =
-    usePlatformImportAction(
+    usePlatformImportTrigger(
       () => platformsService.importItchGames(mode === 'full'),
       {
+        platformLabel: 'Itch',
         setStatus,
         onLibraryUpdate,
-        loadingMessage:
-          mode === 'full'
-            ? t('itch_importing_full_status')
-            : t('itch_importing_status'),
       }
     );
 

@@ -90,7 +90,7 @@ pub struct RawgGame {
 ///
 /// Inclui informações expandidas como descrição, metacritic score, desenvolvedoras e tags.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GameDetails {
+pub struct RawgGameDetails {
     pub id: i32,
     pub name: String,
     #[serde(rename(deserialize = "description_raw", serialize = "descriptionRaw"))]
@@ -147,7 +147,7 @@ pub async fn search_games(api_key: &str, query: &str) -> Result<Vec<RawgGame>, S
 /// Busca detalhes completos de um jogo específico.
 ///
 /// Converte o nome do jogo em slug (formato URL-friendly) e busca informações detalhadas na API RAWG.
-pub async fn fetch_game_details(api_key: &str, query: String) -> Result<GameDetails, String> {
+pub async fn fetch_game_details(api_key: &str, query: String) -> Result<RawgGameDetails, String> {
     let identifier = if query.chars().all(char::is_numeric) {
         query
     } else {
@@ -172,7 +172,7 @@ pub async fn fetch_game_details(api_key: &str, query: String) -> Result<GameDeta
         .map_err(|e| e.to_string())?;
 
     if res.status().is_success() {
-        let details: GameDetails = res.json().await.map_err(|e| e.to_string())?;
+        let details: RawgGameDetails = res.json().await.map_err(|e| e.to_string())?;
         Ok(details)
     } else if res.status().as_u16() == 404 {
         Err("Jogo não encontrado na RAWG".into())

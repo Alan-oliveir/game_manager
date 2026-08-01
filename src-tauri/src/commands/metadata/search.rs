@@ -34,7 +34,7 @@ pub struct ProfileSimilarGame {
 pub async fn fetch_game_details(
     app: AppHandle,
     query: String,
-) -> Result<rawg::GameDetails, AppError> {
+) -> Result<rawg::RawgGameDetails, AppError> {
     let api_key = database::get_secret(&app, "rawg_api_key")?;
     rawg::fetch_game_details(&api_key, query)
         .await

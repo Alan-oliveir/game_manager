@@ -2,13 +2,12 @@ import { Info, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import { ImportProgressPayload, useBattleNetConfig } from '@/hooks/plataforms';
-import { DETECTED_PATHS } from '@/windows/PlataformsConfig/constants';
+import { useBattleNetConfig } from '@/hooks/platforms';
+import { DETECTED_PATHS } from '@/windows/PlatformsConfig/constants';
 
 import {
   DetectedPathsBox,
   ImportedItemsBox,
-  ImportProgressIndicator,
   LauncherPathSection,
   PlatformActionButton,
   PlatformActionsFooter,
@@ -18,12 +17,10 @@ import {
 
 interface BattleNetSettingsProps {
   onLibraryUpdate?: () => void;
-  progress: ImportProgressPayload | null;
 }
 
 export function BattleNetSettings({
   onLibraryUpdate,
-  progress,
 }: Readonly<BattleNetSettingsProps>) {
   const { t } = useTranslation('platforms');
   const { loading, status, actions } = useBattleNetConfig(onLibraryUpdate);
@@ -80,13 +77,6 @@ export function BattleNetSettings({
           </p>
         </WarningBox>
       </div>
-
-      {loading.importingBattleNet && progress && (
-        <ImportProgressIndicator
-          label={t('battlenet_importing')}
-          progress={progress}
-        />
-      )}
 
       <PlatformActionsFooter>
         <PlatformActionButton

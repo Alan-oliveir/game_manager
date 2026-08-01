@@ -2,15 +2,10 @@ import { FolderOpen, Info, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import {
-  ImportProgressPayload,
-  useEaConfig,
-  useNativePathPicker,
-} from '@/hooks/plataforms';
+import { useEaConfig, useNativePathPicker } from '@/hooks/platforms';
 
 import {
   ImportedItemsBox,
-  ImportProgressIndicator,
   PathPickerField,
   PlatformActionButton,
   PlatformActionsFooter,
@@ -20,13 +15,9 @@ import {
 
 interface EaSettingsProps {
   onLibraryUpdate?: () => void;
-  progress: ImportProgressPayload | null;
 }
 
-export function EaSettings({
-  onLibraryUpdate,
-  progress,
-}: Readonly<EaSettingsProps>) {
+export function EaSettings({ onLibraryUpdate }: Readonly<EaSettingsProps>) {
   const { t } = useTranslation('platforms');
   const { installDir, setInstallDir, loading, status, actions } =
     useEaConfig(onLibraryUpdate);
@@ -83,13 +74,6 @@ export function EaSettings({
           </p>
         </WarningBox>
       </div>
-
-      {loading.importingEa && progress && (
-        <ImportProgressIndicator
-          label={t('ea_importing')}
-          progress={progress}
-        />
-      )}
 
       <PlatformActionsFooter>
         <PlatformActionButton

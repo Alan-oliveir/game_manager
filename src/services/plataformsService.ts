@@ -74,10 +74,10 @@ export const platformsService = {
    *
    * @throws Se o Legacy Games Launcher não estiver instalado ou não houver jogos
    */
-  importLegacyGames: async (appStatePath?: string): Promise<string> => {
+  importLegacyGames: async (appStatePath?: string): Promise<void> => {
     const winePrefix = localStorage.getItem('wine_prefix') || undefined;
 
-    return await invoke<string>('import_legacy_games', {
+    return await invoke<void>('import_legacy_games', {
       appStatePath: appStatePath ?? null,
       winePrefix: winePrefix ?? null,
     });
@@ -201,8 +201,8 @@ export const platformsService = {
    *
    * @throws Se nenhum jogo for encontrado
    */
-  importIndiegalaGames: async (full: boolean): Promise<string> => {
-    return await invoke<string>('import_indiegala_games', {
+  importIndiegalaGames: async (full: boolean): Promise<void> => {
+    return await invoke<void>('import_indiegala_games', {
       full,
       installedJsonPath: null,
       configJsonPath: null,
@@ -217,8 +217,8 @@ export const platformsService = {
    *
    * @throws Se nenhum jogo for encontrado ou o banco de dados não existir.
    */
-  importItchGames: async (full: boolean): Promise<string> => {
-    return await invoke<string>('import_itch_games', {
+  importItchGames: async (full: boolean): Promise<void> => {
+    return await invoke<void>('import_itch_games', {
       full,
       butlerDbPath: null,
     });

@@ -48,13 +48,6 @@ pub fn platform_fallback(platform: &Platform) -> PlatformFallback {
             launcher_candidates: &[r"C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe"],
             store_url: "https://www.gog.com/",
         },
-        Platform::Heroic => PlatformFallback {
-            launcher_candidates: &[
-                r"C:\Program Files\Heroic\Heroic.exe",
-                r"C:\Users\%USERNAME%\AppData\Local\Programs\heroic\Heroic.exe",
-            ],
-            store_url: "",
-        },
         Platform::Indiegala => PlatformFallback {
             launcher_candidates: &[r"C:\Program Files (x86)\IGClient\IGClient.exe"],
             store_url: "https://www.indiegala.com/store",

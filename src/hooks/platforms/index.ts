@@ -1,4 +1,4 @@
-export type { ImportProgressPayload, ImportStatus } from './types';
+export type { ImportStatus } from '@/types';
 export { useAmazonConfig } from './useAmazonConfig';
 export { useBattleNetConfig } from './useBattleNetConfig';
 export { useEaConfig } from './useEaConfig';

@@ -1,14 +1,13 @@
 //! Itch.io - Importa jogos instalados ou biblioteca completa lendo o butler.db
 
-use crate::commands::platforms::core::{format_import_summary, trigger_enrichment_if_needed, NewlyImportedGame};
+use crate::commands::platforms::core::{spawn_import_custom, ImportOutcome, NewlyImportedGame};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::itch::{ItchioGame, ItchioSource};
 use crate::utils::status_logic;
 use chrono::{TimeZone, Utc};
 use rusqlite::params;
-use tauri::{AppHandle, Emitter, State};
-use tracing::info;
+use tauri::{AppHandle, Manager};
 use uuid::Uuid;
 
 /// Persiste jogos da Itch.io nas tabelas `games` e `game_details`.
@@ -149,38 +148,34 @@ async fn persist_itch_games(
 #[tauri::command]
 pub async fn import_itch_games(
     app: AppHandle,
-    state: State<'_, AppState>,
     full: bool,
     butler_db_path: Option<String>,
-) -> Result<String, AppError> {
+) -> Result<(), AppError> {
     let db_path = butler_db_path
         .filter(|s| !s.trim().is_empty())
         .map(std::path::PathBuf::from);
 
-    let source = ItchioSource::new(db_path);
+    spawn_import_custom(app, "Itch", move |app| async move {
+        let state: tauri::State<crate::database::AppState> = app.state();
+        let source = ItchioSource::new(db_path);
 
-    let games = if full {
-        source.fetch_full_library_detailed().await?
-    } else {
-        source.fetch_installed_detailed().await?
-    };
-
-    if games.is_empty() {
-        let msg = if full {
-            "Nenhum jogo Itch.io encontrado na biblioteca."
+        let games = if full {
+            source.fetch_full_library_detailed().await?
         } else {
-            "Nenhum jogo Itch.io instalado encontrado."
+            source.fetch_installed_detailed().await?
         };
-        return Ok(msg.to_string());
-    }
 
-    let (inserted, updated, newly_imported) = persist_itch_games(&state, games).await?;
-    let message = format_import_summary("Itch.io", inserted, updated);
-    info!("{}", message);
+        if games.is_empty() {
+            return Ok(ImportOutcome::Empty);
+        }
 
-    let _ = app.emit("library_updated", ());
+        let (inserted, updated, newly_imported) = persist_itch_games(&state, games).await?;
+        Ok(ImportOutcome::Persisted {
+            inserted,
+            updated,
+            newly_imported,
+        })
+    });
 
-    trigger_enrichment_if_needed(&app, newly_imported);
-
-    Ok(message)
+    Ok(())
 }

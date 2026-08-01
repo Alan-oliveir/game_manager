@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
-import { usePlatformImportAction, usePlatformStatus } from '@/hooks';
+import { usePlatformImportTrigger, usePlatformStatus } from '@/hooks';
 import { platformsService } from '@/services/plataformsService';
 
 export type IndiegalaImportMode = 'installed' | 'full';
@@ -25,7 +24,6 @@ function readStoredMode(): IndiegalaImportMode {
  * localStorage entre sessões, como steamRoot faz em useSteamConfig.
  */
 export function useIndiegalaConfig(onLibraryUpdate?: () => void) {
-  const { t } = useTranslation('platforms');
   const { status, setStatus } = usePlatformStatus();
   const [mode, setModeState] = useState<IndiegalaImportMode>(readStoredMode);
 
@@ -38,15 +36,12 @@ export function useIndiegalaConfig(onLibraryUpdate?: () => void) {
   }, []);
 
   const { isImporting: isImportingIndiegala, run: importIndiegalaGames } =
-    usePlatformImportAction(
+    usePlatformImportTrigger(
       () => platformsService.importIndiegalaGames(mode === 'full'),
       {
+        platformLabel: 'Indiegala',
         setStatus,
         onLibraryUpdate,
-        loadingMessage:
-          mode === 'full'
-            ? t('indiegala_importing_full_status')
-            : t('indiegala_importing_status'),
       }
     );
 

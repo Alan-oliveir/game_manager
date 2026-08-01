@@ -1,16 +1,13 @@
 //! IndieGala - Importa jogos instalados ou biblioteca completa via IGClient
 
-use crate::commands::platforms::core::{
-    format_import_summary, trigger_enrichment_if_needed, NewlyImportedGame,
-};
+use crate::commands::platforms::core::{spawn_import_custom, ImportOutcome, NewlyImportedGame};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::sources::indiegala::IndiegalaSource;
 use crate::utils::status_logic;
 use chrono::Utc;
 use rusqlite::params;
-use tauri::{AppHandle, Emitter, State};
-use tracing::info;
+use tauri::{AppHandle, Manager};
 use uuid::Uuid;
 
 /// Persiste jogos da IndieGala nas tabelas `games` e `game_details`.
@@ -140,11 +137,10 @@ async fn persist_indiegala_games(
 #[tauri::command]
 pub async fn import_indiegala_games(
     app: AppHandle,
-    state: State<'_, AppState>,
     full: bool,
     installed_json_path: Option<String>,
     config_json_path: Option<String>,
-) -> Result<String, AppError> {
+) -> Result<(), AppError> {
     let installed_path = installed_json_path
         .filter(|s| !s.trim().is_empty())
         .map(std::path::PathBuf::from);
@@ -152,30 +148,27 @@ pub async fn import_indiegala_games(
         .filter(|s| !s.trim().is_empty())
         .map(std::path::PathBuf::from);
 
-    let source = IndiegalaSource::new(installed_path);
+    spawn_import_custom(app, "Indiegala", move |app| async move {
+        let state: tauri::State<crate::database::AppState> = app.state();
+        let source = IndiegalaSource::new(installed_path);
 
-    let games = if full {
-        source.fetch_full_library_detailed(config_path).await?
-    } else {
-        source.fetch_installed_detailed().await?
-    };
-
-    if games.is_empty() {
-        let msg = if full {
-            "Nenhum jogo IndieGala encontrado na biblioteca."
+        let games = if full {
+            source.fetch_full_library_detailed(config_path).await?
         } else {
-            "Nenhum jogo IndieGala instalado encontrado."
+            source.fetch_installed_detailed().await?
         };
-        return Ok(msg.to_string());
-    }
 
-    let (inserted, updated, newly_imported) = persist_indiegala_games(&state, games).await?;
-    let message = format_import_summary("IndieGala", inserted, updated);
-    info!("{}", message);
+        if games.is_empty() {
+            return Ok(ImportOutcome::Empty);
+        }
 
-    let _ = app.emit("library_updated", ());
+        let (inserted, updated, newly_imported) = persist_indiegala_games(&state, games).await?;
+        Ok(ImportOutcome::Persisted {
+            inserted,
+            updated,
+            newly_imported,
+        })
+    });
 
-    trigger_enrichment_if_needed(&app, newly_imported);
-
-    Ok(message)
+    Ok(())
 }

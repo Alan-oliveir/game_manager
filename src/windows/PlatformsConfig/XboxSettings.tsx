@@ -2,11 +2,10 @@ import { Info, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import { ImportProgressPayload, useXboxConfig } from '@/hooks/plataforms';
+import { useXboxConfig } from '@/hooks/platforms';
 
 import {
   ImportedItemsBox,
-  ImportProgressIndicator,
   InfoNoteBox,
   PlatformActionButton,
   PlatformActionsFooter,
@@ -16,13 +15,9 @@ import {
 
 interface XboxSettingsProps {
   onLibraryUpdate?: () => void;
-  progress: ImportProgressPayload | null;
 }
 
-export function XboxSettings({
-  onLibraryUpdate,
-  progress,
-}: Readonly<XboxSettingsProps>) {
+export function XboxSettings({ onLibraryUpdate }: Readonly<XboxSettingsProps>) {
   const { t } = useTranslation('platforms');
   const { loading, status, actions } = useXboxConfig(onLibraryUpdate);
 
@@ -72,13 +67,6 @@ export function XboxSettings({
           {t('xbox_gamepass_note')}
         </WarningBox>
       </div>
-
-      {loading.importingXbox && progress && (
-        <ImportProgressIndicator
-          label={t('xbox_importing')}
-          progress={progress}
-        />
-      )}
 
       <PlatformActionsFooter>
         <PlatformActionButton

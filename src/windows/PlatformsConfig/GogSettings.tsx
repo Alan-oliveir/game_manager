@@ -2,16 +2,11 @@ import { FolderOpen, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import {
-  ImportProgressPayload,
-  useGogConfig,
-  useNativePathPicker,
-} from '@/hooks/plataforms';
+import { useGogConfig, useNativePathPicker } from '@/hooks/platforms';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 
 import {
   ImportedItemsBox,
-  ImportProgressIndicator,
   LauncherPathSection,
   PathPickerField,
   PlatformActionButton,
@@ -21,13 +16,9 @@ import {
 
 interface GogSettingsProps {
   onLibraryUpdate?: () => void;
-  progress: ImportProgressPayload | null;
 }
 
-export function GogSettings({
-  onLibraryUpdate,
-  progress,
-}: Readonly<GogSettingsProps>) {
+export function GogSettings({ onLibraryUpdate }: Readonly<GogSettingsProps>) {
   const { t } = useTranslation('platforms');
   const {
     isAuthenticated,
@@ -119,13 +110,6 @@ export function GogSettings({
           note={t('gog_import_note_details')}
         />
       </div>
-
-      {loading.importingGog && progress && (
-        <ImportProgressIndicator
-          label={t('gog_importing')}
-          progress={progress}
-        />
-      )}
 
       <PlatformActionsFooter>
         <Tooltip>

@@ -2,14 +2,13 @@ import { HardDrive, Info, Library, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import { ImportProgressPayload, useIndiegalaConfig } from '@/hooks/plataforms';
+import { useIndiegalaConfig } from '@/hooks/platforms';
 import { Switch } from '@/ui/toggle-switch';
-import { DETECTED_PATHS } from '@/windows/PlataformsConfig/constants';
+import { DETECTED_PATHS } from '@/windows/PlatformsConfig/constants';
 
 import {
   DetectedPathsBox,
   ImportedItemsBox,
-  ImportProgressIndicator,
   LauncherPathSection,
   PlatformActionButton,
   PlatformActionsFooter,
@@ -19,12 +18,10 @@ import {
 
 interface IndiegalaSettingsProps {
   onLibraryUpdate?: () => void;
-  progress: ImportProgressPayload | null;
 }
 
 export function IndiegalaSettings({
   onLibraryUpdate,
-  progress,
 }: Readonly<IndiegalaSettingsProps>) {
   const { t } = useTranslation('platforms');
   const { mode, setMode, loading, status, actions } =
@@ -118,15 +115,6 @@ export function IndiegalaSettings({
           </WarningBox>
         )}
       </div>
-
-      {loading.importingIndiegala && progress && (
-        <ImportProgressIndicator
-          label={
-            isFull ? t('indiegala_importing_full') : t('indiegala_importing')
-          }
-          progress={progress}
-        />
-      )}
 
       <PlatformActionsFooter>
         <PlatformActionButton

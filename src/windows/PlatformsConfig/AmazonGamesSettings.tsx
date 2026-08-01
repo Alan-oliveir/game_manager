@@ -2,12 +2,11 @@ import { Info, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsRow, StatusBadge } from '@/components/common';
-import { ImportProgressPayload, useAmazonConfig } from '@/hooks/plataforms';
+import { useAmazonConfig } from '@/hooks/platforms';
 
 import {
   DetectedPathsBox,
   ImportedItemsBox,
-  ImportProgressIndicator,
   PlatformActionButton,
   PlatformActionsFooter,
   PlatformHeader,
@@ -16,12 +15,10 @@ import { DETECTED_PATHS } from './constants';
 
 interface AmazonGamesSettingsProps {
   onLibraryUpdate?: () => void;
-  progress: ImportProgressPayload | null;
 }
 
 export function AmazonGamesSettings({
   onLibraryUpdate,
-  progress,
 }: Readonly<AmazonGamesSettingsProps>) {
   const { t } = useTranslation('platforms');
   const { loading, status, actions, isAuthenticated } =
@@ -101,13 +98,6 @@ export function AmazonGamesSettings({
           ]}
         />
       </div>
-
-      {loading.importingAmazon && progress && (
-        <ImportProgressIndicator
-          label={t('amazon_importing')}
-          progress={progress}
-        />
-      )}
 
       <PlatformActionsFooter>
         <PlatformActionButton

@@ -1,3 +1,3 @@
 // Export all window components
 export * from './GameDetail';
-export * from './PlataformsConfig';
+export * from './PlatformsConfig';

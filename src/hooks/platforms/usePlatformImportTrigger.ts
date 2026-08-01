@@ -2,9 +2,8 @@ import { useCallback } from 'react';
 
 import { parsePlatformError } from '@/errors/errorMessages';
 import { usePlatformImportListener } from '@/hooks';
+import type { ImportStatus } from '@/types';
 import { toast } from '@/utils/toast';
-
-import type { ImportStatus } from './types';
 
 interface UsePlatformImportTriggerOptions {
   platformLabel: string;

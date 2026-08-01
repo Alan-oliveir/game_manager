@@ -230,6 +230,54 @@ where
     });
 }
 
+/// Resultado de uma importação, usado por `spawn_import_custom` para fontes com persistência própria
+/// (IndieGala, Itch.io, Legacy Games), que gravam campos extras (`description_raw`, `tags`, `cover_url`)
+/// fora do `SourceGame` padrão e por isso não passam por `persist_source_games`.
+pub enum ImportOutcome {
+    Empty,
+    Persisted {
+        inserted: u32,
+        updated: u32,
+        newly_imported: Vec<NewlyImportedGame>,
+    },
+}
+
+/// Como `spawn_import`, mas para fontes cuja persistência já está embutida em `run`
+/// (fetch + persist_*_games próprio), retornando o resultado final e não uma lista crua de `SourceGame`.
+pub fn spawn_import_custom<F, Fut>(app: AppHandle, platform: &'static str, run: F)
+where
+    F: FnOnce(AppHandle) -> Fut + Send + 'static,
+    Fut: std::future::Future<Output=Result<ImportOutcome, AppError>> + Send + 'static,
+{
+    let _ = app.emit("import_started", platform);
+    let app_task = app.clone();
+    let app_for_run = app.clone();
+
+    tauri::async_runtime::spawn(async move {
+        match run(app_for_run).await {
+            Ok(ImportOutcome::Empty) => {
+                let msg = format_import_empty(platform);
+                let _ = app_task.emit("import_complete", (platform, msg));
+            }
+            Ok(ImportOutcome::Persisted {
+                   inserted,
+                   updated,
+                   newly_imported,
+               }) => {
+                let message = format_import_summary(platform, inserted, updated);
+                info!("{}", message);
+                let _ = app_task.emit("library_updated", ());
+                let _ = app_task.emit("import_complete", (platform, message));
+                trigger_enrichment_if_needed(&app_task, newly_imported);
+            }
+            Err(e) => {
+                warn!("Import {} falhou: {}", platform, e);
+                let _ = app_task.emit("import_error", (platform, e.to_string()));
+            }
+        }
+    });
+}
+
 // === Funções padronizadas para mensagens ===
 
 /// Mensagem padrão de sucesso: "<Plataforma>: X adicionados, Y atualizados".

@@ -1,3 +1,4 @@
+// === TAGS ===
 export interface GameTag {
   slug: string;
   name: string;
@@ -25,7 +26,11 @@ export const CATEGORY_MULTIPLIERS: Record<TagCategory | 'unknown', number> = {
   unknown: 0.5,
 };
 
-// Plataformas suportadas (deve corresponder ao enum Platform do Rust)
+// === PLATAFORMAS (STEAM, EPIG, GOG, etc.) ===
+
+/**
+ * Plataformas suportadas (deve corresponder ao enum Platform do Rust)
+ */
 export type Platform =
   | 'Steam'
   | 'Epic'
@@ -35,14 +40,15 @@ export type Platform =
   | 'EA'
   | 'BattleNet'
   | 'Xbox'
-  | 'Heroic'
   | 'LegacyGames'
   | 'Indiegala'
   | 'Itch'
   | 'Indie'
   | 'Outra';
 
-// Dicionário para renderização visual na interface
+/**
+ * Dicionário para renderização visual na interface
+ */
 export const PlatformDisplayNames: Record<Platform, string> = {
   Steam: 'Steam',
   Epic: 'Epic Games',
@@ -52,7 +58,6 @@ export const PlatformDisplayNames: Record<Platform, string> = {
   EA: 'EA App',
   BattleNet: 'Battle.net',
   Xbox: 'Xbox',
-  Heroic: 'Heroic Launcher',
   LegacyGames: 'Legacy Games',
   Indiegala: 'IndieGala',
   Itch: 'Itch.io',
@@ -60,8 +65,13 @@ export const PlatformDisplayNames: Record<Platform, string> = {
   Outra: 'Outra',
 };
 
-// Nível de confiança da importação
-export type ImportConfidence = 'High' | 'Medium' | 'Low';
+/**
+ * Status exibido nas telas de configuração de plataformas (StatusBadge).
+ */
+export interface ImportStatus {
+  type: 'success' | 'error' | null;
+  message: string;
+}
 
 /**
  * Tipos para iniciar jogos por plataforma
@@ -71,6 +81,43 @@ export type LaunchOutcome =
   | { kind: 'openedLauncher'; installed: boolean }
   | { kind: 'openedStore' }
   | { kind: 'unavailable' };
+
+export interface GamePlatformLink {
+  id: string;
+  platform: string;
+}
+
+export interface GameActions {
+  onToggleFavorite: (id: string) => void;
+  onGameClick: (game: Game) => void;
+  onDeleteGame: (id: string) => void;
+  onEditGame: (game: Game) => void;
+}
+
+export type SteamReviewSummary =
+  | 'Overwhelmingly Positive'
+  | 'Very Positive'
+  | 'Positive'
+  | 'Mostly Positive'
+  | 'Mixed'
+  | 'Mostly Negative'
+  | 'Negative'
+  | 'Very Negative'
+  | 'Overwhelmingly Negative'
+  | 'No user reviews';
+
+/**
+ * Nível de confiança da importação
+ *
+ * Usado com: Steam
+ *
+ * - Hight: jogos instalados (appmanifest)
+ * - Medium: jogos não instalados (librarycache)
+ * - Low: jogos não instalados (Steam API)
+ */
+export type ImportConfidence = 'High' | 'Medium' | 'Low';
+
+// === MODELOS DE DADOS (SCHEMA 3.0 - Game e GameDetails) ===
 
 /**
  * Informações básicas do jogo - Schema 3.0
@@ -148,28 +195,4 @@ export interface GameDetails {
   externalLinks?: Record<string, string>; // { "steam": "url", "website": "url" }
   medianPlaytime?: number; // Horas (SteamSpy)
   estimatedPlaytime?: number; // Tempo estimado em horas (float)
-}
-
-export type SteamReviewSummary =
-  | 'Overwhelmingly Positive'
-  | 'Very Positive'
-  | 'Positive'
-  | 'Mostly Positive'
-  | 'Mixed'
-  | 'Mostly Negative'
-  | 'Negative'
-  | 'Very Negative'
-  | 'Overwhelmingly Negative'
-  | 'No user reviews';
-
-export interface GamePlatformLink {
-  id: string;
-  platform: string;
-}
-
-export interface GameActions {
-  onToggleFavorite: (id: string) => void;
-  onGameClick: (game: Game) => void;
-  onDeleteGame: (id: string) => void;
-  onEditGame: (game: Game) => void;
 }
