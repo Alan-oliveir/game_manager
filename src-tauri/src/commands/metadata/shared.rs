@@ -18,6 +18,7 @@ pub struct EnrichProgress {
     pub total_found: i32,
     pub last_game: String,
     pub status: String,
+    pub platform: Option<String>,
 }
 
 /// Payload do evento `enrich_complete`.
@@ -41,15 +42,6 @@ pub struct SteamIdResolution {
 
 fn rawg_cache_key(name: &str) -> String {
     format!("search_{}", name.to_lowercase())
-}
-
-pub(in crate::commands::metadata) fn rawg_not_found_cached(
-    name: &str,
-    cache_conn: &rusqlite::Connection,
-) -> bool {
-    let cache_key = rawg_cache_key(name);
-    cache::get_cached_api_data(cache_conn, "rawg", &cache_key)
-        .is_some_and(|cached| cached == NOT_FOUND_MARKER)
 }
 
 async fn fetch_rawg_metadata_inner(
@@ -126,8 +118,8 @@ async fn fetch_rawg_metadata_inner(
 
 /// Busca metadados RAWG com cache
 ///
-/// Esta função é compartilhada entre enrichment e covers
-/// para buscar informações de jogos na API RAWG com suporte a cache SQLite.
+/// Esta função é compartilhada entre enrichment e covers para buscar informações de jogos na API
+/// RAWG com suporte a cache SQLite.
 pub async fn fetch_rawg_metadata(
     api_key: &str,
     name: &str,
@@ -138,9 +130,8 @@ pub async fn fetch_rawg_metadata(
 
 /// Variante que ignora o cache e sempre consulta a RAWG ao vivo.
 ///
-/// Usada pelo comando `fill_missing_metadata` para garantir que dados
-/// possivelmente atualizados na RAWG sejam buscados mesmo para jogos
-/// cujo cache ainda é válido.
+/// Usada pelo comando `fill_missing_metadata` para garantir que dados possivelmente atualizados na
+/// RAWG sejam buscados mesmo para jogos cujo cache ainda é válido.
 pub async fn fetch_rawg_metadata_fresh(
     api_key: &str,
     name: &str,

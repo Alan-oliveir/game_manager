@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { ERROR_MESSAGES } from '@/errors/errorMessages';
 import { settingsService } from '@/services/settingsService';
@@ -15,6 +16,7 @@ import { toast } from '@/utils/toast';
  * @returns Objeto contendo estados, chaves e ações relacionadas às configurações
  */
 export function useSettings(onLibraryUpdate: () => void) {
+  const { t } = useTranslation('settings');
   const [keys, setKeys] = useState({
     rawgApiKey: '',
     geminiApiKey: '',
@@ -25,7 +27,6 @@ export function useSettings(onLibraryUpdate: () => void) {
   const [loading, setLoading] = useState({
     initial: true,
     saving: false,
-    enriching: false,
     fetchingCovers: false,
     fillingMissing: false,
     exporting: false,
@@ -95,11 +96,11 @@ export function useSettings(onLibraryUpdate: () => void) {
       });
       setStatus({
         type: 'success',
-        message: 'Credenciais salvas com segurança!',
+        message: t('save_keys_success'),
       });
-      toast.success('Credenciais API salvas!');
+      toast.success(t('save_keys_toast_success'));
     } catch (error) {
-      const errorMsg = `Erro ao salvar: ${error}`;
+      const errorMsg = t('save_keys_error', { error: String(error) });
       setStatus({ type: 'error', message: errorMsg });
       toast.error(errorMsg);
     } finally {
@@ -107,24 +108,9 @@ export function useSettings(onLibraryUpdate: () => void) {
     }
   };
 
-  const enrichLibrary = async () => {
-    setLoading(prev => ({ ...prev, enriching: true }));
-    setStatus({
-      type: null,
-      message: 'Iniciando atualização de metadados...',
-    });
-
-    try {
-      await settingsService.enrichLibrary();
-    } catch (error) {
-      setStatus({ type: 'error', message: String(error) });
-      setLoading(prev => ({ ...prev, enriching: false }));
-    }
-  };
-
   const fetchMissingCovers = async () => {
     setLoading(prev => ({ ...prev, fetchingCovers: true }));
-    setStatus({ type: null, message: 'Buscando capas faltantes...' });
+    setStatus({ type: null, message: t('fetching_covers_status') });
 
     try {
       await settingsService.fetchMissingCovers();
@@ -136,7 +122,7 @@ export function useSettings(onLibraryUpdate: () => void) {
 
   const fillMissingMetadata = async () => {
     setLoading(prev => ({ ...prev, fillingMissing: true }));
-    setStatus({ type: null, message: 'Buscando campos faltantes na RAWG...' });
+    setStatus({ type: null, message: t('filling_missing_status') });
 
     try {
       await settingsService.fillMissingMetadata();
@@ -148,13 +134,13 @@ export function useSettings(onLibraryUpdate: () => void) {
 
   const exportDatabase = async () => {
     setLoading(prev => ({ ...prev, exporting: true }));
-    setStatus({ type: null, message: 'Exportando backup...' });
+    setStatus({ type: null, message: t('exporting_backup_status') });
 
     try {
       const msg = await settingsService.exportDatabase();
       setStatus({ type: 'success', message: msg });
     } catch (error: unknown) {
-      const errorMessage = getErrorMessage(error, 'Erro ao exportar');
+      const errorMessage = getErrorMessage(error, t('export_error_fallback'));
 
       if (errorMessage === ERROR_MESSAGES.CANCELLED) {
         setStatus({ type: null, message: '' });
@@ -171,14 +157,14 @@ export function useSettings(onLibraryUpdate: () => void) {
 
   const importDatabase = async () => {
     setLoading(prev => ({ ...prev, importingBackup: true }));
-    setStatus({ type: null, message: 'Importando backup...' });
+    setStatus({ type: null, message: t('importing_backup_status') });
 
     try {
       const msg = await settingsService.importDatabase();
       setStatus({ type: 'success', message: msg });
       onLibraryUpdate();
     } catch (error: unknown) {
-      const errorMessage = getErrorMessage(error, 'Erro ao importar');
+      const errorMessage = getErrorMessage(error, t('import_error_fallback'));
 
       if (errorMessage === ERROR_MESSAGES.CANCELLED) {
         setStatus({ type: null, message: '' });
@@ -195,12 +181,12 @@ export function useSettings(onLibraryUpdate: () => void) {
 
   const cleanupCache = async () => {
     setLoading(prev => ({ ...prev, cleaningCache: true }));
-    setStatus({ type: null, message: 'Limpando cache expirado...' });
+    setStatus({ type: null, message: t('cleaning_cache_status') });
 
     try {
       const msg = await settingsService.cleanupCache();
       setStatus({ type: 'success', message: msg });
-      toast.success(msg || 'Cache expirado limpo com sucesso!');
+      toast.success(msg || t('cache_cleaned_success'));
     } catch (error) {
       const errorMsg = String(error);
       setStatus({ type: 'error', message: errorMsg });
@@ -212,12 +198,12 @@ export function useSettings(onLibraryUpdate: () => void) {
 
   const clearAllCache = async () => {
     setLoading(prev => ({ ...prev, clearingAllCache: true }));
-    setStatus({ type: null, message: 'Limpando todo o cache...' });
+    setStatus({ type: null, message: t('clearing_all_cache_status') });
 
     try {
       const msg = await settingsService.clearAllCache();
       setStatus({ type: 'success', message: msg });
-      toast.success(msg || 'Todo o cache foi limpo com sucesso!');
+      toast.success(msg || t('all_cache_cleared_success'));
     } catch (error) {
       const errorMsg = String(error);
       setStatus({ type: 'error', message: errorMsg });
@@ -230,22 +216,25 @@ export function useSettings(onLibraryUpdate: () => void) {
   const toggleSaveLocally = (checked: boolean) => {
     setSaveLocally(checked);
     localStorage.setItem('config_save_covers', String(checked));
-    toast.success(`Modo offline ${checked ? 'ativado' : 'desativado'}`);
+    toast.success(
+      checked
+        ? t('offline_mode_enabled_toast')
+        : t('offline_mode_disabled_toast')
+    );
   };
 
   const handleClearCache = async () => {
     try {
       await invoke('clear_cover_cache');
-      toast.success('Espaço liberado! Imagens locais removidas.');
+      toast.success(t('cache_cleared_toast'));
     } catch {
-      toast.error('Erro ao limpar cache.');
+      toast.error(t('clear_cache_error'));
     }
   };
 
   const updateLoadingForEnrichProgress = (isCoverTask: boolean) => {
     setLoading(prev => ({
       ...prev,
-      enriching: !isCoverTask,
       fetchingCovers: isCoverTask,
     }));
   };
@@ -253,7 +242,6 @@ export function useSettings(onLibraryUpdate: () => void) {
   const finishEnrichment = () => {
     setLoading(prev => ({
       ...prev,
-      enriching: false,
       fetchingCovers: false,
       fillingMissing: false,
     }));
@@ -280,9 +268,17 @@ export function useSettings(onLibraryUpdate: () => void) {
   // Listeners para eventos de enriquecimento
   useEffect(() => {
     const handleEnrichProgress = (event: {
-      payload: { current: number; total_found: number; last_game: string };
+      payload: {
+        current: number;
+        total_found: number;
+        last_game: string;
+        platform: string | null;
+      };
     }) => {
       const p = event.payload;
+
+      if (p.platform) return; // pertence ao toast por plataforma, não a esta tela
+
       setProgress({
         current: p.current,
         total: p.total_found,
@@ -292,12 +288,16 @@ export function useSettings(onLibraryUpdate: () => void) {
       updateLoadingForEnrichProgress(p.last_game.startsWith('Capa:'));
     };
 
-    const handleEnrichComplete = () => {
+    const handleEnrichComplete = (event: {
+      payload: { platform: string | null; message: string };
+    }) => {
+      if (event.payload.platform) return; // toast por plataforma já cobre
+
       finishEnrichment();
       setProgress(null);
       setStatus({
         type: 'success',
-        message: 'Processo concluído com sucesso!',
+        message: t('process_completed_success'),
       });
       onLibraryUpdate();
     };
@@ -373,7 +373,7 @@ export function useSettings(onLibraryUpdate: () => void) {
       isActive = false;
       cleanup();
     };
-  }, [onLibraryUpdate]);
+  }, [onLibraryUpdate, t]);
 
   // Auto-close status messages
   useEffect(() => {
@@ -397,7 +397,6 @@ export function useSettings(onLibraryUpdate: () => void) {
     handleClearCache,
     actions: {
       saveKeys,
-      enrichLibrary,
       fetchMissingCovers,
       fillMissingMetadata,
       exportDatabase,

@@ -7,6 +7,7 @@ import AddGame from '@/dialogs/AddGame';
 import {
   useDebounce,
   useEnrichmentNotifications,
+  useEnrichmentProgressNotifications,
   useGameDetails,
 } from '@/hooks';
 import { UpdateProvider } from '@/providers/UpdateProvider';
@@ -88,6 +89,7 @@ function AppContent() {
   }, []);
 
   useEnrichmentNotifications();
+  useEnrichmentProgressNotifications();
 
   // Updater manual: sob demanda apenas
   const handleCheckUpdates = async () => {

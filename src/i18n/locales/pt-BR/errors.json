@@ -15,6 +15,8 @@
 
   "retry_button": "Tentar Novamente",
 
+  "action_retry": "Tentar novamente",
+
   "error_msg_dialog_save_permission": "Permissão necessária para salvar arquivos.",
   "error_msg_dialog_open_permission": "Permissão necessária para abrir arquivos.",
   "error_msg_backup_export_failed": "Não foi possível exportar o backup. Tente novamente.",
@@ -38,5 +40,14 @@
   "error_msg_cancelled": "CANCELLED",
   "error_msg_error_accessing_file": "Erro ao acessar arquivo: {{message}}",
   "error_msg_error_processing_data": "Erro ao processar dados: {{message}}",
-  "error_msg_permission_denied_launcher": "Permissão negada ao acessar os arquivos do launcher."
+  "error_msg_permission_denied_launcher": "Permissão negada ao acessar os arquivos do launcher.",
+  "error_msg_validation_error": "Validação: {{message}}",
+  "error_msg_database_save_error": "Erro ao salvar dados: {{message}}",
+  "error_msg_connection_error": "Erro de conexão: {{message}}",
+  "error_msg_not_found": "Não encontrado: {{message}}",
+  "error_msg_already_exists": "Já existe: {{message}}",
+  "error_msg_mutex_busy": "Recurso temporariamente ocupado. Tente novamente em alguns segundos.",
+  "error_msg_missing_api_key": "Configure a API key da {{apiName}} nas configurações.",
+  "error_msg_generic_network": "Erro de conexão. Verifique sua internet.",
+  "error_msg_open_link_failed": "Não foi possível abrir o link no navegador."
 }

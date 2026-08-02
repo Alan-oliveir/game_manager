@@ -2,7 +2,7 @@
 //!
 //! Permite buscar capas faltantes para jogos na biblioteca usando a API RAWG, com cache de metadados.
 
-use super::shared::{fetch_rawg_metadata, EnrichProgress};
+use super::shared::{fetch_rawg_metadata, EnrichCompletePayload, EnrichProgress};
 use crate::constants::RAWG_RATE_LIMIT_MS;
 use crate::database;
 use crate::database::AppState;
@@ -40,9 +40,9 @@ pub async fn fetch_missing_covers(app: AppHandle) -> Result<(), AppError> {
             stmt.query_map([], |row| -> rusqlite::Result<(String, String)> {
                 Ok((row.get(0)?, row.get(1)?))
             })
-            .unwrap()
-            .flatten()
-            .collect()
+                .unwrap()
+                .flatten()
+                .collect()
         };
 
         if !games_without_cover.is_empty() {
@@ -56,6 +56,7 @@ pub async fn fetch_missing_covers(app: AppHandle) -> Result<(), AppError> {
                         total_found: count as i32,
                         last_game: format!("Capa: {}", name),
                         status: "running".to_string(),
+                        platform: None,
                     },
                 );
 
@@ -98,7 +99,13 @@ pub async fn fetch_missing_covers(app: AppHandle) -> Result<(), AppError> {
             "Busca de capas finalizada: {} sucesso, {} falhas",
             total_updated, total_failed
         );
-        let _ = app_handle.emit("enrich_complete", "Busca de capas finalizada.");
+        let _ = app_handle.emit(
+            "enrich_complete",
+            EnrichCompletePayload {
+                platform: None,
+                message: "Busca de capas finalizada.".to_string(),
+            },
+        );
     });
 
     Ok(())

@@ -15,6 +15,8 @@
 
   "retry_button": "Try Again",
 
+  "action_retry": "Try again",
+
   "error_msg_dialog_save_permission": "Permission required to save files.",
   "error_msg_dialog_open_permission": "Permission required to open files.",
   "error_msg_backup_export_failed": "Failed to export backup. Please try again.",
@@ -38,5 +40,14 @@
   "error_msg_cancelled": "CANCELLED",
   "error_msg_error_accessing_file": "Error accessing file: {{message}}",
   "error_msg_error_processing_data": "Error processing data: {{message}}",
-  "error_msg_permission_denied_launcher": "Permission denied when accessing launcher files."
+  "error_msg_permission_denied_launcher": "Permission denied when accessing launcher files.",
+  "error_msg_validation_error": "Validation: {{message}}",
+  "error_msg_database_save_error": "Error saving data: {{message}}",
+  "error_msg_connection_error": "Connection error: {{message}}",
+  "error_msg_not_found": "Not found: {{message}}",
+  "error_msg_already_exists": "Already exists: {{message}}",
+  "error_msg_mutex_busy": "Resource temporarily busy. Please try again in a few seconds.",
+  "error_msg_missing_api_key": "Configure the {{apiName}} API key in settings.",
+  "error_msg_generic_network": "Connection error. Check your internet connection.",
+  "error_msg_open_link_failed": "Could not open the link in your browser."
 }

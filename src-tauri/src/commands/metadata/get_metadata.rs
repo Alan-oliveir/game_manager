@@ -10,7 +10,10 @@
 //! - Reutiliza `ProcessedGameDetails` e `save_game_details` de `enrichment.rs`.
 
 use super::enrichment::{save_game_details, ProcessedGameDetails};
-use super::shared::{fetch_rawg_metadata_fresh, fetch_steam_reviews, fetch_steam_store_data, resolve_steam_app_id, EnrichCompletePayload, EnrichProgress};
+use super::shared::{
+    fetch_rawg_metadata_fresh, fetch_steam_reviews, fetch_steam_store_data, resolve_steam_app_id,
+    EnrichCompletePayload, EnrichProgress,
+};
 use crate::constants::{RAWG_RATE_LIMIT_MS, RAWG_REQUISITIONS_PER_BATCH};
 use crate::database;
 use crate::database::AppState;
@@ -143,6 +146,7 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                         total_found: total_in_batch as i32,
                         last_game: name.clone(),
                         status: "running".to_string(),
+                        platform: None,
                     },
                 );
 
@@ -184,19 +188,39 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                             let mut links_map: HashMap<String, String> = HashMap::new();
                             let mut found_raw_tags: Vec<String> = Vec::new();
 
-                            // 1. Resolução do Steam App ID — cobre tanto jogos Steam (direto do platform_game_id) quanto
-                            // jogos de outras plataformas (via busca por nome na Steam Store Search), com cache de tentativas sem sucesso.
-                            let target_steam_id =
-                                resolve_steam_app_id(&name, &platform, platform_game_id.as_deref(), &cache_conn)
+                            // A cadeia Steam (resolve ID → store_data + reviews em paralelo) não
+                            // depende da RAWG, então roda inteira em paralelo com ela. Dentro da
+                            // cadeia Steam, store_data e reviews só dependem do ID resolvido.
+                            let rawg_future = fetch_rawg_metadata_fresh(&api_key, &name, &cache_conn);
+
+                            let steam_future = async {
+                                let target_steam_id = resolve_steam_app_id(
+                                    &name,
+                                    &platform,
+                                    platform_game_id.as_deref(),
+                                    &cache_conn,
+                                )
                                     .await
                                     .map(|resolution| resolution.app_id);
 
-                            // 2a. Busca na RAWG ignorando o cache
-                            if let Some(rawg_det) =
-                                fetch_rawg_metadata_fresh(&api_key, &name, &cache_conn).await
-                            {
-                                found_raw_tags =
-                                    rawg_det.tags.iter().map(|t| t.slug.clone()).collect();
+                                match &target_steam_id {
+                                    Some(steam_id) => {
+                                        let (store_data, reviews) = tokio::join!(
+                            fetch_steam_store_data(steam_id, &cache_conn),
+                            fetch_steam_reviews(steam_id, &cache_conn)
+                        );
+                                        (target_steam_id, store_data, reviews)
+                                    }
+                                    None => (target_steam_id, None, None),
+                                }
+                            };
+
+                            let (rawg_result, (target_steam_id, store_data, reviews)) =
+                                tokio::join!(rawg_future, steam_future);
+
+                            // 2a. Aplica resultado da RAWG (já resolvido acima)
+                            if let Some(rawg_det) = rawg_result {
+                                found_raw_tags = rawg_det.tags.iter().map(|t| t.slug.clone()).collect();
                                 let raw_tag_slugs: Vec<String> =
                                     rawg_det.tags.iter().map(|t| t.slug.clone()).collect();
 
@@ -208,18 +232,12 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                                     .map(|g| g.name.clone())
                                     .collect::<Vec<_>>()
                                     .join(", ");
-                                details.tags = crate::services::tags::classify_and_sort_tags(
-                                    raw_tag_slugs,
-                                    10,
-                                );
-                                details.developer =
-                                    rawg_det.developers.first().map(|d| d.name.clone());
-                                details.publisher =
-                                    rawg_det.publishers.first().map(|p| p.name.clone());
+                                details.tags = crate::services::tags::classify_and_sort_tags(raw_tag_slugs, 10);
+                                details.developer = rawg_det.developers.first().map(|d| d.name.clone());
+                                details.publisher = rawg_det.publishers.first().map(|p| p.name.clone());
                                 details.critic_score = rawg_det.metacritic;
                                 details.background_image = rawg_det.background_image;
-                                details.esrb_rating =
-                                    rawg_det.esrb_rating.as_ref().map(|r| r.name.clone());
+                                details.esrb_rating = rawg_det.esrb_rating.as_ref().map(|r| r.name.clone());
 
                                 if let Some(url) = &rawg_det.website {
                                     links_map.insert("website".to_string(), url.clone());
@@ -236,12 +254,12 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                                 );
                             } else {
                                 warn!(
-                                    game = %name,
-                                    "RAWG não retornou dados — jogo será ignorado nas próximas iterações"
-                                );
+                    game = %name,
+                    "RAWG não retornou dados — jogo será ignorado nas próximas iterações"
+                );
                             }
 
-                            // 2b. Steam como fallback / complemento
+                            // 2b. Steam como fallback / complemento — já resolvido acima
                             if let Some(steam_id) = &target_steam_id {
                                 if !links_map.contains_key("steam") {
                                     links_map.insert(
@@ -251,18 +269,14 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                                 }
                                 details.steam_app_id = Some(steam_id.clone());
 
-                                if let Some(store_data) =
-                                    fetch_steam_store_data(steam_id, &cache_conn).await
-                                {
-                                    let (detected_adult, flags) =
-                                        steam_api::detect_adult_content(&store_data);
+                                if let Some(store_data) = store_data {
+                                    let (detected_adult, flags) = steam_api::detect_adult_content(&store_data);
                                     details.is_adult = detected_adult;
                                     if !flags.is_empty() {
                                         details.adult_tags = serde_json::to_string(&flags).ok();
                                     }
                                     if details.description_raw.is_none() {
-                                        details.description_raw =
-                                            Some(store_data.short_description);
+                                        details.description_raw = Some(store_data.short_description);
                                     }
                                     if details.release_date.is_none() {
                                         details.release_date = store_data.release_date;
@@ -272,19 +286,15 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                                     }
                                 }
 
-                                if let Some(reviews) =
-                                    fetch_steam_reviews(steam_id, &cache_conn).await
-                                {
+                                if let Some(reviews) = reviews {
                                     details.steam_review_label = Some(reviews.review_score_desc);
                                     details.steam_review_count = Some(reviews.total_reviews as i32);
                                     let total = reviews.total_positive + reviews.total_negative;
                                     if total > 0 {
-                                        details.steam_review_score = Some(
-                                            (reviews.total_positive as f32 / total as f32) * 100.0,
-                                        );
+                                        details.steam_review_score =
+                                            Some((reviews.total_positive as f32 / total as f32) * 100.0);
                                     }
-                                    details.steam_review_updated_at =
-                                        Some(chrono::Utc::now().to_rfc3339());
+                                    details.steam_review_updated_at = Some(chrono::Utc::now().to_rfc3339());
                                 }
                             }
 
@@ -340,7 +350,10 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
 
         let _ = app_handle.emit(
             "enrich_complete",
-            EnrichCompletePayload { platform: None, message: "Campos vazios preenchidos!".to_string() },
+            EnrichCompletePayload {
+                platform: None,
+                message: "Campos vazios preenchidos!".to_string(),
+            },
         );
         info!("fill_missing_metadata concluído.");
     });

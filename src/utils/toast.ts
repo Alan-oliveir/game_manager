@@ -178,7 +178,14 @@ function showToast(
   message: string,
   options?: ToastOptions
 ): ToastId {
-  if (shouldUseNativeNotification() && variant !== 'loading') {
+  const isUpdatingExisting =
+    !!options && 'id' in options && options.id !== undefined;
+
+  if (
+    !isUpdatingExisting &&
+    shouldUseNativeNotification() &&
+    variant !== 'loading'
+  ) {
     return showNativeNotification(variant, message, options);
   }
 

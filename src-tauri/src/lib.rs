@@ -139,7 +139,6 @@ pub fn run() {
             // Comando para iniciar um jogo
             commands::launcher::launch_game,
             // Comandos de Metadados (Enriquecimento, Capas, Refresh, Busca)
-            commands::metadata::enrichment::update_metadata,
             commands::metadata::get_metadata::fill_missing_metadata,
             commands::metadata::covers::fetch_missing_covers,
             commands::metadata::refresh::check_and_refresh_background,

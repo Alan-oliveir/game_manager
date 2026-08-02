@@ -11,7 +11,6 @@ import {
   ImageIcon,
   Loader2,
   RefreshCcw,
-  RefreshCw,
   Save,
   Search,
   ShieldAlert,
@@ -241,39 +240,13 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
           description={t('search_metadata_description')}
         >
           <div className="w-full space-y-2">
-            <div className="flex gap-2">
-              <Button
-                onClick={actions.enrichLibrary}
-                variant="outline"
-                className="flex-1"
-                disabled={
-                  loading.enriching ||
-                  loading.fetchingCovers ||
-                  loading.fillingMissing
-                }
-              >
-                {loading.enriching ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('updating')}
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    {t('update_button')}
-                  </>
-                )}
-              </Button>
-
+            {/* Container flex para manter os botões lado a lado */}
+            <div className="flex w-full gap-2">
               <Button
                 onClick={actions.fetchMissingCovers}
                 variant="outline"
-                className="flex-1"
-                disabled={
-                  loading.fetchingCovers ||
-                  loading.enriching ||
-                  loading.fillingMissing
-                }
+                className="flex-1" // Alterado de w-full para flex-1
+                disabled={loading.fetchingCovers || loading.fillingMissing}
                 title={t('fetch_covers_tooltip')}
               >
                 {loading.fetchingCovers ? (
@@ -288,41 +261,34 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
                   </>
                 )}
               </Button>
+
+              <Button
+                onClick={actions.fillMissingMetadata}
+                variant="outline"
+                className="flex-1" // Alterado de w-full para flex-1
+                disabled={loading.fillingMissing || loading.fetchingCovers}
+                title={t('fill_missing_tooltip')}
+              >
+                {loading.fillingMissing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('filling_fields')}
+                  </>
+                ) : (
+                  <>
+                    <WandSparkles className="mr-2 h-4 w-4" />
+                    {t('fill_missing_fields_button')}
+                  </>
+                )}
+              </Button>
             </div>
 
-            <Button
-              onClick={actions.fillMissingMetadata}
-              variant="outline"
-              className="w-full"
-              disabled={
-                loading.fillingMissing ||
-                loading.enriching ||
-                loading.fetchingCovers
-              }
-              title={t('fill_missing_tooltip')}
-            >
-              {loading.fillingMissing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('filling_fields')}
-                </>
-              ) : (
-                <>
-                  <WandSparkles className="mr-2 h-4 w-4" />
-                  {t('fill_missing_fields_button')}
-                </>
-              )}
-            </Button>
-
-            {(loading.enriching ||
-              loading.fetchingCovers ||
-              loading.fillingMissing) &&
-              progress && (
-                <div className="text-muted-foreground animate-pulse text-center text-xs">
-                  {t('processing')} {progress.game} ({progress.current}/
-                  {progress.total})
-                </div>
-              )}
+            {(loading.fetchingCovers || loading.fillingMissing) && progress && (
+              <div className="text-muted-foreground animate-pulse text-center text-xs">
+                {t('processing')} {progress.game} ({progress.current}/
+                {progress.total})
+              </div>
+            )}
           </div>
         </SettingsRow>
       </section>

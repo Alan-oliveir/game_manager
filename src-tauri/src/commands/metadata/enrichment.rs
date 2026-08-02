@@ -9,12 +9,14 @@
 //! - block_in_place usado para manter conexão SQLite durante awaits
 //! - Itens compartilhados com covers estão no módulo shared
 
-use super::shared::{fetch_rawg_metadata, fetch_steam_reviews, fetch_steam_store_data, resolve_steam_app_id, EnrichCompletePayload, EnrichProgress};
+use super::shared::{
+    fetch_rawg_metadata, fetch_steam_reviews, fetch_steam_store_data, resolve_steam_app_id,
+    EnrichCompletePayload, EnrichProgress,
+};
 use crate::commands::platforms::core::NewlyImportedGame;
-use crate::constants::{RAWG_RATE_LIMIT_MS, RAWG_REQUISITIONS_PER_BATCH};
+use crate::constants::RAWG_RATE_LIMIT_MS;
 use crate::database;
 use crate::database::AppState;
-use crate::errors::AppError;
 use crate::services::cache;
 use crate::services::integration::nexus::{find_best_nexus_match, NexusGame};
 use crate::services::integration::steam_api;
@@ -25,24 +27,6 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::time::sleep;
 use tracing::{info, warn};
-
-const ENRICH_SKIP_SOURCE: &str = "enrich";
-
-// === HELPERS LOCAIS ===
-
-fn enrich_skip_key(game_id: &str) -> String {
-    format!("skip_{}", game_id)
-}
-
-fn is_enrich_skipped(game_id: &str, cache_conn: &rusqlite::Connection) -> bool {
-    let key = enrich_skip_key(game_id);
-    cache::get_stale_api_data(cache_conn, ENRICH_SKIP_SOURCE, &key).is_some()
-}
-
-fn mark_enrich_skipped(game_id: &str, cache_conn: &rusqlite::Connection) {
-    let key = enrich_skip_key(game_id);
-    let _ = cache::save_cached_api_data(cache_conn, ENRICH_SKIP_SOURCE, &key, "1");
-}
 
 // === ESTRUTURAS DE DADOS ===
 
@@ -117,6 +101,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                 total_found: total as i32,
                 last_game: game.name.clone(),
                 status: "running".to_string(),
+                platform: platform_label.clone(),
             },
         );
 
@@ -178,7 +163,10 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
     };
     let _ = app.emit(
         "enrich_complete",
-        EnrichCompletePayload { platform: platform_label, message },
+        EnrichCompletePayload {
+            platform: platform_label,
+            message,
+        },
     );
 }
 
@@ -225,18 +213,36 @@ async fn enrich_game_metadata(
         links_map.insert("nexus".to_string(), url);
     }
 
+    // A cadeia Steam (resolve ID → store_data + reviews em paralelo) não depende da RAWG,
+    // então roda inteira em paralelo com ela. Dentro da cadeia Steam, store_data e reviews
+    // só dependem do ID resolvido, não uma da outra.
+    let rawg_future = fetch_rawg_metadata(api_key, name, cache_conn);
+
+    let steam_future = async {
+        let target_steam_id =
+            resolve_steam_app_id(name, platform, platform_game_id.as_deref(), cache_conn)
+                .await
+                .map(|resolution| resolution.app_id);
+
+        match &target_steam_id {
+            Some(steam_id) => {
+                let (store_data, reviews) = tokio::join!(
+                    fetch_steam_store_data(steam_id, cache_conn),
+                    fetch_steam_reviews(steam_id, cache_conn)
+                );
+                (target_steam_id, store_data, reviews)
+            }
+            None => (target_steam_id, None, None),
+        }
+    };
+
+    let (rawg_result, (target_steam_id, store_data, reviews)) =
+        tokio::join!(rawg_future, steam_future);
+
     let mut found_raw_tags: Vec<String> = Vec::new();
     let mut rawg_found = false;
 
-    // 1. Resolução do Steam App ID — cobre tanto jogos Steam (direto do platform_game_id) quanto
-    // jogos de outras plataformas (via busca por nome na Steam Store Search), com cache de tentativas sem sucesso.
-    let target_steam_id =
-        resolve_steam_app_id(name, platform, platform_game_id.as_deref(), cache_conn)
-            .await
-            .map(|resolution| resolution.app_id);
-
-    // 2. Busca na RAWG (com cache)
-    if let Some(rawg_det) = fetch_rawg_metadata(api_key, name, cache_conn).await {
+    if let Some(rawg_det) = rawg_result {
         rawg_found = true;
         found_raw_tags = rawg_det.tags.iter().map(|t| t.slug.clone()).collect();
 
@@ -272,14 +278,13 @@ async fn enrich_game_metadata(
         );
     }
 
-    // 3. Busca na Steam (com cache) — usa o ID já resolvido no passo 1
     if let Some(steam_id) = &target_steam_id {
         links_map
             .entry("steam".to_string())
             .or_insert_with(|| format!("https://store.steampowered.com/app/{}", steam_id));
         details.steam_app_id = Some(steam_id.clone());
 
-        if let Some(store_data) = fetch_steam_store_data(steam_id, cache_conn).await {
+        if let Some(store_data) = store_data {
             let (detected_adult, flags) = steam_api::detect_adult_content(&store_data);
             details.is_adult = detected_adult;
             if !flags.is_empty() {
@@ -296,7 +301,7 @@ async fn enrich_game_metadata(
             }
         }
 
-        if let Some(reviews) = fetch_steam_reviews(steam_id, cache_conn).await {
+        if let Some(reviews) = reviews {
             details.steam_review_label = Some(reviews.review_score_desc);
             details.steam_review_count = Some(reviews.total_reviews as i32);
             let total = reviews.total_positive + reviews.total_negative;
@@ -392,233 +397,6 @@ where
             params![img, d.game_id],
         )?;
     }
-
-    Ok(())
-}
-
-// === COMANDOS PRINCIPAIS ===
-
-/// Atualiza metadados de jogos na biblioteca (OTIMIZADO)
-#[tauri::command]
-pub async fn update_metadata(app: AppHandle) -> Result<(), AppError> {
-    let app_handle = app.clone();
-    let api_key = database::get_secret(&app, "rawg_api_key")?;
-    if api_key.is_empty() {
-        return Err(AppError::ValidationError(
-            "API Key da RAWG não configurada.".to_string(),
-        ));
-    }
-
-    tauri::async_runtime::spawn(async move {
-        info!("Iniciando enriquecimento com cache...");
-
-        let state: State<AppState> = app_handle.state();
-        let mut all_session_tags: HashSet<String> = HashSet::new();
-
-        let nexus_api_key = database::get_secret(&app_handle, "nexus_api_key").unwrap_or_default();
-
-        let nexus_games: Vec<NexusGame> = {
-            let is_stale = {
-                let cache_conn = state.cache_db.lock().unwrap();
-                let _ = cache::cleanup_expired_cache(&cache_conn);
-                cache::nexus_cache_is_stale(&cache_conn).unwrap_or(true)
-            };
-
-            if is_stale && !nexus_api_key.is_empty() {
-                match crate::services::integration::nexus::fetch_nexus_games(&nexus_api_key).await {
-                    Ok(games) => {
-                        let cache_conn = state.cache_db.lock().unwrap();
-                        let _ = cache::save_nexus_games_cache(&cache_conn, &games);
-                    }
-                    Err(e) => warn!("Falha ao atualizar catálogo do Nexus: {}", e),
-                }
-            }
-
-            let cache_conn = state.cache_db.lock().unwrap();
-            cache::get_cached_nexus_games(&cache_conn).unwrap_or_default()
-        };
-
-        loop {
-            // 1. Busca batch de jogos
-            let mut games_to_update: Vec<(String, String, String, Option<String>)> = {
-                let conn = match state.games_db.lock() {
-                    Ok(c) => c,
-                    Err(_) => break,
-                };
-                let mut stmt = conn
-                    .prepare(
-                        // Inclui jogos sem nenhuma entrada em game_details E também jogos da Legacy
-                        // Games que já têm description_raw da loja, mas ainda não foram enriquecidos
-                        // pela RAWG (identificados pela ausência de genres/developer/tags).
-                        "SELECT g.id, g.name, g.platform, g.platform_game_id
-                         FROM games g
-                         LEFT JOIN game_details gd ON g.id = gd.game_id
-                         WHERE gd.game_id IS NULL
-                            OR (
-                                gd.game_id IS NOT NULL
-                                AND (gd.genres IS NULL OR gd.genres = '')
-                                AND (gd.developer IS NULL OR gd.developer = '')
-                                AND (gd.tags IS NULL OR gd.tags = '' OR gd.tags = '[]')
-                            )
-                         LIMIT ?",
-                    )
-                    .unwrap();
-
-                stmt.query_map(params![RAWG_REQUISITIONS_PER_BATCH], |row| {
-                    Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
-                })
-                    .unwrap()
-                    .flatten()
-                    .collect()
-            };
-
-            if games_to_update.is_empty() {
-                break;
-            }
-
-            let skipped_rawg_miss = {
-                let cache_conn = match state.cache_db.lock() {
-                    Ok(c) => c,
-                    Err(_) => break,
-                };
-                let before = games_to_update.len();
-                games_to_update.retain(|(_, name, _, _)| {
-                    !super::shared::rawg_not_found_cached(name, &cache_conn)
-                });
-                before - games_to_update.len()
-            };
-
-            let skipped_enrich = {
-                let cache_conn = match state.cache_db.lock() {
-                    Ok(c) => c,
-                    Err(_) => break,
-                };
-                let before = games_to_update.len();
-                games_to_update
-                    .retain(|(game_id, _, _, _)| !is_enrich_skipped(game_id, &cache_conn));
-                before - games_to_update.len()
-            };
-
-            if games_to_update.is_empty() {
-                info!(
-                    "Nenhum jogo elegível para enriquecer (RAWG miss: {}, skip: {}).",
-                    skipped_rawg_miss, skipped_enrich
-                );
-                break;
-            }
-
-            let total_in_batch = games_to_update.len();
-
-            // 2. Processa batch - coleta todos os dados primeiro
-            let mut batch_results = Vec::new();
-
-            for (index, (game_id, name, platform, platform_game_id)) in
-                games_to_update.into_iter().enumerate()
-            {
-                let _ = app_handle.emit(
-                    "enrich_progress",
-                    EnrichProgress {
-                        current: (index + 1) as i32,
-                        total_found: total_in_batch as i32,
-                        last_game: name.clone(),
-                        status: "running".to_string(),
-                    },
-                );
-
-                // Processa metadados com cache
-                let (processed_data, raw_tags, rawg_found) = {
-                    let cache_conn = match state.cache_db.lock() {
-                        Ok(c) => c,
-                        Err(_) => continue,
-                    };
-
-                    // Executar TUDO com a conexão disponível e fazer await dentro do block_in_place
-                    let result = tokio::task::block_in_place(|| {
-                        let rt = tokio::runtime::Handle::current();
-                        rt.block_on(async {
-                            enrich_game_metadata(
-                                &api_key,
-                                &game_id,
-                                &name,
-                                &platform,
-                                platform_game_id.clone(),
-                                &cache_conn,
-                                &nexus_games,
-                            )
-                                .await
-                        })
-                    });
-                    result
-                };
-
-                let should_skip = !rawg_found
-                    || (processed_data.genres.is_empty()
-                    && processed_data.developer.is_none()
-                    && processed_data.tags.is_empty());
-
-                if should_skip {
-                    if let Ok(cache_conn) = state.cache_db.lock() {
-                        mark_enrich_skipped(&game_id, &cache_conn);
-                    }
-                }
-
-                // Coleta tags da sessão
-                for tag in raw_tags {
-                    all_session_tags.insert(tag);
-                }
-
-                // Armazena resultado para salvar em batch
-                batch_results.push((name.clone(), processed_data));
-            }
-
-            // 3. Salva todos os resultados do batch numa única transação
-            {
-                if let Ok(mut conn) = state.games_db.lock() {
-                    match conn.transaction() {
-                        Ok(tx) => {
-                            let mut success_count = 0;
-                            let mut error_count = 0;
-
-                            for (game_name, processed_data) in batch_results {
-                                if let Err(e) = save_game_details(&tx, processed_data) {
-                                    warn!("Erro ao preparar salvamento de {}: {}", game_name, e);
-                                    error_count += 1;
-                                } else {
-                                    success_count += 1;
-                                }
-                            }
-
-                            // Commit de todas as alterações do batch de uma vez
-                            match tx.commit() {
-                                Ok(_) => {
-                                    info!(
-                                        "Batch salvo com sucesso: {} jogos (erros: {})",
-                                        success_count, error_count
-                                    );
-                                }
-                                Err(e) => {
-                                    warn!("Erro ao commitar transação do batch: {}", e);
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            warn!("Erro ao iniciar transação: {}", e);
-                        }
-                    }
-                }
-            }
-
-            // 4. Rate limit entre batches
-            sleep(Duration::from_millis(RAWG_RATE_LIMIT_MS)).await;
-        }
-
-        let _ = crate::services::tags::generate_analysis_report(&app_handle, all_session_tags);
-        
-        let _ = app_handle.emit(
-            "enrich_complete",
-            EnrichCompletePayload { platform: None, message: "Metadados atualizados!".to_string() },
-        );
-    });
 
     Ok(())
 }

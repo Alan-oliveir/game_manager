@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import { AppError, getErrorMessage, isAppError } from '@/types/errors';
 import { toast } from '@/utils/toast';
 
@@ -24,7 +25,7 @@ export function handleBackendError(
   options: ErrorHandlerOptions = {}
 ): string {
   const {
-    defaultMessage = 'Ocorreu um erro inesperado',
+    defaultMessage = i18n.t('errors:generic_desc'),
     showToast = true,
     toastType = 'error',
     onError,
@@ -70,28 +71,42 @@ export function handleBackendError(
 function formatAppError(error: AppError): string {
   switch (error.type) {
     case 'ValidationError':
-      return `Validação: ${error.message}`;
+      return i18n.t('errors:error_msg_validation_error', {
+        message: error.message,
+      });
 
     case 'DatabaseError':
-      return `Erro ao salvar dados: ${error.message}`;
+      return i18n.t('errors:error_msg_database_save_error', {
+        message: error.message,
+      });
 
     case 'NetworkError':
-      return `Erro de conexão: ${error.message}`;
+      return i18n.t('errors:error_msg_connection_error', {
+        message: error.message,
+      });
 
     case 'NotFound':
-      return `Não encontrado: ${error.message}`;
+      return i18n.t('errors:error_msg_not_found', {
+        message: error.message,
+      });
 
     case 'IoError':
-      return `Erro ao acessar arquivo: ${error.message}`;
+      return i18n.t('errors:error_msg_error_accessing_file', {
+        message: error.message,
+      });
 
     case 'SerializationError':
-      return `Erro ao processar dados: ${error.message}`;
+      return i18n.t('errors:error_msg_error_processing_data', {
+        message: error.message,
+      });
 
     case 'AlreadyExists':
-      return `Já existe: ${error.message}`;
+      return i18n.t('errors:error_msg_already_exists', {
+        message: error.message,
+      });
 
     case 'MutexError':
-      return 'Recurso temporariamente ocupado. Tente novamente em alguns segundos.';
+      return i18n.t('errors:error_msg_mutex_busy');
 
     default:
       return error.message;
@@ -102,7 +117,7 @@ function formatAppError(error: AppError): string {
  * Helper específico para erros de API key ausente
  */
 export function handleMissingApiKey(apiName: string): void {
-  toast.warning(`Configure a API key da ${apiName} nas configurações.`, {
+  toast.warning(i18n.t('errors:error_msg_missing_api_key', { apiName }), {
     duration: 5000,
   });
 }
@@ -116,12 +131,12 @@ export function handleNetworkError(
 ): void {
   const message = isAppError(error)
     ? error.message
-    : 'Erro de conexão. Verifique sua internet.';
+    : i18n.t('errors:error_msg_generic_network');
 
   if (retryCallback) {
     toast.error(message, {
       action: {
-        label: 'Tentar novamente',
+        label: i18n.t('errors:action_retry'),
         onClick: retryCallback,
       },
     });

@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
 
 import { ERROR_MESSAGES, parseBackupError } from '@/errors/errorMessages';
-import { ImportSummary, KeysBatch } from '@/types';
+import { KeysBatch } from '@/types';
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
@@ -29,16 +29,6 @@ export const settingsService = {
     nexusApiKey: string | null;
   }): Promise<void> => {
     await invoke('set_secrets', keys);
-  },
-
-  /**
-   * Enriquece jogos existentes com dados de gênero na Steam, buscados diretamente da API da Steam.
-   * Processa apenas jogos sem dados completos.
-   * Operação pode ser lenta para bibliotecas grandes.
-   * Os dados são usados para o sistema de recomendação.
-   */
-  enrichLibrary: async (): Promise<ImportSummary> => {
-    return await invoke<ImportSummary>('update_metadata');
   },
 
   /**

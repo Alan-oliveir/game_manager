@@ -53,4 +53,5 @@ export * from './platforms';
 
 // Special hooks (na raiz)
 export * from './useEnrichmentNotifications';
+export * from './useEnrichmentProgressNotifications';
 export * from './useHome';

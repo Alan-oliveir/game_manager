@@ -314,76 +314,68 @@ async fn scan_librarycache_dir(dir: &Path, games: &mut Vec<GameData>) -> Result<
     Ok(())
 }
 
-/// Busca nomes de jogos em lote com rate limiting
+/// Busca nomes de jogos em lote, respeitando o limitador compartilhado da Steam
+/// (mesmo STEAM_LIMITER usado no enrichment).
 async fn fetch_game_names_batch(appids: &[String]) -> HashMap<String, String> {
     let mut names = HashMap::new();
-    let batch_size = 10;
-    let delay_between_batches = Duration::from_millis(1000); // 1 segundo entre batches
-    let delay_between_requests = Duration::from_millis(100); // 100ms entre requests
 
     info!("Iniciando busca em batch de {} jogos", appids.len());
 
-    for (batch_idx, chunk) in appids.chunks(batch_size).enumerate() {
-        debug!(
-            "Processando batch {}/{}",
-            batch_idx + 1,
-            appids.len().div_ceil(batch_size)
-        );
-
-        for appid in chunk {
-            if let Some(name) = fetch_steam_game_name(appid).await {
-                names.insert(appid.clone(), name);
-            }
-            sleep(delay_between_requests).await;
+    for appid in appids {
+        if let Some(name) = fetch_steam_game_name(appid).await {
+            names.insert(appid.clone(), name);
         }
-
-        // Rate limiting entre batches (exceto no último)
-        if batch_idx < appids.len().div_ceil(batch_size) - 1 {
-            debug!("Aguardando antes do próximo batch...");
-            sleep(delay_between_batches).await;
-        }
+        sleep(Duration::from_millis(crate::constants::STEAM_RATE_LIMIT_MS)).await;
     }
 
     info!(
-        "Batch concluído: {}/{} nomes obtidos",
+        "Busca concluída: {}/{} nomes obtidos",
         names.len(),
         appids.len()
     );
     names
 }
 
-/// Busca nome do jogo via Steam Store API - VERSÃO ASYNC
+/// Busca nome do jogo via Steam Store API, com rate limiting e backoff
+/// compartilhados via STEAM_LIMITER (mesmo usado por get_app_details/search_app_by_name).
 async fn fetch_steam_game_name(app_id: &str) -> Option<String> {
     use crate::utils::http_client::HTTP_CLIENT;
 
-    let url = format!(
-        "https://store.steampowered.com/api/appdetails?appids={}",
-        app_id
-    );
+    crate::services::rate_limiter::STEAM_LIMITER
+        .run(|| async {
+            let url = format!(
+                "https://store.steampowered.com/api/appdetails?appids={}",
+                app_id
+            );
 
-    let resp = HTTP_CLIENT
-        .get(&url)
-        .header("User-Agent", USER_AGENT_BROWSER)
-        .timeout(Duration::from_secs(STEAM_STORE_TIMEOUT_SECS))
-        .send()
+            let resp = HTTP_CLIENT
+                .get(&url)
+                .header("User-Agent", USER_AGENT_BROWSER)
+                .timeout(Duration::from_secs(STEAM_STORE_TIMEOUT_SECS))
+                .send()
+                .await
+                .map_err(|e| e.to_string())?;
+
+            if !resp.status().is_success() {
+                return Err(format!("Steam appdetails Error: {}", resp.status()));
+            }
+
+            let json: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+            Ok(json)
+        })
         .await
-        .ok()?;
-
-    if !resp.status().is_success() {
-        return None;
-    }
-
-    let json: serde_json::Value = resp.json().await.ok()?;
-    let app_data = json.get(app_id)?;
-    if !app_data.get("success")?.as_bool()? {
-        return None;
-    }
-
-    app_data
-        .get("data")?
-        .get("name")?
-        .as_str()
-        .map(|s| s.to_string())
+        .ok()
+        .and_then(|json| {
+            let app_data = json.get(app_id)?;
+            if !app_data.get("success")?.as_bool()? {
+                return None;
+            }
+            app_data
+                .get("data")?
+                .get("name")?
+                .as_str()
+                .map(|s| s.to_string())
+        })
 }
 
 // === API STEAM ===

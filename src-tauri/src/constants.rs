@@ -70,7 +70,6 @@ pub const RAWG_BACKOFF_MAX_RETRIES: u32 = 3; // 2s, 4s, 8s antes de desistir
 pub const RAWG_SEARCH_PAGE_SIZE: u32 = 10;
 pub const RAWG_TRENDING_PAGE_SIZE: u32 = 15;
 pub const RAWG_UPCOMING_PAGE_SIZE: u32 = 10;
-#[allow(dead_code)]
 pub const STEAM_RATE_LIMIT_MS: u64 = 200;
 pub const STEAM_MAX_CONCURRENT_REQUESTS: u32 = 3;
 pub const STEAM_BACKOFF_BASE_MS: u64 = 2000;
