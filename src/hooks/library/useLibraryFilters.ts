@@ -61,7 +61,7 @@ export function useLibraryFilter({
       const groups = new Map<string, Game[]>();
 
       for (const game of result) {
-        const key = game.name.trim().toLowerCase();
+        const key = game.slug;
         const group = groups.get(key) ?? [];
         group.push(game);
         groups.set(key, group);

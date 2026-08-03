@@ -107,6 +107,34 @@ impl std::fmt::Display for Platform {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum PlaytimeSource {
+    Platform(Platform), // API oficial (Steam, Itch, Indiegala)
+    Local,              // tracker local via processo
+}
+
+impl PlaytimeSource {
+    /// Serializa para o formato salvo na coluna `playtime_source` (TEXT).
+    pub fn as_db_str(&self) -> String {
+        match self {
+            PlaytimeSource::Local => "local".to_string(),
+            PlaytimeSource::Platform(p) => p.to_string(),
+        }
+    }
+}
+
+impl FromStr for PlaytimeSource {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == "local" {
+            Ok(PlaytimeSource::Local)
+        } else {
+            s.parse::<Platform>().map(PlaytimeSource::Platform)
+        }
+    }
+}
+
 // === Modelos de Dados ===
 
 /// Jogo na biblioteca do usuário.
@@ -118,6 +146,7 @@ impl std::fmt::Display for Platform {
 pub struct Game {
     pub id: String,
     pub name: String,
+    pub slug: String,
     pub cover_url: Option<String>,
     pub genres: Option<String>,
     pub developer: Option<String>,
@@ -136,6 +165,7 @@ pub struct Game {
     pub favorite: bool,
     pub status: Option<String>,
     pub playtime: Option<i32>,
+    pub playtime_source: Option<PlaytimeSource>,
 
     // Metadados de Tempo
     pub last_played: Option<String>,

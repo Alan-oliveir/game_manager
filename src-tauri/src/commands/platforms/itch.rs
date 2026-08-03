@@ -52,27 +52,30 @@ async fn persist_itch_games(
         if !exists {
             let new_id = Uuid::new_v4().to_string();
             let display_name = game.name.clone().unwrap_or_else(|| "Unknown".to_string());
+            let slug = crate::utils::text::slugify(&display_name);
 
             tx.execute(
                 "INSERT INTO games (
-                    id, name, cover_url, platform, platform_game_id,
-                    installed, status, playtime, last_played, added_at,
-                    favorite, user_rating, install_path, executable_path
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0, NULL, ?11, ?12)",
+                            id, name, slug, cover_url, platform, platform_game_id,
+                            installed, status, playtime, playtime_source, last_played, added_at,
+                            favorite, user_rating, install_path, executable_path
+                    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, NULL, ?13, ?14)",
                 params![
-                    new_id,
-                    display_name,
-                    itchio_game.cover_url, // Capa oficial da API da itch
-                    game.platform,
-                    game.platform_game_id,
-                    game.installed,
-                    status,
-                    game.playtime_minutes.unwrap_or(0),
-                    last_played_iso,
-                    now,
-                    game.install_path,
-                    game.executable_path,
-                ],
+                        new_id,
+                        display_name,
+                        slug,
+                        itchio_game.cover_url,
+                        game.platform,
+                        game.platform_game_id,
+                        game.installed,
+                        status,
+                        game.playtime_minutes.unwrap_or(0),
+                        crate::models::PlaytimeSource::Platform(crate::models::Platform::Itch).as_db_str(),
+                        last_played_iso,
+                        now,
+                        game.install_path,
+                        game.executable_path,
+                    ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
@@ -100,15 +103,18 @@ async fn persist_itch_games(
                     installed       = ?1,
                     status          = ?2,
                     playtime        = COALESCE(?3, playtime),
-                    last_played     = COALESCE(?4, last_played),
-                    install_path    = COALESCE(?5, install_path),
-                    executable_path = COALESCE(?6, executable_path),
-                    cover_url       = COALESCE(?7, cover_url)
-                 WHERE platform = ?8 AND platform_game_id = ?9",
+                    playtime_source = CASE WHEN ?3 IS NOT NULL THEN ?4 ELSE playtime_source END,
+                    last_played     = COALESCE(?5, last_played),
+                    install_path    = COALESCE(?6, install_path),
+                    executable_path = COALESCE(?7, executable_path),
+                    cover_url       = COALESCE(?8, cover_url)
+                WHERE platform = ?9 AND platform_game_id = ?10",
                 params![
                     game.installed,
                     status,
                     game.playtime_minutes,
+                    crate::models::PlaytimeSource::Platform(crate::models::Platform::Itch)
+                        .as_db_str(),
                     last_played_iso,
                     game.install_path,
                     game.executable_path,

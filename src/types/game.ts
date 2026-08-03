@@ -117,6 +117,8 @@ export type SteamReviewSummary =
  */
 export type ImportConfidence = 'High' | 'Medium' | 'Low';
 
+export type PlaytimeSource = 'local' | { platform: Platform };
+
 // === MODELOS DE DADOS (SCHEMA 3.0 - Game e GameDetails) ===
 
 /**
@@ -129,6 +131,7 @@ export type ImportConfidence = 'High' | 'Medium' | 'Low';
 export interface Game {
   id: string;
   name: string;
+  slug: string;
   coverUrl?: string;
 
   // Identificação
@@ -151,6 +154,7 @@ export interface Game {
 
   // Dados de tempo
   playtime?: number;
+  playtimeSource: PlaytimeSource | null;
   lastPlayed?: string;
   addedAt: string;
 

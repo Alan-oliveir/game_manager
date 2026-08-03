@@ -82,11 +82,13 @@ pub(crate) async fn persist_source_games(
             }
         });
 
+        let is_official_playtime_platform = game.platform == "Steam";
+
         if !exists {
             let new_id = Uuid::new_v4().to_string();
             let display_name = game.name.clone().unwrap_or_else(|| "Unknown".to_string());
+            let slug = crate::utils::text::slugify(&display_name);
 
-            // Define uma capa padrão da Steam se for essa a plataforma
             let cover_url = if game.platform == "Steam" {
                 Some(format!(
                     "{}/{}",
@@ -97,21 +99,34 @@ pub(crate) async fn persist_source_games(
                 None
             };
 
+            // Só Steam grava playtime_source no INSERT; as demais ficam NULL até
+            // o tracker local (playtime.rs) assumir e marcar como 'local'.
+            let playtime_source = if is_official_playtime_platform {
+                Some(
+                    crate::models::PlaytimeSource::Platform(crate::models::Platform::Steam)
+                        .as_db_str(),
+                )
+            } else {
+                None
+            };
+
             tx.execute(
                 "INSERT INTO games (
-                    id, name, cover_url, platform, platform_game_id,
-                    installed, status, playtime, last_played, added_at,
-                    favorite, user_rating, install_path, executable_path
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0, NULL, ?11, ?12)",
+                id, name, slug, cover_url, platform, platform_game_id,
+                installed, status, playtime, playtime_source, last_played, added_at,
+                favorite, user_rating, install_path, executable_path
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, NULL, ?13, ?14)",
                 params![
                     new_id,
-                    game.name.unwrap_or_else(|| "Unknown".to_string()),
+                    display_name,
+                    slug,
                     cover_url,
                     game.platform,
                     game.platform_game_id,
                     game.installed,
                     status,
                     game.playtime_minutes.unwrap_or(0),
+                    playtime_source,
                     last_played_iso,
                     now,
                     game.install_path,
@@ -129,27 +144,55 @@ pub(crate) async fn persist_source_games(
 
             inserted += 1;
         } else {
-            tx.execute(
-                "UPDATE games SET
+            if is_official_playtime_platform {
+                // Steam remanda playtime a cada sync — sobrescreve e marca fonte oficial.
+                tx.execute(
+                    "UPDATE games SET
                     installed = ?1,
                     status = ?2,
                     playtime = ?3,
-                    last_played = ?4,
-                    install_path = COALESCE(?5, install_path),
-                    executable_path = COALESCE(?6, executable_path)
-                 WHERE platform = ?7 AND platform_game_id = ?8",
-                params![
-                    game.installed,
-                    status,
-                    game.playtime_minutes.unwrap_or(0),
-                    last_played_iso,
-                    game.install_path,
-                    game.executable_path,
-                    game.platform,
-                    game.platform_game_id
-                ],
-            )
-                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+                    playtime_source = ?4,
+                    last_played = ?5,
+                    install_path = COALESCE(?6, install_path),
+                    executable_path = COALESCE(?7, executable_path)
+                WHERE platform = ?8 AND platform_game_id = ?9",
+                    params![
+                        game.installed,
+                        status,
+                        game.playtime_minutes.unwrap_or(0),
+                        crate::models::PlaytimeSource::Platform(crate::models::Platform::Steam)
+                            .as_db_str(),
+                        last_played_iso,
+                        game.install_path,
+                        game.executable_path,
+                        game.platform,
+                        game.platform_game_id
+                    ],
+                )
+                    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+            } else {
+                // Demais plataformas: não têm playtime próprio pra remandar —
+                // preserva o que o tracker local já gravou (playtime e playtime_source intactos).
+                tx.execute(
+                    "UPDATE games SET
+                    installed = ?1,
+                    status = ?2,
+                    last_played = ?3,
+                    install_path = COALESCE(?4, install_path),
+                    executable_path = COALESCE(?5, executable_path)
+                WHERE platform = ?6 AND platform_game_id = ?7",
+                    params![
+                        game.installed,
+                        status,
+                        last_played_iso,
+                        game.install_path,
+                        game.executable_path,
+                        game.platform,
+                        game.platform_game_id
+                    ],
+                )
+                    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+            }
 
             updated += 1;
         }

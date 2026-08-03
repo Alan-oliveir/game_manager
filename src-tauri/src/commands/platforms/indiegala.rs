@@ -49,25 +49,28 @@ async fn persist_indiegala_games(
         if !exists {
             let new_id = Uuid::new_v4().to_string();
             let display_name = game.name.clone().unwrap_or_else(|| "Unknown".to_string());
+            let slug = crate::utils::text::slugify(&display_name);
 
             tx.execute(
                 "INSERT INTO games (
-                    id, name, cover_url, platform, platform_game_id,
-                    installed, status, playtime, last_played, added_at,
-                    favorite, user_rating, install_path, executable_path
-                ) VALUES (?1, ?2, NULL, ?3, ?4, ?5, ?6, ?7, NULL, ?8, 0, NULL, ?9, ?10)",
+                        id, name, slug, cover_url, platform, platform_game_id,
+                        installed, status, playtime, playtime_source, last_played, added_at,
+                        favorite, user_rating, install_path, executable_path
+                    ) VALUES (?1, ?2, ?3, NULL, ?4, ?5, ?6, ?7, ?8, ?9, NULL, ?10, 0, NULL, ?11, ?12)",
                 params![
-                    new_id,
-                    display_name,
-                    game.platform,
-                    game.platform_game_id,
-                    game.installed,
-                    status,
-                    game.playtime_minutes.unwrap_or(0),
-                    now,
-                    game.install_path,
-                    game.executable_path,
-                ],
+                        new_id,
+                        display_name,
+                        slug,
+                        game.platform,
+                        game.platform_game_id,
+                        game.installed,
+                        status,
+                        game.playtime_minutes.unwrap_or(0),
+                        crate::models::PlaytimeSource::Platform(crate::models::Platform::Indiegala).as_db_str(), // <- novo
+                        now,
+                        game.install_path,
+                        game.executable_path,
+                    ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
@@ -96,20 +99,22 @@ async fn persist_indiegala_games(
         } else {
             tx.execute(
                 "UPDATE games SET
-                    installed       = ?1,
-                    status          = ?2,
-                    playtime        = COALESCE(?3, playtime),
-                    install_path    = COALESCE(?4, install_path),
-                    executable_path = COALESCE(?5, executable_path)
-                 WHERE platform = ?6 AND platform_game_id = ?7",
+                        installed       = ?1,
+                        status          = ?2,
+                        playtime        = COALESCE(?3, playtime),
+                        playtime_source = CASE WHEN ?3 IS NOT NULL THEN ?4 ELSE playtime_source END,
+                        install_path    = COALESCE(?5, install_path),
+                        executable_path = COALESCE(?6, executable_path)
+                    WHERE platform = ?7 AND platform_game_id = ?8",
                 params![
-                    game.installed,
-                    status,
-                    game.playtime_minutes, // Option<u32> cru — sem unwrap_or(0)
-                    game.install_path,
-                    game.executable_path,
-                    game.platform,
-                    game.platform_game_id,
+                        game.installed,
+                        status,
+                        game.playtime_minutes,
+                        crate::models::PlaytimeSource::Platform(crate::models::Platform::Indiegala).as_db_str(),
+                        game.install_path,
+                        game.executable_path,
+                        game.platform,
+                        game.platform_game_id,
                 ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;

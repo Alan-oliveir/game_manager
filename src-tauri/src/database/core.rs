@@ -126,6 +126,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         "CREATE TABLE IF NOT EXISTS games (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
+            slug TEXT NOT NULL DEFAULT '',
             cover_url TEXT,
             platform TEXT NOT NULL,
             platform_game_id TEXT NOT NULL,
@@ -226,6 +227,9 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     conn.execute("CREATE INDEX IF NOT EXISTS idx_status ON games(status)", [])
+        .map_err(|e| e.to_string())?;
+
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_slug ON games(slug)", [])
         .map_err(|e| e.to_string())?;
 
     // Tabelas extras - PCGamingWiki e scrapers relacionados

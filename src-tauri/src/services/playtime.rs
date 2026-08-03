@@ -112,10 +112,11 @@ fn increment_playtime(app: &AppHandle, game_id: &str) -> Result<(), rusqlite::Er
     )?;
     let new_playtime = current.unwrap_or(0) + 1;
     let status = status_logic::calculate_status(new_playtime);
+    let source = crate::models::PlaytimeSource::Local.as_db_str();
 
     conn.execute(
-        "UPDATE games SET playtime = ?1, status = ?2, playtime_source = 'local' WHERE id = ?3",
-        rusqlite::params![new_playtime, status, game_id],
+        "UPDATE games SET playtime = ?1, status = ?2, playtime_source = ?3 WHERE id = ?4",
+        rusqlite::params![new_playtime, status, source, game_id],
     )?;
     Ok(())
 }

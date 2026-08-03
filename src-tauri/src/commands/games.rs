@@ -10,6 +10,7 @@ use crate::errors::AppError;
 use crate::models;
 use crate::models::Platform;
 use crate::utils::status_logic;
+use crate::utils::text::slugify;
 use chrono::Utc;
 use rusqlite::{params, OptionalExtension};
 use serde::Deserialize;
@@ -151,13 +152,14 @@ pub fn add_game(state: State<AppState>, game: GameInput) -> Result<(), AppError>
 
     conn.execute(
         "INSERT INTO games (
-        id, name, cover_url, platform, platform_game_id,
+        id, name, slug, cover_url, platform, platform_game_id,
         installed, import_confidence, install_path, executable_path, launch_args,
         user_rating, status, playtime, added_at
-    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
         params![
             game.id,
             game.name,
+            slugify(&game.name),
             game.cover_url,
             platform.to_string(),
             platform_game_id,
@@ -190,21 +192,23 @@ pub fn update_game(state: State<AppState>, game: GameInput) -> Result<(), AppErr
 
     conn.execute(
         "UPDATE games SET
-            name = ?1,
-            cover_url = ?2,
-            platform = ?3,
-            platform_game_id = ?4,
-            installed = ?5,
-            import_confidence = ?6,
-            playtime = ?7,
-            user_rating = ?8,
-            status = ?9,
-            install_path = ?10,
-            executable_path = ?11,
-            launch_args = ?12
-         WHERE id = ?13",
+        name = ?1,
+        slug = ?2,
+        cover_url = ?3,
+        platform = ?4,
+        platform_game_id = ?5,
+        installed = ?6,
+        import_confidence = ?7,
+        playtime = ?8,
+        user_rating = ?9,
+        status = ?10,
+        install_path = ?11,
+        executable_path = ?12,
+        launch_args = ?13
+    WHERE id = ?14",
         params![
             game.name,
+            slugify(&game.name),
             game.cover_url,
             game.platform.to_string(),
             game.platform_game_id,
@@ -231,41 +235,44 @@ pub fn update_game(state: State<AppState>, game: GameInput) -> Result<(), AppErr
 pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> {
     let conn = state.games_db.lock()?;
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT
-            g.id, g.name, g.cover_url, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
-            g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.last_played, g.added_at,
-            gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult -- Campos da tabela game_details
-         FROM games g
-         LEFT JOIN game_details gd ON g.id = gd.game_id
-         ORDER BY g.name ASC"
-        )?;
+    let mut stmt = conn.prepare(
+        "SELECT
+            g.id, g.name, g.slug, g.cover_url, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
+            g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at,
+            gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult
+        FROM games g
+        LEFT JOIN game_details gd ON g.id = gd.game_id
+        ORDER BY g.name ASC"
+    )?;
 
     let games = stmt
         .query_map([], |row| {
             Ok(models::Game {
                 id: row.get(0)?,
                 name: row.get(1)?,
-                cover_url: row.get(2)?,
-                platform: row.get::<_, String>(3)?.parse().unwrap_or(Platform::Outra),
-                platform_game_id: row.get(4)?,
-                installed: row.get(5)?,
+                slug: row.get(2)?,
+                cover_url: row.get(3)?,
+                platform: row.get::<_, String>(4)?.parse().unwrap_or(Platform::Outra),
+                platform_game_id: row.get(5)?,
+                installed: row.get(6)?,
                 import_confidence: row
-                    .get::<_, Option<String>>(6)?
+                    .get::<_, Option<String>>(7)?
                     .and_then(|s| s.parse().ok()),
-                install_path: row.get(7)?,
-                executable_path: row.get(8)?,
-                launch_args: row.get(9)?,
-                user_rating: row.get(10)?,
-                favorite: row.get(11)?,
-                status: row.get(12)?,
-                playtime: row.get(13)?,
-                last_played: row.get(14)?,
-                added_at: row.get(15)?,
-                genres: row.get(16)?,
-                developer: row.get(17)?,
-                is_adult: row.get(18)?,
+                install_path: row.get(8)?,
+                executable_path: row.get(9)?,
+                launch_args: row.get(10)?,
+                user_rating: row.get(11)?,
+                favorite: row.get(12)?,
+                status: row.get(13)?,
+                playtime: row.get(14)?,
+                playtime_source: row
+                    .get::<_, Option<String>>(15)?
+                    .and_then(|s| s.parse().ok()),
+                last_played: row.get(16)?,
+                added_at: row.get(17)?,
+                genres: row.get(18)?,
+                developer: row.get(19)?,
+                is_adult: row.get(20)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
@@ -348,12 +355,12 @@ pub fn get_game_by_id(
 
     let mut stmt = conn.prepare(
         "SELECT
-            g.id, g.name, g.cover_url, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
-            g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.last_played, g.added_at,
+            g.id, g.name, g.slug, g.cover_url, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
+            g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at,
             gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult
-         FROM games g
-         LEFT JOIN game_details gd ON g.id = gd.game_id
-         WHERE g.id = ?1",
+        FROM games g
+        LEFT JOIN game_details gd ON g.id = gd.game_id
+        WHERE g.id = ?1",
     )?;
 
     let game = stmt
@@ -361,25 +368,29 @@ pub fn get_game_by_id(
             Ok(models::Game {
                 id: row.get(0)?,
                 name: row.get(1)?,
-                cover_url: row.get(2)?,
-                platform: row.get::<_, String>(3)?.parse().unwrap_or(Platform::Outra),
-                platform_game_id: row.get(4)?,
-                installed: row.get(5)?,
+                slug: row.get(2)?,
+                cover_url: row.get(3)?,
+                platform: row.get::<_, String>(4)?.parse().unwrap_or(Platform::Outra),
+                platform_game_id: row.get(5)?,
+                installed: row.get(6)?,
                 import_confidence: row
-                    .get::<_, Option<String>>(6)?
+                    .get::<_, Option<String>>(7)?
                     .and_then(|s| s.parse().ok()),
-                install_path: row.get(7)?,
-                executable_path: row.get(8)?,
-                launch_args: row.get(9)?,
-                user_rating: row.get(10)?,
-                favorite: row.get(11)?,
-                status: row.get(12)?,
-                playtime: row.get(13)?,
-                last_played: row.get(14)?,
-                added_at: row.get(15)?,
-                genres: row.get(16)?,
-                developer: row.get(17)?,
-                is_adult: row.get(18)?,
+                install_path: row.get(8)?,
+                executable_path: row.get(9)?,
+                launch_args: row.get(10)?,
+                user_rating: row.get(11)?,
+                favorite: row.get(12)?,
+                status: row.get(13)?,
+                playtime: row.get(14)?,
+                playtime_source: row
+                    .get::<_, Option<String>>(15)?
+                    .and_then(|s| s.parse().ok()),
+                last_played: row.get(16)?,
+                added_at: row.get(17)?,
+                genres: row.get(18)?,
+                developer: row.get(19)?,
+                is_adult: row.get(20)?,
             })
         })
         .optional()?;

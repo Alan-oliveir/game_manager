@@ -17,6 +17,8 @@ const EDITION_SUFFIXES: &[&str] = &[
     "Ultimate Edition",
 ];
 
+// === FUNÇÕES ===
+
 /// Remove símbolos de marca registrada, preservando capitalização e conteúdo.
 /// Uso: limpar nome antes de persistir (import), exibição.
 pub fn strip_trademark_symbols(name: &str) -> String {
@@ -113,4 +115,19 @@ pub fn strip_edition_suffix(name: &str) -> String {
         }
     }
     trimmed.to_string()
+}
+
+/// Gera um slug normalizado para comparação/dedup: minúsculo, sem símbolos,
+/// palavras separadas por hífen. Não usar para exibição — preserva apenas
+/// o essencial para matching entre plataformas.
+/// Ex: "BioShock Infinite: Complete Edition" -> "bioshock-infinite-complete-edition"
+pub fn slugify(name: &str) -> String {
+    strip_trademark_symbols(name)
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { ' ' })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join("-")
 }

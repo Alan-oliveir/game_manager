@@ -52,31 +52,35 @@ pub fn fetch_backup_data(state: &State<AppState>) -> Result<BackupDataTuple, App
 /// Busca todos os jogos na biblioteca
 fn fetch_games(conn: &Connection) -> Result<Vec<Game>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, last_played, added_at FROM games"
+        "SELECT id, name, slug, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, playtime_source, last_played, added_at FROM games"
     )?;
 
     let game_iter = stmt.query_map([], |row| {
         Ok(Game {
             id: row.get(0)?,
             name: row.get(1)?,
-            cover_url: row.get(2)?,
+            slug: row.get(2)?,
+            cover_url: row.get(3)?,
             genres: None,
             developer: None,
-            platform: row.get::<_, String>(3)?.parse().unwrap_or(Platform::Outra),
-            platform_game_id: row.get(4)?,
-            installed: row.get(5)?,
+            platform: row.get::<_, String>(4)?.parse().unwrap_or(Platform::Outra),
+            platform_game_id: row.get(5)?,
+            installed: row.get(6)?,
             import_confidence: row
-                .get::<_, Option<String>>(6)?
+                .get::<_, Option<String>>(7)?
                 .and_then(|s| s.parse().ok()),
-            install_path: row.get(7)?,
-            executable_path: row.get(8)?,
-            launch_args: row.get(9)?,
-            user_rating: row.get(10)?,
-            favorite: row.get(11)?,
-            status: row.get(12)?,
-            playtime: row.get(13)?,
-            last_played: row.get(14)?,
-            added_at: row.get(15)?,
+            install_path: row.get(8)?,
+            executable_path: row.get(9)?,
+            launch_args: row.get(10)?,
+            user_rating: row.get(11)?,
+            favorite: row.get(12)?,
+            status: row.get(13)?,
+            playtime: row.get(14)?,
+            playtime_source: row
+                .get::<_, Option<String>>(15)?
+                .and_then(|s| s.parse().ok()),
+            last_played: row.get(16)?,
+            added_at: row.get(17)?,
             is_adult: false,
         })
     })?;

@@ -155,8 +155,8 @@ fn fetch_games_with_details(
 
     let mut stmt = conn.prepare(
         "SELECT
-            g.id, g.name, g.playtime, g.favorite, g.user_rating, g.cover_url,
-            g.platform_game_id, g.last_played, g.added_at, g.platform,
+            g.id, g.name, g.slug, g.playtime, g.favorite, g.user_rating, g.cover_url,
+            g.platform_game_id, g.last_played, g.added_at, g.platform, g.playtime_source,
             gd.genres, gd.steam_app_id, gd.release_date, gd.series, gd.tags
          FROM games g
          LEFT JOIN game_details gd ON g.id = gd.game_id
@@ -168,27 +168,31 @@ fn fetch_games_with_details(
             let game = crate::models::Game {
                 id: row.get(0)?,
                 name: row.get(1)?,
-                playtime: row.get(2)?,
-                favorite: row.get(3)?,
-                user_rating: row.get(4)?,
-                cover_url: row.get(5)?,
-                platform_game_id: row.get(6)?,
-                last_played: row.get(7)?,
-                added_at: row.get(8)?,
-                platform: row.get::<_, String>(9)?.parse().unwrap_or(Platform::Outra),
+                slug: row.get(2)?,
+                playtime: row.get(3)?,
+                favorite: row.get(4)?,
+                user_rating: row.get(5)?,
+                cover_url: row.get(6)?,
+                platform_game_id: row.get(7)?,
+                last_played: row.get(8)?,
+                added_at: row.get(9)?,
+                platform: row.get::<_, String>(10)?.parse().unwrap_or(Platform::Outra),
                 // Campos não utilizados
-                genres: None,
-                developer: None,
+                installed: false,
+                import_confidence: None,
                 install_path: None,
                 executable_path: None,
                 launch_args: None,
                 status: None,
+                playtime_source: row
+                    .get::<_, Option<String>>(11)?
+                    .and_then(|s| s.parse().ok()),
+                genres: None,
+                developer: None,
                 is_adult: false,
-                installed: false,
-                import_confidence: None,
             };
 
-            let genres_json: Option<String> = row.get(10)?;
+            let genres_json: Option<String> = row.get(12)?;
             let genres: Vec<String> = genres_json
                 .as_ref()
                 .map(|s| {
@@ -205,15 +209,15 @@ fn fetch_games_with_details(
                 })
                 .unwrap_or_default();
 
-            let steam_app_id_str: Option<String> = row.get(11)?;
+            let steam_app_id_str: Option<String> = row.get(13)?;
             let steam_app_id: Option<u32> = steam_app_id_str.and_then(|s| s.parse().ok());
 
-            let release_date: Option<String> = row.get(12)?;
+            let release_date: Option<String> = row.get(14)?;
             let release_year = release_date.and_then(|d| parse_release_year(&d));
-            let series: Option<String> = row.get(13)?;
+            let series: Option<String> = row.get(15)?;
 
             // Buscar tags do JSON na coluna tags
-            let tags_json: Option<String> = row.get(14)?;
+            let tags_json: Option<String> = row.get(16)?;
             let tags: Vec<crate::models::GameTag> = tags_json
                 .as_ref()
                 .and_then(|s| serde_json::from_str(s).ok())
