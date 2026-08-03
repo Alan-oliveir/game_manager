@@ -14,6 +14,7 @@ use crate::constants::{
 use crate::errors::AppError;
 use crate::security;
 use crate::services::integration::pcgamingwiki::db::initialize_pcgamingwiki_tables;
+use crate::services::playtime::PlaytimeRegistry;
 use rusqlite::{params, Connection};
 use std::sync::Mutex;
 use tauri::State;
@@ -24,6 +25,7 @@ pub struct AppState {
     pub games_db: Mutex<Connection>,
     pub secrets_db: Mutex<Connection>,
     pub cache_db: Mutex<Connection>,
+    pub playtime_registry: PlaytimeRegistry,
 }
 
 /// Retorna a versão atual do schema armazenada no banco
@@ -102,6 +104,7 @@ pub fn initialize_databases(app: &AppHandle) -> Result<AppState, String> {
         games_db: Mutex::new(games_conn),
         secrets_db: Mutex::new(secrets_conn),
         cache_db: Mutex::new(cache_conn),
+        playtime_registry: PlaytimeRegistry::default(),
     })
 }
 
@@ -135,6 +138,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
             favorite BOOLEAN DEFAULT 0,
             status TEXT,
             playtime INTEGER,
+            playtime_source TEXT,
             last_played TEXT,
             added_at TEXT NOT NULL
         )",

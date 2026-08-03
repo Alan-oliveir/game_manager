@@ -14,6 +14,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+
 // === JOGO IMPORTADO COM METADADOS EXTRAS (além do SourceGame padrão) ===
 
 /// Jogo importado da IndieGala com campos adicionais além do `SourceGame` padrão.
