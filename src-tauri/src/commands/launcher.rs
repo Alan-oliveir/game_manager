@@ -61,7 +61,8 @@ pub async fn launch_game(
 
     if should_track {
         if let Some(exe_path) = game.executable_path.as_ref().map(PathBuf::from) {
-            watch_game(app.clone(), game.id.clone(), exe_path);
+            let install_path = game.install_path.as_ref().map(PathBuf::from);
+            watch_game(app.clone(), game.id.clone(), exe_path, install_path);
         }
     }
 

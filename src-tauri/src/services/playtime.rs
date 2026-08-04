@@ -54,13 +54,35 @@ pub fn has_official_playtime_source(platform: &Platform) -> bool {
     )
 }
 
+fn normalize_path_str(s: &str) -> String {
+    s.replace('\\', "/")
+}
+
 /// Dispara o watcher em background para o jogo informado. Idempotente: se já
 /// houver um watch em andamento para o mesmo `game_id`, não faz nada.
-pub fn watch_game(app: AppHandle, game_id: String, exe_path: PathBuf) {
+pub fn watch_game(
+    app: AppHandle,
+    game_id: String,
+    exe_path: PathBuf,
+    install_path: Option<PathBuf>,
+) {
     let state = app.state::<AppState>();
     if !state.playtime_registry.try_start(&game_id) {
+        tracing::warn!("[playtime] watch já em andamento para {game_id}, ignorando");
         return;
     }
+
+    let expected_filename = exe_path
+        .file_name()
+        .map(|f| f.to_string_lossy().to_lowercase());
+
+    let install_path_lower = install_path
+        .as_ref()
+        .map(|p| normalize_path_str(&p.to_string_lossy().to_lowercase()));
+
+    tracing::info!(
+        "[playtime] iniciando watch para {game_id} | expected_filename={expected_filename:?} | install_path_lower={install_path_lower:?}"
+    );
 
     tauri::async_runtime::spawn(async move {
         let mut sys = System::new_with_specifics(
@@ -74,10 +96,26 @@ pub fn watch_game(app: AppHandle, game_id: String, exe_path: PathBuf) {
             tokio::time::sleep(POLL_INTERVAL).await;
             sys.refresh_processes(ProcessesToUpdate::All, true);
 
-            let running = sys
-                .processes()
-                .values()
-                .any(|p| p.exe().map(|p| p == exe_path.as_path()).unwrap_or(false));
+            let mut running = false;
+
+            for p in sys.processes().values() {
+                let Some(exe) = p.exe() else { continue };
+                let exe_str = normalize_path_str(&exe.to_string_lossy().to_lowercase());
+
+                let candidate_filename =
+                    exe.file_name().map(|f| f.to_string_lossy().to_lowercase());
+                let name_matches = candidate_filename == expected_filename;
+
+                let within_install_dir = match &install_path_lower {
+                    Some(dir) => exe_str.starts_with(dir.as_str()),
+                    None => true,
+                };
+
+                if name_matches && within_install_dir {
+                    running = true;
+                    break; // Otimização: se achou o processo, não precisa continuar iterando
+                }
+            }
 
             if running {
                 found = true;
@@ -85,11 +123,13 @@ pub fn watch_game(app: AppHandle, game_id: String, exe_path: PathBuf) {
                     tracing::warn!("[playtime] falha ao gravar incremento para {game_id}: {e}");
                 }
             } else if found {
-                break; // processo existiu e sumiu -> sessão encerrada
+                tracing::info!("[playtime] processo sumiu, encerrando sessão para {game_id}");
+                break;
             } else {
                 waited += POLL_INTERVAL;
                 if waited >= MAX_WAIT_FOR_START {
-                    break; // desistiu de esperar o jogo abrir
+                    tracing::warn!("[playtime] timeout esperando processo iniciar para {game_id}");
+                    break;
                 }
             }
         }
