@@ -238,7 +238,7 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
     let mut stmt = conn.prepare(
         "SELECT
             g.id, g.name, g.slug, g.cover_url, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
-            g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at,
+            g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
             gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult
         FROM games g
         LEFT JOIN game_details gd ON g.id = gd.game_id
@@ -247,6 +247,9 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
 
     let games = stmt
         .query_map([], |row| {
+            let alt_names_json: Option<String> = row.get(18)?;
+            let alternative_names = alt_names_json.and_then(|s| serde_json::from_str(&s).ok());
+
             Ok(models::Game {
                 id: row.get(0)?,
                 name: row.get(1)?,
@@ -270,9 +273,10 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
                     .and_then(|s| s.parse().ok()),
                 last_played: row.get(16)?,
                 added_at: row.get(17)?,
-                genres: row.get(18)?,
-                developer: row.get(19)?,
-                is_adult: row.get(20)?,
+                alternative_names,
+                genres: row.get(19)?,
+                developer: row.get(20)?,
+                is_adult: row.get(21)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
@@ -298,13 +302,13 @@ pub fn get_library_game_details(
                 description_raw, description_ptbr, background_image, critic_score,
                 steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
                 esrb_rating, is_adult, adult_tags, external_links, median_playtime,
-                estimated_playtime
+                estimated_playtime, updated_at
              FROM game_details
              WHERE game_id = ?1",
     )?;
 
     let mut rows = stmt.query_map(params![game_id], |row| {
-        let links_json: Option<String> = row.get(19)?; // external_links
+        let links_json: Option<String> = row.get(19)?;
         let external_links = links_json.and_then(|json| serde_json::from_str(&json).ok());
 
         let tags_json: Option<String> = row.get(6)?;
@@ -333,6 +337,7 @@ pub fn get_library_game_details(
             external_links,
             median_playtime: row.get(20)?,
             estimated_playtime: row.get(21)?,
+            updated_at: row.get(22)?,
         })
     })?;
 
@@ -356,7 +361,7 @@ pub fn get_game_by_id(
     let mut stmt = conn.prepare(
         "SELECT
             g.id, g.name, g.slug, g.cover_url, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
-            g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at,
+            g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
             gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult
         FROM games g
         LEFT JOIN game_details gd ON g.id = gd.game_id
@@ -365,6 +370,9 @@ pub fn get_game_by_id(
 
     let game = stmt
         .query_row(params![id], |row| {
+            let alt_names_json: Option<String> = row.get(18)?;
+            let alternative_names = alt_names_json.and_then(|s| serde_json::from_str(&s).ok());
+
             Ok(models::Game {
                 id: row.get(0)?,
                 name: row.get(1)?,
@@ -388,9 +396,10 @@ pub fn get_game_by_id(
                     .and_then(|s| s.parse().ok()),
                 last_played: row.get(16)?,
                 added_at: row.get(17)?,
-                genres: row.get(18)?,
-                developer: row.get(19)?,
-                is_adult: row.get(20)?,
+                alternative_names,
+                genres: row.get(19)?,
+                developer: row.get(20)?,
+                is_adult: row.get(21)?,
             })
         })
         .optional()?;

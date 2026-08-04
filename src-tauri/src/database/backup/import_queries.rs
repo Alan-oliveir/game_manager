@@ -15,8 +15,8 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
 
     // Prepared statements para melhor desempenho
     let mut game_stmt = conn.prepare(
-        "INSERT OR REPLACE INTO games (id, name, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, last_played, added_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)"
+        "INSERT OR REPLACE INTO games (id, name, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, last_played, added_at, alternative_names)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)"
     )?;
 
     let mut details_stmt = conn.prepare(
@@ -24,9 +24,9 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
         game_id, steam_app_id, developer, publisher, release_date, genres, tags, series,
         description_raw, description_ptbr, background_image, critic_score, steam_review_label,
         steam_review_count, steam_review_score, steam_review_updated_at, esrb_rating, is_adult,
-        adult_tags, external_links, median_playtime, estimated_playtime
+        adult_tags, external_links, median_playtime, estimated_playtime, updated_at
     )
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)"
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)"
     )?;
 
     let mut wishlist_stmt = conn.prepare(
@@ -35,6 +35,11 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
     )?;
 
     for game in &backup.games {
+        let alt_names_json = game
+            .alternative_names
+            .as_ref()
+            .and_then(|v| serde_json::to_string(v).ok());
+
         game_stmt.execute(params![
             game.id,
             game.name,
@@ -51,7 +56,8 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             game.status,
             game.playtime,
             game.last_played,
-            game.added_at
+            game.added_at,
+            alt_names_json
         ])?;
     }
 
@@ -88,7 +94,8 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             detail.adult_tags,
             links_json,
             detail.median_playtime,
-            detail.estimated_playtime
+            detail.estimated_playtime,
+            detail.updated_at
         ])?;
     }
 

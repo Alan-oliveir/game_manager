@@ -152,6 +152,7 @@ pub struct Game {
     pub developer: Option<String>,
     pub platform: Platform,
     pub platform_game_id: String,
+    pub alternative_names: Option<Vec<String>>,
 
     // Execução
     pub installed: bool,
@@ -223,6 +224,9 @@ pub struct GameDetails {
     // Tempo de jogo
     pub median_playtime: Option<i32>, // Alternativa para HLTB (média da Steam)
     pub estimated_playtime: Option<f32>, // Estimativa de tempo de jogo
+
+    // Timestamps
+    pub updated_at: Option<String>,
 }
 
 /// Jogo na lista de desejos (wishlist) com tracking de preços.

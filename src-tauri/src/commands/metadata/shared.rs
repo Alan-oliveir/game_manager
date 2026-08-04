@@ -3,10 +3,12 @@
 //! Contém estruturas e funções reutilizadas por enrichment e covers.
 
 use crate::constants::NOT_FOUND_MARKER;
+use crate::database;
 use crate::models::ImportConfidence;
 use crate::services::cache;
 use crate::services::integration::{rawg, steam_api};
 use crate::utils::text::{is_likely_non_base_game, normalize_for_matching, strip_edition_suffix};
+use rusqlite::params;
 use tracing::warn;
 
 // === ESTRUTURAS COMPARTILHADAS ===
@@ -30,6 +32,34 @@ pub struct EnrichProgress {
 pub struct EnrichCompletePayload {
     pub platform: Option<String>,
     pub message: String,
+}
+
+/// Estrutura intermediária de metadados dos jogos
+pub struct ProcessedGameDetails {
+    pub game_id: String,
+    pub description_raw: Option<String>,
+    pub description_ptbr: Option<String>,
+    pub release_date: Option<String>,
+    pub genres: String,
+    pub tags: Vec<crate::models::GameTag>,
+    pub developer: Option<String>,
+    pub publisher: Option<String>,
+    pub critic_score: Option<i32>,
+    pub background_image: Option<String>,
+    pub series: Option<String>,
+    pub steam_review_label: Option<String>,
+    pub steam_review_count: Option<i32>,
+    pub steam_review_score: Option<f32>,
+    pub steam_review_updated_at: Option<String>,
+    pub esrb_rating: Option<String>,
+    pub is_adult: bool,
+    pub adult_tags: Option<String>,
+    pub external_links: Option<String>,
+    pub steam_app_id: Option<String>,
+    pub median_playtime: Option<i32>,
+    pub estimated_playtime: Option<f32>,
+    pub alternative_names: Option<Vec<String>>,
+    pub updated_at: Option<String>,
 }
 
 /// Resultado da resolução de `steam_app_id` a partir do nome de um jogo.
@@ -114,7 +144,7 @@ async fn fetch_rawg_metadata_inner(
     }
 }
 
-// === FUNÇÕES COMPARTILHADAS ===
+// === FUNÇÕES COMPARTILHADAS - RAWG ===
 
 /// Busca metadados RAWG com cache
 ///
@@ -139,6 +169,8 @@ pub async fn fetch_rawg_metadata_fresh(
 ) -> Option<rawg::RawgGameDetails> {
     fetch_rawg_metadata_inner(api_key, name, cache_conn, true).await
 }
+
+// === FUNÇÕES COMPARTILHADAS - STEAM ===
 
 pub async fn resolve_steam_app_id(
     name: &str,
@@ -259,4 +291,94 @@ pub(crate) async fn fetch_steam_reviews(
         }
         _ => None,
     }
+}
+
+// === PERSISTÊNCIA ===
+
+/// Salva detalhes do jogo no banco. Aceita tanto Connection quanto Transaction (via Deref trait)
+pub fn save_game_details<C>(conn: &C, d: ProcessedGameDetails) -> Result<(), rusqlite::Error>
+where
+    C: std::ops::Deref<Target=rusqlite::Connection>,
+{
+    let tags_json = database::serialize_tags(&d.tags).unwrap_or_else(|_| "[]".to_string());
+
+    // Garante que a linha existe antes do UPDATE (para jogos que já têm
+    // description_raw da Legacy Games, o INSERT OR IGNORE preserva o valor).
+    conn.execute(
+        "INSERT OR IGNORE INTO game_details (game_id) VALUES (?1)",
+        params![d.game_id],
+    )?;
+
+    // Atualiza todos os campos usando COALESCE nos campos de texto para nunca
+    // sobrescrever um valor existente com NULL vindo da RAWG.
+    conn.execute(
+        "UPDATE game_details SET
+            description_raw     = COALESCE(?2,  description_raw),
+            description_ptbr    = COALESCE(?3,  description_ptbr),
+            release_date        = COALESCE(?4,  release_date),
+            genres              = COALESCE(NULLIF(?5, ''), genres),
+            tags                = COALESCE(NULLIF(?6, '[]'), tags),
+            developer           = COALESCE(?7,  developer),
+            publisher           = COALESCE(?8,  publisher),
+            critic_score        = COALESCE(?9,  critic_score),
+            background_image    = COALESCE(?10, background_image),
+            series              = COALESCE(?11, series),
+            steam_review_label  = COALESCE(?12, steam_review_label),
+            steam_review_count  = COALESCE(?13, steam_review_count),
+            steam_review_score  = COALESCE(?14, steam_review_score),
+            steam_review_updated_at = COALESCE(?15, steam_review_updated_at),
+            esrb_rating         = COALESCE(?16, esrb_rating),
+            is_adult            = ?17,
+            adult_tags          = COALESCE(?18, adult_tags),
+            external_links      = COALESCE(?19, external_links),
+            steam_app_id        = COALESCE(?20, steam_app_id),
+            median_playtime     = COALESCE(?21, median_playtime),
+            estimated_playtime  = COALESCE(?22, estimated_playtime),
+            updated_at          = ?23
+         WHERE game_id = ?1",
+        params![
+            d.game_id,
+            d.description_raw,
+            d.description_ptbr,
+            d.release_date,
+            d.genres,
+            tags_json,
+            d.developer,
+            d.publisher,
+            d.critic_score,
+            d.background_image.clone(),
+            d.series,
+            d.steam_review_label,
+            d.steam_review_count,
+            d.steam_review_score,
+            d.steam_review_updated_at,
+            d.esrb_rating,
+            d.is_adult,
+            d.adult_tags,
+            d.external_links,
+            d.steam_app_id,
+            d.median_playtime,
+            d.estimated_playtime,
+            d.updated_at
+        ],
+    )?;
+
+    if let Some(img) = d.background_image {
+        conn.execute(
+            "UPDATE games SET cover_url = ?1 WHERE id = ?2 AND (cover_url IS NULL OR cover_url = '')",
+            params![img, d.game_id],
+        )?;
+    }
+
+    if let Some(alt_names) = d.alternative_names {
+        if !alt_names.is_empty() {
+            let alt_json = serde_json::to_string(&alt_names).unwrap_or_default();
+            conn.execute(
+                "UPDATE games SET alternative_names = COALESCE(?1, alternative_names) WHERE id = ?2",
+                params![alt_json, d.game_id],
+            )?;
+        }
+    }
+
+    Ok(())
 }

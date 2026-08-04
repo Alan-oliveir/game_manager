@@ -93,6 +93,8 @@ pub struct RawgGame {
 pub struct RawgGameDetails {
     pub id: i32,
     pub name: String,
+    #[serde(default)]
+    pub alternative_names: Vec<String>,
     #[serde(rename(deserialize = "description_raw", serialize = "descriptionRaw"))]
     pub description_raw: Option<String>,
     pub metacritic: Option<i32>,

@@ -52,8 +52,9 @@ pub async fn generate_recommendation_analysis(
         fetch_and_prepare_data(&state)?;
 
     let profile = calculate_user_profile(&all_games_with_details, &HashSet::new());
-    let (cf_scores, _) =
-        crate::services::recommendation::cf_aggregator::build_cf_candidates(&all_games_with_details);
+    let (cf_scores, _) = crate::services::recommendation::cf_aggregator::build_cf_candidates(
+        &all_games_with_details,
+    );
 
     let config = RecommendationConfig::default();
     let user_settings = UserSettings::default();
@@ -156,7 +157,7 @@ fn fetch_games_with_details(
     let mut stmt = conn.prepare(
         "SELECT
             g.id, g.name, g.slug, g.playtime, g.favorite, g.user_rating, g.cover_url,
-            g.platform_game_id, g.last_played, g.added_at, g.platform, g.playtime_source,
+            g.platform_game_id, g.last_played, g.added_at, g.platform, g.playtime_source, g.alternative_names,
             gd.genres, gd.steam_app_id, gd.release_date, gd.series, gd.tags
          FROM games g
          LEFT JOIN game_details gd ON g.id = gd.game_id
@@ -165,6 +166,9 @@ fn fetch_games_with_details(
 
     let games_with_details: Result<Vec<GameWithDetails>, _> = stmt
         .query_map([], |row| {
+            let alt_names_json: Option<String> = row.get(12)?;
+            let alternative_names = alt_names_json.and_then(|s| serde_json::from_str(&s).ok());
+
             let game = crate::models::Game {
                 id: row.get(0)?,
                 name: row.get(1)?,
@@ -177,7 +181,7 @@ fn fetch_games_with_details(
                 last_played: row.get(8)?,
                 added_at: row.get(9)?,
                 platform: row.get::<_, String>(10)?.parse().unwrap_or(Platform::Outra),
-                // Campos não utilizados
+                alternative_names,
                 installed: false,
                 import_confidence: None,
                 install_path: None,
@@ -192,15 +196,13 @@ fn fetch_games_with_details(
                 is_adult: false,
             };
 
-            let genres_json: Option<String> = row.get(12)?;
+            let genres_json: Option<String> = row.get(13)?;
             let genres: Vec<String> = genres_json
                 .as_ref()
                 .map(|s| {
-                    // Tentar parsear como JSON primeiro
                     if let Ok(vec) = serde_json::from_str::<Vec<String>>(s) {
                         vec
                     } else {
-                        // Fallback: parsear como comma-separated string
                         s.split(',')
                             .map(|g| g.trim().to_string())
                             .filter(|g| !g.is_empty())
@@ -209,15 +211,14 @@ fn fetch_games_with_details(
                 })
                 .unwrap_or_default();
 
-            let steam_app_id_str: Option<String> = row.get(13)?;
+            let steam_app_id_str: Option<String> = row.get(14)?;
             let steam_app_id: Option<u32> = steam_app_id_str.and_then(|s| s.parse().ok());
 
-            let release_date: Option<String> = row.get(14)?;
+            let release_date: Option<String> = row.get(15)?;
             let release_year = release_date.and_then(|d| parse_release_year(&d));
-            let series: Option<String> = row.get(15)?;
+            let series: Option<String> = row.get(16)?;
 
-            // Buscar tags do JSON na coluna tags
-            let tags_json: Option<String> = row.get(16)?;
+            let tags_json: Option<String> = row.get(17)?;
             let tags: Vec<crate::models::GameTag> = tags_json
                 .as_ref()
                 .and_then(|s| serde_json::from_str(s).ok())

@@ -52,10 +52,13 @@ pub fn fetch_backup_data(state: &State<AppState>) -> Result<BackupDataTuple, App
 /// Busca todos os jogos na biblioteca
 fn fetch_games(conn: &Connection) -> Result<Vec<Game>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, slug, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, playtime_source, last_played, added_at FROM games"
+        "SELECT id, name, slug, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, playtime_source, last_played, added_at, alternative_names FROM games"
     )?;
 
     let game_iter = stmt.query_map([], |row| {
+        let alt_names_json: Option<String> = row.get(18)?;
+        let alternative_names = alt_names_json.and_then(|s| serde_json::from_str(&s).ok());
+
         Ok(Game {
             id: row.get(0)?,
             name: row.get(1)?,
@@ -65,6 +68,7 @@ fn fetch_games(conn: &Connection) -> Result<Vec<Game>, AppError> {
             developer: None,
             platform: row.get::<_, String>(4)?.parse().unwrap_or(Platform::Outra),
             platform_game_id: row.get(5)?,
+            alternative_names,
             installed: row.get(6)?,
             import_confidence: row
                 .get::<_, Option<String>>(7)?
@@ -96,7 +100,7 @@ fn fetch_game_details(conn: &Connection) -> Result<Vec<GameDetails>, AppError> {
         description_raw, description_ptbr, background_image, critic_score,
         steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
         esrb_rating, is_adult, adult_tags, external_links, median_playtime,
-        estimated_playtime
+        estimated_playtime, updated_at
      FROM game_details",
     )?;
 
@@ -130,6 +134,7 @@ fn fetch_game_details(conn: &Connection) -> Result<Vec<GameDetails>, AppError> {
             external_links,
             median_playtime: row.get(20)?,
             estimated_playtime: row.get(21)?,
+            updated_at: row.get(22)?,
         })
     })?;
 
