@@ -135,6 +135,30 @@ impl FromStr for PlaytimeSource {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub enum ManagedTool {
+    Legendary,
+    // Nile depois
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(tag = "status", rename_all = "camelCase")]
+pub enum ToolStatus {
+    NotFound,
+    Found {
+        path: String,
+        version: Option<String>,
+        source: ToolSource,
+    },
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum ToolSource {
+    SystemPath,
+    Managed,
+}
+
 // === Modelos de Dados ===
 
 /// Jogo na biblioteca do usuário.
@@ -177,10 +201,9 @@ pub struct Game {
     pub is_adult: bool,
 }
 
-/// Detalhes adicionais do jogo (Schema v3).
+/// Detalhes adicionais do jogo (Schema v4).
 ///
-/// Contém metadados enriquecidos obtidos de APIs externas como RAWG,
-/// substituindo e expandindo os dados anteriores.
+/// Contém metadados enriquecidos obtidos de APIs externas como RAWG, substituindo e expandindo os dados anteriores.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GameDetails {
@@ -221,9 +244,11 @@ pub struct GameDetails {
     // Links Externos
     pub external_links: Option<HashMap<String, String>>,
 
-    // Tempo de jogo
-    pub median_playtime: Option<i32>, // Alternativa para HLTB (média da Steam)
-    pub estimated_playtime: Option<f32>, // Estimativa de tempo de jogo
+    // Tempos de jogo do HowLongToBeat (em horas)
+    pub hltb_main_story: Option<f64>,
+    pub hltb_main_extra: Option<f64>,
+    pub hltb_completionist: Option<f64>,
+    pub hltb_coop_time: Option<f64>,
 
     // Timestamps
     pub updated_at: Option<String>,

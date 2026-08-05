@@ -8,10 +8,10 @@
 //! - `ai_translation`: Comandos para tradução de descrições usando IA.
 //! - `caches`: Comandos para gerenciar o cache de metadados.
 //! - `games`: Comandos CRUD para a biblioteca de jogos.
+//! - `launcher`: Comandos para lançar jogos e interagir com plataformas de jogos.
 //! - `metadata`: Comandos para enriquecimento, atualização e busca de metadados via RAWG/Steam API.
 //! - `platforms`: Comandos para gerenciar plataformas de jogos.
-//! - `debug`: Comandos para debug e testes manuais.
-//! - `tooltips`: Sistema completo de recomendação v4.0 (core + análise).
+//! - `recommendation`: Comandos para gerenciar recomendações de jogos.
 //! - `settings`: Comandos para gerenciar configurações e segredos do usuário.
 //! - `subscriptions`: Comandos para gerenciar assinaturas de serviços de jogos e buscar catálogos.
 //! - `system`: Comandos para interagir com o sistema (abrir pastas, arquivos, etc).
@@ -21,7 +21,6 @@
 pub mod achievements;
 pub mod ai_translation;
 pub mod caches;
-pub mod debug;
 pub mod games;
 pub mod launcher;
 pub mod metadata;

@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { Game, GameDetails, GamePlatformLink, GameTag } from '@/types/game';
 import { Badge } from '@/ui/badge';
 import { Button } from '@/ui/button';
-import { formatTime } from '@/utils/formatTime';
+import { formatHours, formatTime, getPlaytimeCategory } from '@/utils';
 import { AgeRatingBadge, GameLinks, SteamReviewBadge } from '@/windows';
 
 interface GameSidebarProps {
@@ -102,6 +102,14 @@ export function GameSidebar({
           .join(', ') || null // Junta com vírgula
       : null;
 
+  // Verifica se existe pelo menos um dado de HLTB maior que 0
+  const hasHltbData = !!(
+    (details?.hltbMainStory && details.hltbMainStory > 0) ||
+    (details?.hltbMainExtra && details.hltbMainExtra > 0) ||
+    (details?.hltbCompletionist && details.hltbCompletionist > 0) ||
+    (details?.hltbCoopTime && details.hltbCoopTime > 0)
+  );
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       {/* AVISO DE CONTEÚDO ADULTO */}
@@ -159,7 +167,58 @@ export function GameSidebar({
         </div>
       )}
 
-      {/* 3. DETALHES TÉCNICOS */}
+      {/* 3. TEMPO DE JOGO (HOW LONG TO BEAT) */}
+      {hasHltbData && (
+        <div className="space-y-1.5">
+          <h3 className="text-muted-foreground flex items-center gap-2 pb-2 text-sm font-bold tracking-wider uppercase">
+            <Clock size={18} /> {t('sidebar_playtime_heading', 'Tempo de Jogo')}
+          </h3>
+
+          {/* Categoria baseada na Main Story, como você fazia antes */}
+          {details?.hltbMainStory && details.hltbMainStory > 0 && (
+            <DetailRow
+              icon={Clock}
+              label={t('sidebar_duration', 'Duração')}
+              value={getPlaytimeCategory(details.hltbMainStory).label}
+            />
+          )}
+
+          {/* Dados detalhados */}
+          {details?.hltbMainStory && details.hltbMainStory > 0 && (
+            <DetailRow
+              icon={Gamepad2}
+              label={t('sidebar_hltb_main', 'História Principal')}
+              value={formatHours(details.hltbMainStory)}
+            />
+          )}
+
+          {details?.hltbMainExtra && details.hltbMainExtra > 0 && (
+            <DetailRow
+              icon={ListCheck}
+              label={t('sidebar_hltb_extra', 'História + Extras')}
+              value={formatHours(details.hltbMainExtra)}
+            />
+          )}
+
+          {details?.hltbCompletionist && details.hltbCompletionist > 0 && (
+            <DetailRow
+              icon={Trophy}
+              label={t('sidebar_hltb_completionist', 'Completista')}
+              value={formatHours(details.hltbCompletionist)}
+            />
+          )}
+
+          {details?.hltbCoopTime && details.hltbCoopTime > 0 && (
+            <DetailRow
+              icon={Users}
+              label={t('sidebar_hltb_coop', 'Co-op')}
+              value={formatHours(details.hltbCoopTime)}
+            />
+          )}
+        </div>
+      )}
+
+      {/* 4. DETALHES TÉCNICOS */}
       <div className="space-y-1.5">
         <h3 className="text-muted-foreground flex items-center gap-2 pb-2 text-sm font-bold tracking-wider uppercase">
           <ListCheck size={18} /> {t('sidebar_details_heading')}
@@ -214,10 +273,10 @@ export function GameSidebar({
         />
       </div>
 
-      {/* 4. LINKS */}
+      {/* 5. LINKS */}
       <GameLinks links={details?.externalLinks} />
 
-      {/* 5. TAGS (Com Categorização) */}
+      {/* 6. TAGS (Com Categorização) */}
       {details?.tags &&
         Array.isArray(details.tags) &&
         details.tags.length > 0 && (
@@ -229,7 +288,7 @@ export function GameSidebar({
           </div>
         )}
 
-      {/* 6. OUTRAS PLATAFORMAS */}
+      {/* 7. OUTRAS PLATAFORMAS */}
       {siblings.length > 0 && (
         <div className="border-border/40 space-y-2 border-t pt-4">
           <span className="text-muted-foreground text-sm font-medium">

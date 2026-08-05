@@ -92,6 +92,15 @@ impl EpicCatalogItem {
     }
 }
 
+#[derive(Debug, Deserialize)]
+struct LegendaryInstalledGame {
+    app_name: String,
+    install_path: String,
+    title: String,
+    executable: String,
+    is_dlc: bool,
+}
+
 // === JOGOS INSTALADOS ===
 
 impl EpicSource {
@@ -150,35 +159,6 @@ impl EpicSource {
         None
     }
 
-    /// Importa todos os jogos instalados detectados nos manifestos locais
-    pub async fn import_installed(&self) -> Result<Vec<SourceGame>, AppError> {
-        let manifest_dir = match self.resolve_manifest_dir() {
-            Some(dir) => dir,
-            None => return Ok(vec![]), // Epic não instalada ou sem jogos
-        };
-
-        let mut games = Vec::new();
-
-        for entry in fs::read_dir(&manifest_dir)? {
-            let entry = entry?;
-            let path = entry.path();
-
-            if !is_item_file(&path) {
-                continue;
-            }
-
-            match Self::parse_manifest(&path) {
-                Ok(game) => games.push(game),
-                Err(err) => {
-                    log::warn!("Erro ao processar manifest {:?}: {}", path, err);
-                    continue;
-                }
-            }
-        }
-
-        Ok(games)
-    }
-
     fn parse_manifest(path: &Path) -> Result<SourceGame, AppError> {
         let content = fs::read_to_string(path)?;
 
@@ -216,6 +196,90 @@ impl EpicSource {
             last_played: None,
         })
     }
+
+    /// Importa jogos instalados no Linux via Legendary
+    #[cfg(target_os = "linux")]
+    async fn import_installed_via_legendary(&self) -> Result<Vec<SourceGame>, AppError> {
+        use crate::models::ManagedTool;
+        use crate::services::tools;
+
+        let status = tools::get_tool_status(&self.app_handle, ManagedTool::Legendary)?;
+
+        let path = match status {
+            crate::models::ToolStatus::Found { path, .. } => path,
+            crate::models::ToolStatus::NotFound => return Ok(vec![]), // não quebra o import
+        };
+
+        let json = tools::run_json(Path::new(&path), &["list-installed", "--json"])?;
+        parse_legendary_installed(json)
+    }
+
+    /// Importa todos os jogos instalados detectados nos manifestos locais
+    pub async fn import_installed(&self) -> Result<Vec<SourceGame>, AppError> {
+        let manifest_dir = match self.resolve_manifest_dir() {
+            Some(dir) => dir,
+            None => {
+                #[cfg(target_os = "linux")]
+                {
+                    return self.import_installed_via_legendary().await;
+                }
+                #[cfg(not(target_os = "linux"))]
+                {
+                    return Ok(vec![]); // Epic não-instalada ou sem jogos
+                }
+            }
+        };
+
+        let mut games = Vec::new();
+
+        for entry in fs::read_dir(&manifest_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            if !is_item_file(&path) {
+                continue;
+            }
+
+            match Self::parse_manifest(&path) {
+                Ok(game) => games.push(game),
+                Err(err) => {
+                    log::warn!("Erro ao processar manifest {:?}: {}", path, err);
+                    continue;
+                }
+            }
+        }
+
+        Ok(games)
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn parse_legendary_installed(json: serde_json::Value) -> Result<Vec<SourceGame>, AppError> {
+    let games: Vec<LegendaryInstalledGame> = serde_json::from_value(json)
+        .map_err(|e| AppError::ParseError(format!("Falha ao parsear saída do Legendary: {e}")))?;
+
+    Ok(games
+        .into_iter()
+        .filter(|g| !g.is_dlc)
+        .filter(|g| Path::new(&g.install_path).exists())
+        .map(|g| {
+            let full_executable_path = Path::new(&g.install_path)
+                .join(&g.executable)
+                .to_string_lossy()
+                .to_string();
+
+            SourceGame {
+                platform: "Epic".to_string(),
+                platform_game_id: g.app_name,
+                name: Some(g.title),
+                installed: true,
+                executable_path: Some(full_executable_path),
+                install_path: Some(g.install_path),
+                playtime_minutes: None,
+                last_played: None,
+            }
+        })
+        .collect())
 }
 
 // === BIBLIOTECA COMPLETA (OAuth) ===
@@ -354,10 +418,10 @@ impl OAuthGameSource for EpicSource {
         let raw_json = tokio::task::spawn_blocking(move || {
             rx.recv_timeout(Duration::from_secs(OAUTH_CALLBACK_TIMEOUT_SECS))
         })
-        .await
-        .map_err(|e| AppError::OAuthConfigError(format!("Task de callback falhou: {e}")))?
-        .map_err(|_| AppError::OAuthConfigError("Tempo limite de login excedido".to_string()))?
-        .map_err(AppError::OAuthConfigError)?;
+            .await
+            .map_err(|e| AppError::OAuthConfigError(format!("Task de callback falhou: {e}")))?
+            .map_err(|_| AppError::OAuthConfigError("Tempo limite de login excedido".to_string()))?
+            .map_err(AppError::OAuthConfigError)?;
 
         let _ = window.close();
 

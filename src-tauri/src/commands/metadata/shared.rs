@@ -6,9 +6,10 @@ use crate::constants::NOT_FOUND_MARKER;
 use crate::database;
 use crate::models::ImportConfidence;
 use crate::services::cache;
-use crate::services::integration::{rawg, steam_api};
+use crate::services::integration::{hltb, rawg, steam_api};
 use crate::utils::text::{is_likely_non_base_game, normalize_for_matching, strip_edition_suffix};
 use rusqlite::params;
+use std::collections::HashMap;
 use tracing::warn;
 
 // === ESTRUTURAS COMPARTILHADAS ===
@@ -56,8 +57,10 @@ pub struct ProcessedGameDetails {
     pub adult_tags: Option<String>,
     pub external_links: Option<String>,
     pub steam_app_id: Option<String>,
-    pub median_playtime: Option<i32>,
-    pub estimated_playtime: Option<f32>,
+    pub hltb_main_story: Option<f64>,
+    pub hltb_main_extra: Option<f64>,
+    pub hltb_completionist: Option<f64>,
+    pub hltb_coop_time: Option<f64>,
     pub alternative_names: Option<Vec<String>>,
     pub updated_at: Option<String>,
 }
@@ -293,6 +296,48 @@ pub(crate) async fn fetch_steam_reviews(
     }
 }
 
+/// Busca dados do HLTB com cache e retorna o melhor resultado encontrado.
+pub async fn fetch_hltb_metadata(
+    name: &str,
+    cache_conn: &rusqlite::Connection,
+) -> Option<hltb::HltbEntry> {
+    match hltb::HltbClient::search_hltb_with_cache(name, cache_conn).await {
+        Ok(results) => results.first().cloned(),
+        Err(e) => {
+            warn!("search_hltb_with_cache falhou para '{}': {}", name, e);
+            None
+        }
+    }
+}
+
+/// Aplica os campos do HLTB em `game_details`, preservando os links já existentes.
+pub fn apply_hltb_metadata(details: &mut ProcessedGameDetails, entry: &hltb::HltbEntry) {
+    details.hltb_main_story = entry.main_story;
+    details.hltb_main_extra = entry.main_extra;
+    details.hltb_completionist = entry.completionist;
+    details.hltb_coop_time = entry.coop_time;
+
+    let mut links_map: HashMap<String, String> = match details.external_links.as_ref() {
+        Some(raw) => match serde_json::from_str(raw) {
+            Ok(map) => map,
+            Err(e) => {
+                warn!(
+                    "Falha ao ler external_links para anexar HLTB '{}': {}",
+                    details.game_id, e
+                );
+                HashMap::new()
+            }
+        },
+        None => HashMap::new(),
+    };
+
+    links_map
+        .entry("hltb".to_string())
+        .or_insert_with(|| entry.game_web_link.clone());
+
+    details.external_links = serde_json::to_string(&links_map).ok();
+}
+
 // === PERSISTÊNCIA ===
 
 /// Salva detalhes do jogo no banco. Aceita tanto Connection quanto Transaction (via Deref trait)
@@ -332,9 +377,11 @@ where
             adult_tags          = COALESCE(?18, adult_tags),
             external_links      = COALESCE(?19, external_links),
             steam_app_id        = COALESCE(?20, steam_app_id),
-            median_playtime     = COALESCE(?21, median_playtime),
-            estimated_playtime  = COALESCE(?22, estimated_playtime),
-            updated_at          = ?23
+            hltb_main_story     = COALESCE(?21, hltb_main_story),
+            hltb_main_extra     = COALESCE(?22, hltb_main_extra),
+            hltb_completionist  = COALESCE(?23, hltb_completionist),
+            hltb_coop_time      = COALESCE(?24, hltb_coop_time),
+            updated_at          = ?25
          WHERE game_id = ?1",
         params![
             d.game_id,
@@ -357,8 +404,10 @@ where
             d.adult_tags,
             d.external_links,
             d.steam_app_id,
-            d.median_playtime,
-            d.estimated_playtime,
+            d.hltb_main_story,
+            d.hltb_main_extra,
+            d.hltb_completionist,
+            d.hltb_coop_time,
             d.updated_at
         ],
     )?;

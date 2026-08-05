@@ -17,6 +17,7 @@ pub struct DetailedCacheStats {
     pub steam_store: i32,
     pub steam_reviews: i32,
     pub steam_playtime: i32,
+    pub hltb_searches: i32,
     pub expired: i32,
 }
 
@@ -93,6 +94,15 @@ pub fn get_detailed_cache_stats(state: State<AppState>) -> Result<DetailedCacheS
         )
         .unwrap_or(0);
 
+    let hltb: i32 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM api_cache
+             WHERE source = 'hltb' AND external_id LIKE 'search_hltb_%'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or(0);
+
     let stats = cache::get_cache_stats(&conn).map_err(AppError::DatabaseError)?;
 
     Ok(DetailedCacheStats {
@@ -102,6 +112,7 @@ pub fn get_detailed_cache_stats(state: State<AppState>) -> Result<DetailedCacheS
         steam_store: store,
         steam_reviews: reviews,
         steam_playtime: playtime,
+        hltb_searches: hltb,
         expired: stats.expired_entries,
     })
 }

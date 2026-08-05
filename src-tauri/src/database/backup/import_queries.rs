@@ -24,9 +24,9 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
         game_id, steam_app_id, developer, publisher, release_date, genres, tags, series,
         description_raw, description_ptbr, background_image, critic_score, steam_review_label,
         steam_review_count, steam_review_score, steam_review_updated_at, esrb_rating, is_adult,
-        adult_tags, external_links, median_playtime, estimated_playtime, updated_at
+        adult_tags, external_links, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_coop_time, updated_at
     )
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)"
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)"
     )?;
 
     let mut wishlist_stmt = conn.prepare(
@@ -93,8 +93,10 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             detail.is_adult,
             detail.adult_tags,
             links_json,
-            detail.median_playtime,
-            detail.estimated_playtime,
+            detail.hltb_main_story,
+            detail.hltb_main_extra,
+            detail.hltb_completionist,
+            detail.hltb_coop_time,
             detail.updated_at
         ])?;
     }

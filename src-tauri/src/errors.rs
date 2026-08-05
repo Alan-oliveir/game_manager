@@ -99,6 +99,15 @@ pub enum AppError {
 
     #[error("Erro ao lançar jogo: {0}")]
     LaunchError(String),
+
+    #[error("Ferramenta '{0}' não encontrada")]
+    ToolNotFound(String),
+
+    #[error("Erro ao executar ferramenta '{0}': {1}")]
+    ToolExecutionError(String, String),
+
+    #[error("Erro ao verificar versão da ferramenta '{0}': {1}")]
+    ToolVersionCheckError(String, String),
 }
 
 impl From<rusqlite::Error> for AppError {

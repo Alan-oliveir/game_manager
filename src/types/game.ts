@@ -122,7 +122,7 @@ export type PlaytimeSource = 'local' | { platform: Platform };
 // === MODELOS DE DADOS (SCHEMA 3.0 - Game e GameDetails) ===
 
 /**
- * Informações básicas do jogo - Schema 3.0
+ * Informações básicas do jogo - Schema 4.0
  *
  * Dados básicos armazenados no banco de dados local.
  * Esses dados são essenciais para a exibição e gerenciamento dos jogos na biblioteca.
@@ -139,6 +139,7 @@ export interface Game {
   platformGameId: string;
   genres?: string;
   developer?: string;
+  alternativeNames?: string;
 
   // Execução
   installed: boolean;
@@ -163,7 +164,7 @@ export interface Game {
 }
 
 /**
- * Detalhes adicionais do jogo - Schema 3.0
+ * Detalhes adicionais do jogo - Schema 4.0
  *
  * Metadados enriquecidos armazenados no banco de dados local,
  * provenientes de APIs externas (RAWG, STEAM).
@@ -197,6 +198,9 @@ export interface GameDetails {
 
   // Links & Tempo
   externalLinks?: Record<string, string>; // { "steam": "url", "website": "url" }
-  medianPlaytime?: number; // Horas (SteamSpy)
-  estimatedPlaytime?: number; // Tempo estimado em horas (float)
+  hltbMainStory?: number;
+  hltbMainExtra?: number;
+  hltbCompletionist?: number;
+  hltbCoopTime?: number;
+  updatedAt?: string;
 }

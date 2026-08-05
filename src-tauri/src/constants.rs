@@ -112,6 +112,7 @@ pub const CACHE_GAME_PASS_FULL_TTL_DAYS: i64 = 15;
 pub const CACHE_UBISOFT_PLUS_TTL_DAYS: i64 = 30;
 pub const CACHE_EA_PLAY_TTL_DAYS: i64 = 30;
 pub const NEXUS_CACHE_TTL_DAYS: i64 = 20;
+pub const CACHE_HLTB_TTL_DAYS: i64 = 30;
 pub const CACHE_DEFAULT_TTL_DAYS: i64 = 7;
 
 // === CHAVES DE CACHE DE ASSINATURAS ===
@@ -167,3 +168,11 @@ pub const AMAZON_APP_VERSION: &str = "1.0.0";
 pub const AMAZON_REDIRECT_PREFIX: &str =
     "https://www.amazon.com/?openid.assoc_handle=amzn_sonic_games_launcher";
 pub const AMAZON_ENTITLEMENTS_KEY_ID: &str = "d5dc8b8b-86c8-4fc4-ae93-18c0def5314d";
+
+// === Legendary (Epic CLI) — Linux only ===
+pub const LEGENDARY_GITHUB_REPO: &str = "derrod/legendary";
+pub const LEGENDARY_BIN_NAME: &str = "legendary";
+
+// === Diretório de ferramentas gerenciadas ===
+pub const TOOLS_DIR_NAME: &str = "tools";
+pub const TOOL_CONFIG_KEY_PREFIX: &str = "tool_path_"; // ex: "tool_path_legendary"

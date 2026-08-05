@@ -10,6 +10,7 @@
 //! - `recommendation`: Sistema de recomendação de jogos v4.0 (modular e refatorado).
 //! - `subscriptions`: Gerenciamento de assinaturas de serviços de jogos (Amazon Luna, Xbox Game Pass, etc.).
 //! - `tags`: Serviço para classificação e gerenciamento de tags de jogos.
+//! - `tools`: Gerenciamento de uso e atualização de ferramentas de externas.
 
 pub mod cache;
 pub mod images;
@@ -19,3 +20,4 @@ pub mod rate_limiter;
 pub mod recommendation;
 pub mod subscriptions;
 pub mod tags;
+pub mod tools;

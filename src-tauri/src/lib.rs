@@ -80,7 +80,10 @@ pub fn run() {
             // === COLLABORATIVE FILTERING ===
 
             if let Err(e) = recommendation::cf_aggregator::init_cf_index() {
-                tracing::warn!("CF desativado (fallback CB ativo): {}", e);
+                tracing::warn!(
+                    "C pub(crate) pub(crate) pub(crate)F desativado (fallback CB ativo): {}",
+                    e
+                );
             }
 
             // Log de inicialização completa
@@ -149,6 +152,7 @@ pub fn run() {
             commands::metadata::search::get_similar_games,
             commands::metadata::search::get_game_media,
             commands::metadata::search::get_profile_similar_games,
+            commands::metadata::search::search_hltb,
             commands::metadata::pcgamingwiki::get_or_fetch_pcgw_data,
             commands::metadata::pcgamingwiki::refresh_pcgw_data,
             commands::metadata::pcgamingwiki::search_pcgw_games,
@@ -161,9 +165,6 @@ pub fn run() {
             commands::settings::list_secrets,
             commands::settings::get_secrets,
             commands::settings::set_secrets,
-            // Comandos de Debug
-            commands::debug::debug_populate_nexus_cache,
-            commands::debug::backfill_slug_names,
             // Comandos de Recomendação
             commands::recommendation::core::get_user_profile,
             commands::recommendation::core::recommend_hybrid_library,

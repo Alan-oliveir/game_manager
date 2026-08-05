@@ -10,8 +10,9 @@
 //! - Reutiliza `ProcessedGameDetails` e `save_game_details` de `enrichment.rs`.
 
 use crate::commands::metadata::shared::{
-    fetch_rawg_metadata_fresh, fetch_steam_reviews, fetch_steam_store_data, resolve_steam_app_id,
-    save_game_details, EnrichCompletePayload, EnrichProgress, ProcessedGameDetails,
+    apply_hltb_metadata, fetch_hltb_metadata, fetch_rawg_metadata_fresh, fetch_steam_reviews,
+    fetch_steam_store_data, resolve_steam_app_id, save_game_details, EnrichCompletePayload,
+    EnrichProgress, ProcessedGameDetails,
 };
 use crate::constants::{RAWG_RATE_LIMIT_MS, RAWG_REQUISITIONS_PER_BATCH};
 use crate::database;
@@ -126,8 +127,10 @@ async fn process_missing_metadata(
         adult_tags: None,
         external_links: None,
         steam_app_id: None,
-        median_playtime: None,
-        estimated_playtime: None,
+        hltb_main_story: None,
+        hltb_main_extra: None,
+        hltb_completionist: None,
+        hltb_coop_time: None,
         updated_at: Some(chrono::Utc::now().to_rfc3339()),
     };
 
@@ -140,6 +143,7 @@ async fn process_missing_metadata(
     }
 
     let rawg_future = fetch_rawg_metadata_fresh(api_key, &name, cache_conn);
+    let hltb_future = fetch_hltb_metadata(&name, cache_conn);
 
     let steam_future = async {
         let target_steam_id =
@@ -159,8 +163,8 @@ async fn process_missing_metadata(
         }
     };
 
-    let (rawg_result, (target_steam_id, store_data, reviews)) =
-        tokio::join!(rawg_future, steam_future);
+    let (rawg_result, (target_steam_id, store_data, reviews), hltb_result) =
+        tokio::join!(rawg_future, steam_future, hltb_future);
 
     if let Some(rawg_det) = rawg_result {
         found_raw_tags = rawg_det.tags.iter().map(|t| t.slug.clone()).collect();
@@ -237,6 +241,10 @@ async fn process_missing_metadata(
 
     if !links_map.is_empty() {
         details.external_links = serde_json::to_string(&links_map).ok();
+    }
+
+    if let Some(hltb_det) = hltb_result {
+        apply_hltb_metadata(&mut details, &hltb_det);
     }
 
     (details, found_raw_tags)

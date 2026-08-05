@@ -4,14 +4,17 @@
 //! usando APIs externas como RAWG e GamerPower.
 
 use crate::database;
+use crate::database::AppState;
 use crate::errors::AppError;
 use crate::models::Game;
+use crate::services::cache;
 use crate::services::integration::gamebrain::{GameMedia, SimilarGame};
 use crate::services::integration::gamerpower::{self, Giveaway};
+use crate::services::integration::hltb::{HltbClient, HltbEntry};
 use crate::services::integration::{gamebrain, rawg};
 use crate::services::recommendation::core::calculate_game_weight;
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 // === ESTRUTURAS ===
 
@@ -166,4 +169,33 @@ pub async fn get_game_media(
     game_name: String,
 ) -> Result<GameMedia, String> {
     gamebrain::fetch_game_media(&app, &game_id, &game_name).await
+}
+
+/// Busca dados do HLTB para um jogo
+#[tauri::command]
+pub async fn search_hltb(
+    app: AppHandle,
+    game_name: String,
+) -> Result<Vec<HltbEntry>, String> {
+    let state = app.state::<AppState>();
+    let cache_key = format!("search_hltb_{}", game_name.to_lowercase());
+
+    if let Ok(cache_conn) = state.cache_db.lock() {
+        if let Some(cached) = cache::get_cached_api_data(&cache_conn, "hltb", &cache_key) {
+            if let Ok(entries) = serde_json::from_str::<Vec<HltbEntry>>(&cached) {
+                return Ok(entries);
+            }
+        }
+    }
+
+    let client = HltbClient::new();
+    let results = client.search(&game_name).await.map_err(|e| e.to_string())?;
+
+    if let Ok(cache_conn) = state.cache_db.lock() {
+        if let Ok(json) = serde_json::to_string(&results) {
+            let _ = cache::save_cached_api_data(&cache_conn, "hltb", &cache_key, &json);
+        }
+    }
+
+    Ok(results)
 }

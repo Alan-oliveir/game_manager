@@ -301,8 +301,8 @@ pub fn get_library_game_details(
                 game_id, steam_app_id, developer, publisher, release_date, genres, tags, series,
                 description_raw, description_ptbr, background_image, critic_score,
                 steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
-                esrb_rating, is_adult, adult_tags, external_links, median_playtime,
-                estimated_playtime, updated_at
+                esrb_rating, is_adult, adult_tags, external_links, hltb_main_story,
+                hltb_main_extra, hltb_completionist, hltb_coop_time, updated_at
              FROM game_details
              WHERE game_id = ?1",
     )?;
@@ -335,9 +335,11 @@ pub fn get_library_game_details(
             is_adult: row.get(17).unwrap_or(false),
             adult_tags: row.get(18)?,
             external_links,
-            median_playtime: row.get(20)?,
-            estimated_playtime: row.get(21)?,
-            updated_at: row.get(22)?,
+            hltb_main_story: row.get(20)?,
+            hltb_main_extra: row.get(21)?,
+            hltb_completionist: row.get(22)?,
+            hltb_coop_time: row.get(23)?,
+            updated_at: row.get(24)?,
         })
     })?;
 
@@ -471,6 +473,7 @@ pub fn delete_game(state: State<AppState>, id: String) -> Result<(), AppError> {
     let conn = state.games_db.lock()?;
 
     conn.execute("DELETE FROM games WHERE id = ?1", params![id])?;
+    conn.execute("DELETE FROM game_details WHERE game_id = ?1", params![id])?;
 
     Ok(())
 }
