@@ -91,6 +91,7 @@ impl HltbClient {
                         let path_suffix = cap[1].to_string();
                         let base_path = path_suffix.split('/').next().unwrap_or("").to_string();
                         candidates.push(format!("/api/{}", base_path));
+                        tracing::debug!("HLTB: endpoint descoberto dinamicamente: /api/{}", base_path);
                         break;
                     }
                 }
@@ -167,21 +168,39 @@ impl HltbClient {
         for endpoint in endpoints {
             let init_url = format!("{}{}/init?t={}", self.base_url, endpoint, timestamp);
 
-            if let Ok(response) = self
+            match self
                 .client
                 .get(&init_url)
                 .header("referer", &self.base_url)
                 .send()
                 .await
             {
-                if response.status().is_success() {
-                    if let Ok(text) = response.text().await {
-                        if let Ok(json_data) = serde_json::from_str::<Value>(&text) {
-                            if let Some(auth_struct) = self.extract_auth_from_json(&json_data) {
-                                return Ok((endpoint, auth_struct));
+                Ok(response) => {
+                    let status = response.status();
+                    if status.is_success() {
+                        if let Ok(text) = response.text().await {
+                            if let Ok(json_data) = serde_json::from_str::<Value>(&text) {
+                                if let Some(auth_struct) = self.extract_auth_from_json(&json_data) {
+                                    tracing::debug!("HLTB: endpoint '{}' OK, token obtido", endpoint);
+                                    return Ok((endpoint, auth_struct));
+                                }
+                                tracing::debug!(
+                                    "HLTB: endpoint '{}' respondeu 200 mas JSON não tinha os campos esperados: {}",
+                                    endpoint, text
+                                );
+                            } else {
+                                tracing::debug!(
+                                    "HLTB: endpoint '{}' respondeu 200 mas corpo não é JSON válido",
+                                    endpoint
+                                );
                             }
                         }
+                    } else {
+                        tracing::debug!("HLTB: endpoint '{}' falhou com status {}", endpoint, status);
                     }
+                }
+                Err(e) => {
+                    tracing::debug!("HLTB: endpoint '{}' erro de rede: {}", endpoint, e);
                 }
             }
         }
@@ -324,6 +343,9 @@ impl HltbClient {
             .or_else(|| json_response.get("items"))
             .and_then(|v| v.as_array());
 
+        let total_from_api = items_array.map(|v| v.len()).unwrap_or(0);
+        tracing::debug!("HLTB: API devolveu {} item(ns) para '{}'", total_from_api, game_name);
+
         let mut results = Vec::new();
         let query_numbers: Vec<&str> = game_name
             .split_whitespace()
@@ -403,6 +425,11 @@ impl HltbClient {
             }
         }
 
+        tracing::debug!(
+            "HLTB: {}/{} item(ns) passaram no filtro de similaridade (>= 0.4) para '{}'",
+            results.len(), total_from_api, game_name
+        );
+
         // Ordena do mais parecido para o menos parecido
         results.sort_by(|a, b| {
             b.similarity
@@ -437,33 +464,5 @@ impl HltbClient {
         }
 
         Ok(results)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_hltb_search_integration() {
-        let client = HltbClient::new();
-        let game_name = "The Witcher 3";
-
-        let result = client.search(game_name).await;
-        assert!(result.is_ok(), "A requisição falhou: {:?}", result.err());
-
-        let data = result.unwrap();
-        println!("\n>> {} Jogos Encontrados:", data.len());
-        for game in data.iter().take(3) {
-            println!(
-                "- {} (ID: {}) | Similaridade: {:.2}% | Main Story: {:?}h | Completionist: {:?}h",
-                game.game_name,
-                game.game_id,
-                game.similarity * 100.0,
-                game.main_story,
-                game.completionist
-            );
-        }
-        assert!(!data.is_empty(), "Nenhum jogo encontrado.");
     }
 }

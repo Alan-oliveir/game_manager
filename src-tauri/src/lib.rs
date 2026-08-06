@@ -153,6 +153,7 @@ pub fn run() {
             commands::metadata::search::get_game_media,
             commands::metadata::search::get_profile_similar_games,
             commands::metadata::search::search_hltb,
+            commands::metadata::search::get_trending_mods,
             commands::metadata::pcgamingwiki::get_or_fetch_pcgw_data,
             commands::metadata::pcgamingwiki::refresh_pcgw_data,
             commands::metadata::pcgamingwiki::search_pcgw_games,

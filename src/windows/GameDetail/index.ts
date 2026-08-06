@@ -7,5 +7,6 @@ export * from './GameEditForm';
 export * from './GameExtras';
 export * from './GameHeader';
 export * from './GameMedia';
+export * from './GameMods';
 export * from './GameSidebar';
 export * from './GameWindowTabs';

@@ -11,10 +11,12 @@ use crate::services::cache;
 use crate::services::integration::gamebrain::{GameMedia, SimilarGame};
 use crate::services::integration::gamerpower::{self, Giveaway};
 use crate::services::integration::hltb::{HltbClient, HltbEntry};
+use crate::services::integration::nexus::TrendingMod;
 use crate::services::integration::{gamebrain, rawg};
 use crate::services::recommendation::core::calculate_game_weight;
+use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, State};
 
 // === ESTRUTURAS ===
 
@@ -28,6 +30,18 @@ pub struct ProfileSimilarGame {
     /// Nome do jogo da biblioteca que originou esta sugestão.
     #[serde(rename = "becauseOf")]
     pub because_of: String,
+}
+
+#[derive(serde::Serialize)]
+pub enum ModsAvailability {
+    NoNexusMatch, // jogo não tem "nexus" em external_links
+    Available,
+}
+
+#[derive(serde::Serialize)]
+pub struct TrendingModsResult {
+    pub availability: ModsAvailability,
+    pub mods: Vec<TrendingMod>,
 }
 
 // === FUNÇÕES ===
@@ -173,10 +187,7 @@ pub async fn get_game_media(
 
 /// Busca dados do HLTB para um jogo
 #[tauri::command]
-pub async fn search_hltb(
-    app: AppHandle,
-    game_name: String,
-) -> Result<Vec<HltbEntry>, String> {
+pub async fn search_hltb(app: AppHandle, game_name: String) -> Result<Vec<HltbEntry>, String> {
     let state = app.state::<AppState>();
     let cache_key = format!("search_hltb_{}", game_name.to_lowercase());
 
@@ -198,4 +209,75 @@ pub async fn search_hltb(
     }
 
     Ok(results)
+}
+
+#[tauri::command]
+pub async fn get_trending_mods(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    game_id: String,
+) -> Result<TrendingModsResult, AppError> {
+    let nexus_url: Option<String> = {
+        let conn = state.games_db.lock()?;
+        conn.query_row(
+            "SELECT json_extract(external_links, '$.nexus') FROM game_details WHERE game_id = ?1",
+            params![game_id],
+            |row| row.get(0),
+        )
+            .optional()?
+            .flatten()
+    };
+
+    let Some(url) = nexus_url.filter(|u| !u.is_empty()) else {
+        return Ok(TrendingModsResult {
+            availability: ModsAvailability::NoNexusMatch,
+            mods: vec![],
+        });
+    };
+
+    let domain = crate::services::integration::nexus::extract_domain_from_nexus_url(&url)
+        .ok_or_else(|| AppError::ValidationError("URL da Nexus inválida".into()))?;
+
+    let api_key = database::get_secret(&app, "nexus_api_key")?;
+
+    // Verifica cache antes de fazer await
+    let cache_key = format!("trending_mods_{domain}");
+    let cached_mods = {
+        if let Ok(cache_conn) = state.cache_db.lock() {
+            if let Some(cached) = cache::get_cached_api_data(&cache_conn, "nexus", &cache_key) {
+                serde_json::from_str::<Vec<TrendingMod>>(
+                    &cached,
+                )
+                    .ok()
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    };
+
+    if let Some(mods) = cached_mods {
+        return Ok(TrendingModsResult {
+            availability: ModsAvailability::Available,
+            mods,
+        });
+    }
+
+    // Faz o fetch sem manter o guard
+    let mods = crate::services::integration::nexus::fetch_trending_mods(&api_key, domain)
+        .await
+        .map_err(|e| AppError::ExternalApiError(e.to_string()))?;
+
+    // Salva no cache
+    if let Ok(cache_conn) = state.cache_db.lock() {
+        if let Ok(json) = serde_json::to_string(&mods) {
+            let _ = cache::save_cached_api_data(&cache_conn, "nexus", &cache_key, &json);
+        }
+    }
+
+    Ok(TrendingModsResult {
+        availability: ModsAvailability::Available,
+        mods,
+    })
 }

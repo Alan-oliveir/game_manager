@@ -54,6 +54,8 @@
   "sidebar_duration": "Duration",
   "sidebar_other_versions": "Other Versions:",
   "sidebar_features": "Features",
+  "sidebar_playtime_heading": "Playtime",
+  "sidebar_hltb_heading": "HowLongtoBeat",
 
   "tags_mode": "Mode",
   "tags_narrative": "Narrative",
@@ -141,6 +143,17 @@
   "system_requirements_th_minimum": "Minimum",
   "system_requirements_th_recommended": "Recommended",
   "system_requirements_label_storage": "Storage",
+
+  "window_tabs_tab_addons": "Add-ons",
+  "addons_mods_header_title": "Trending Mods",
+  "addons_mods_count": "mods",
+  "addons_mods_loading_message": "Searching for mods...",
+  "addons_mods_empty_title": "No mods found",
+  "addons_no_nexus_match_title": "No match found on Nexus Mods",
+  "addons_no_nexus_match_description": "This game was not found in the Nexus Mods catalog.",
+  "addons_view_on_nexus": "View on Nexus Mods",
+  "addons_mod_link_title": "Open mod page",
+  "addons_unknown_error": "Unknown error while searching for mods",
 
   "path_row_copy_tooltip": "Copy path"
 }

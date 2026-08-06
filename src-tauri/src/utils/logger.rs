@@ -20,7 +20,10 @@ pub fn init_logging(log_dir: PathBuf) -> WorkerGuard {
     // Configura o formato do log para arquivo
     // Apenas INFO+ para reduzir ruído (DEBUG fica disponível via variável de ambiente)
     let registry = tracing_subscriber::registry()
-        .with(EnvFilter::new("warn,game_manager_lib=info,tao=error"))
+        .with(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("warn,game_manager_lib=info,tao=error")),
+        )
         .with(
             fmt::Layer::default()
                 .with_writer(non_blocking)

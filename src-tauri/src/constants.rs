@@ -114,6 +114,7 @@ pub const CACHE_EA_PLAY_TTL_DAYS: i64 = 30;
 pub const NEXUS_CACHE_TTL_DAYS: i64 = 20;
 pub const CACHE_HLTB_TTL_DAYS: i64 = 30;
 pub const CACHE_DEFAULT_TTL_DAYS: i64 = 7;
+pub const CACHE_NEXUS_TRENDING_MODS_TTL_DAYS: i64 = 28;
 
 // === CHAVES DE CACHE DE ASSINATURAS ===
 pub const AMAZON_LUNA_CACHE_SOURCE: &str = "amazon_luna";

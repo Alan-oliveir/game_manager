@@ -16,8 +16,13 @@ import { useTranslation } from 'react-i18next';
 import { Game, GameDetails, GamePlatformLink, GameTag } from '@/types/game';
 import { Badge } from '@/ui/badge';
 import { Button } from '@/ui/button';
-import { formatHours, formatTime, getPlaytimeCategory } from '@/utils';
-import { AgeRatingBadge, GameLinks, SteamReviewBadge } from '@/windows';
+import { formatTime } from '@/utils';
+import {
+  AgeRatingBadge,
+  GameLinks,
+  HltbBadge,
+  SteamReviewBadge,
+} from '@/windows';
 
 interface GameSidebarProps {
   game: Game;
@@ -37,7 +42,7 @@ const TAG_LABEL_KEYS: Record<string, string> = {
   meta: 'tags_meta',
 };
 
-function TagSection({ tags }: { tags: GameTag[] }) {
+function TagSection({ tags }: Readonly<{ tags: GameTag[] }>) {
   const { t } = useTranslation('game_detail');
 
   const grouped = tags.reduce(
@@ -90,7 +95,7 @@ export function GameSidebar({
   details,
   siblings,
   onSwitchGame,
-}: GameSidebarProps) {
+}: Readonly<GameSidebarProps>) {
   const { t } = useTranslation('game_detail');
 
   // Lógica para extrair APENAS os modos de jogo
@@ -169,52 +174,17 @@ export function GameSidebar({
 
       {/* 3. TEMPO DE JOGO (HOW LONG TO BEAT) */}
       {hasHltbData && (
-        <div className="space-y-1.5">
-          <h3 className="text-muted-foreground flex items-center gap-2 pb-2 text-sm font-bold tracking-wider uppercase">
-            <Clock size={18} /> {t('sidebar_playtime_heading', 'Tempo de Jogo')}
+        <div className="space-y-3">
+          <h3 className="text-muted-foreground flex items-center gap-2 text-sm font-bold tracking-wider uppercase">
+            <Clock size={18} /> {t('sidebar_playtime_heading')}
           </h3>
 
-          {/* Categoria baseada na Main Story, como você fazia antes */}
-          {details?.hltbMainStory && details.hltbMainStory > 0 && (
-            <DetailRow
-              icon={Clock}
-              label={t('sidebar_duration', 'Duração')}
-              value={getPlaytimeCategory(details.hltbMainStory).label}
-            />
-          )}
-
-          {/* Dados detalhados */}
-          {details?.hltbMainStory && details.hltbMainStory > 0 && (
-            <DetailRow
-              icon={Gamepad2}
-              label={t('sidebar_hltb_main', 'História Principal')}
-              value={formatHours(details.hltbMainStory)}
-            />
-          )}
-
-          {details?.hltbMainExtra && details.hltbMainExtra > 0 && (
-            <DetailRow
-              icon={ListCheck}
-              label={t('sidebar_hltb_extra', 'História + Extras')}
-              value={formatHours(details.hltbMainExtra)}
-            />
-          )}
-
-          {details?.hltbCompletionist && details.hltbCompletionist > 0 && (
-            <DetailRow
-              icon={Trophy}
-              label={t('sidebar_hltb_completionist', 'Completista')}
-              value={formatHours(details.hltbCompletionist)}
-            />
-          )}
-
-          {details?.hltbCoopTime && details.hltbCoopTime > 0 && (
-            <DetailRow
-              icon={Users}
-              label={t('sidebar_hltb_coop', 'Co-op')}
-              value={formatHours(details.hltbCoopTime)}
-            />
-          )}
+          <HltbBadge
+            mainStory={details?.hltbMainStory}
+            mainExtra={details?.hltbMainExtra}
+            completionist={details?.hltbCompletionist}
+            coopTime={details?.hltbCoopTime}
+          />
         </div>
       )}
 
@@ -319,11 +289,11 @@ function DetailRow({
   icon: Icon,
   label,
   value,
-}: {
+}: Readonly<{
   icon: LucideIcon;
   label: string;
   value?: string;
-}) {
+}>) {
   if (!value) return null;
 
   return (

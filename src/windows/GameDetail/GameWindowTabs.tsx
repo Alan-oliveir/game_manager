@@ -1,4 +1,4 @@
-import { BookOpen, Compass, Play, Wrench } from 'lucide-react';
+import { Blocks, BookOpen, Compass, Play, Wrench } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -8,12 +8,13 @@ import {
   GameDiscovery,
   GameExtras,
   GameMedia,
+  GameMods,
 } from '@/windows';
 
 // === TIPOS ===
 
 // Tipo das abas disponíveis
-type GameTab = 'description' | 'discovery' | 'media' | 'extras';
+type GameTab = 'description' | 'discovery' | 'addons' | 'media' | 'extras';
 
 interface Tab {
   id: GameTab;
@@ -41,6 +42,7 @@ export function GameTabs({ activeTab, onTabChange }: GameTabsProps) {
       label: t('window_tabs_tab_discovery'),
       icon: <Compass />,
     },
+    { id: 'addons', label: t('window_tabs_tab_addons'), icon: <Blocks /> },
     { id: 'media', label: t('window_tabs_tab_media'), icon: <Play /> },
     { id: 'extras', label: t('window_tabs_tab_extras'), icon: <Wrench /> },
   ];
@@ -115,6 +117,7 @@ export function GameContentTabs({
         {activeTab === 'discovery' && !isEditing && (
           <GameDiscovery game={game} />
         )}
+        {activeTab === 'addons' && !isEditing && <GameMods game={game} />}
         {activeTab === 'media' && !isEditing && <GameMedia game={game} />}
         {activeTab === 'extras' && !isEditing && (
           <GameExtras game={game} details={details} />

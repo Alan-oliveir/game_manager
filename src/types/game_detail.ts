@@ -164,3 +164,18 @@ export interface ProtonDbSummary {
   score: number;
   total: number;
 }
+
+export interface TrendingMod {
+  name: string;
+  author: string;
+  summary: string;
+  pictureUrl: string;
+  modPageUrl: string;
+}
+
+export type ModsAvailability = 'NoNexusMatch' | 'Available';
+
+export interface TrendingModsResult {
+  availability: ModsAvailability;
+  mods: TrendingMod[];
+}

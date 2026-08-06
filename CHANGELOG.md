@@ -2,10 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-## [4.4.0] - 2026-08-04
+## [4.4.0] - 2026-08-05
 
 ### Added
 
+- Platform grouping view for the Libraries screen: games can now be grouped by platform (Steam, Epic, GOG, etc.) in the
+  virtualized grid, with collapsible section headers showing the game count per platform.
+- New "Hide not installed" view filter, consolidated into a single dropdown menu alongside the existing "hide
+  duplicates" and "hide adult content".
+- Nexus Mods integration: a `nexus_games` reference table, refreshed from the Nexus API `games.json` endpoint , is used
+  to match library games against Nexus Mods' supported game catalog. Matched games receive a `nexus` entry in
+  `external_links` — no per-game API call required, matching is resolved entirely against the cached catalog.
+- Integration with HowLongToBeat (HLTB) to automatically fetch detailed completion time metrics (Main Story, Main +
+  Extra, Completionist, and Co-op).
 - Local playtime tracking for platforms without an official playtime API (Amazon, Battle.net, EA, Epic, GOG, Legacy
   Games, Ubisoft, Xbox, and manually scanned folders): while a game is running, a background process watcher accrues
   playtime in one-minute increments — matching the granularity already reported by Steam, Itch.io, and IndieGala —
@@ -15,6 +24,10 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 
+- `normalize_for_matching` now also strips straight and typographic apostrophes (`'` / `’`), improving cross-source name
+  matching (e.g. Steam Store data using typographic quotes) for series inference, Steam ID resolution and Nexus Mods
+  matcher that share this utility.
+- Game sidebar interface now displays specific HowLongToBeat time categories instead of a generic estimated playtime.
 - New `playtime_source` column on the `games` table, recording whether a game's playtime came from an official platform
   API (Steam, Itch.io, IndieGala) or from local tracking.
 

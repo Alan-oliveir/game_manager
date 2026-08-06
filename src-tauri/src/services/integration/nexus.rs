@@ -1,5 +1,6 @@
 use crate::utils::text::{normalize_for_matching, strip_edition_suffix};
 
+use crate::services::cache;
 use serde::Deserialize;
 
 // === STRUCTS ===
@@ -11,6 +12,45 @@ pub struct NexusGame {
     pub domain_name: String,
     pub genre: Option<String>,
     pub approved_date: Option<i64>,
+}
+
+/// Mod retornado por GET /v1/games/{domain}/mods/trending.json.
+/// A resposta é um array JSON puro (sem envelope "data"), e não traz
+/// mod_page_url — construímos a partir de domain_name + mod_id.
+#[derive(Debug, Deserialize)]
+struct NexusTrendingModRaw {
+    name: String,
+    author: String,
+    summary: String,
+    picture_url: String,
+    domain_name: String,
+    mod_id: i64,
+}
+
+#[derive(Debug, Deserialize, serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TrendingMod {
+    pub name: String,
+    pub author: String,
+    pub summary: String,
+    pub picture_url: String,
+    pub mod_page_url: String,
+}
+
+impl From<NexusTrendingModRaw> for TrendingMod {
+    fn from(raw: NexusTrendingModRaw) -> Self {
+        let mod_page_url = format!(
+            "https://www.nexusmods.com/{}/mods/{}",
+            raw.domain_name, raw.mod_id
+        );
+        TrendingMod {
+            name: raw.name,
+            author: raw.author,
+            summary: raw.summary,
+            picture_url: raw.picture_url,
+            mod_page_url,
+        }
+    }
 }
 
 // === NEXUS - CLIENTE ===
@@ -28,6 +68,60 @@ pub async fn fetch_nexus_games(api_key: &str) -> Result<Vec<NexusGame>, reqwest:
         .error_for_status()?;
 
     response.json::<Vec<NexusGame>>().await
+}
+
+pub async fn fetch_trending_mods(
+    api_key: &str,
+    domain: &str,
+) -> Result<Vec<TrendingMod>, reqwest::Error> {
+    let client = reqwest::Client::new();
+    let url = format!("https://api.nexusmods.com/v1/games/{domain}/mods/trending.json");
+
+    let response = client
+        .get(&url)
+        .header("accept", "application/json")
+        .header("apikey", api_key)
+        .header("User-Agent", "Playlite/1.0.0 (Windows_NT 10.0; x64)")
+        .send()
+        .await?
+        .error_for_status()?;
+
+    let raw: Vec<NexusTrendingModRaw> = response.json().await?;
+    Ok(raw.into_iter().map(TrendingMod::from).collect())
+}
+
+/// Extrai o domain_name da URL salva em `external_links["nexus"]`
+/// (ex: "https://www.nexusmods.com/skyrimspecialedition" -> "skyrimspecialedition").
+/// Evita duplicar o domínio em dois lugares — a URL já é a fonte da verdade.
+pub fn extract_domain_from_nexus_url(url: &str) -> Option<&str> {
+    url.trim_start_matches("https://www.nexusmods.com/")
+        .split('/')
+        .next()
+        .filter(|s| !s.is_empty())
+}
+
+pub async fn fetch_trending_mods_cached(
+    api_key: &str,
+    domain: &str,
+    cache_conn: &rusqlite::Connection,
+) -> Result<Vec<TrendingMod>, String> {
+    let cache_key = format!("trending_mods_{domain}");
+
+    if let Some(cached) = cache::get_cached_api_data(cache_conn, "nexus", &cache_key) {
+        if let Ok(mods) = serde_json::from_str::<Vec<TrendingMod>>(&cached) {
+            return Ok(mods);
+        }
+    }
+
+    let mods = fetch_trending_mods(api_key, domain)
+        .await
+        .map_err(|e| format!("Erro ao buscar mods em alta: {e}"))?;
+
+    if let Ok(json) = serde_json::to_string(&mods) {
+        let _ = cache::save_cached_api_data(cache_conn, "nexus", &cache_key, &json);
+    }
+
+    Ok(mods)
 }
 
 // === NEXUS - MATCHING ===

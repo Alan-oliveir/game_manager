@@ -1,8 +1,7 @@
-use serde::Serialize;
+use serde::{Serialize, Serializer};
 use thiserror::Error;
 
-#[derive(Debug, Error, Serialize)]
-#[serde(tag = "type", content = "message")]
+#[derive(Debug, Error)]
 pub enum AppError {
     #[error("Erro de banco de dados: {0}")]
     DatabaseError(String),
@@ -108,6 +107,9 @@ pub enum AppError {
 
     #[error("Erro ao verificar versão da ferramenta '{0}': {1}")]
     ToolVersionCheckError(String, String),
+
+    #[error("Erro ao consultar API externa: {0}")]
+    ExternalApiError(String),
 }
 
 impl From<rusqlite::Error> for AppError {
@@ -155,5 +157,16 @@ impl From<String> for AppError {
 impl From<AppError> for String {
     fn from(err: AppError) -> Self {
         err.to_string()
+    }
+}
+
+// Serializa como string simples usando o Display gerado pelo thiserror, em vez do enum.
+// O frontend recebe uma string no catch do invoke(), sem precisar inspecionar o shape do erro.
+impl Serialize for AppError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
     }
 }
