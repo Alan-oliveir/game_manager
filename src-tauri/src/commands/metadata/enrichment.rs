@@ -15,7 +15,6 @@ use super::shared::{
     EnrichProgress, ProcessedGameDetails,
 };
 use crate::commands::platforms::core::NewlyImportedGame;
-use crate::constants::RAWG_RATE_LIMIT_MS;
 use crate::database;
 use crate::database::AppState;
 use crate::services::cache;
@@ -23,9 +22,7 @@ use crate::services::integration::nexus::{find_best_nexus_match, NexusGame};
 use crate::services::integration::steam_api;
 use crate::utils::series;
 use std::collections::{HashMap, HashSet};
-use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, State};
-use tokio::time::sleep;
 use tracing::{info, warn};
 
 // === ESTRUTURAS DE DADOS ===
@@ -50,15 +47,12 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
         }
     };
 
-    // Todos os jogos do lote vêm da mesma importação — extrai a plataforma antes de consumir a lista no loop.
     let platform_label = games.first().map(|g| g.platform.clone());
 
     let state: State<AppState> = app.state();
     let total = games.len();
     let mut all_session_tags: HashSet<String> = HashSet::new();
-    let mut batch_results = Vec::new();
 
-    // Carrega o catálogo do Nexus uma única vez, direto do cache local
     let nexus_games: Vec<NexusGame> = state
         .cache_db
         .lock()
@@ -66,65 +60,84 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
         .and_then(|conn| cache::get_cached_nexus_games(&conn).ok())
         .unwrap_or_default();
 
-    // loop de processamento
-    for (index, game) in games.into_iter().enumerate() {
-        let _ = app.emit(
-            "enrich_progress",
-            EnrichProgress {
-                current: (index + 1) as i32,
-                total_found: total as i32,
-                last_game: game.name.clone(),
-                status: "running".to_string(),
-                platform: platform_label.clone(),
-            },
-        );
+    let batch_size = crate::constants::RAWG_REQUISITIONS_PER_BATCH as usize;
+    let mut processed_count = 0usize;
+    let mut total_success = 0usize;
+    let mut total_errors = 0usize;
 
-        let (processed_data, raw_tags, _rawg_found) = {
-            let cache_conn = match state.cache_db.lock() {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
-            tokio::task::block_in_place(|| {
-                let rt = tokio::runtime::Handle::current();
-                rt.block_on(async {
-                    enrich_game_metadata(
-                        &api_key,
-                        &game.game_id,
-                        &game.name,
-                        &game.platform,
-                        Some(game.platform_game_id.clone()),
-                        &cache_conn,
-                        &nexus_games,
-                    )
-                        .await
+    for chunk in games.chunks(batch_size) {
+        let mut batch_results = Vec::with_capacity(chunk.len());
+
+        for game in chunk {
+            processed_count += 1;
+
+            let _ = app.emit(
+                "enrich_progress",
+                EnrichProgress {
+                    current: processed_count as i32,
+                    total_found: total as i32,
+                    last_game: game.name.clone(),
+                    status: "running".to_string(),
+                    platform: platform_label.clone(),
+                },
+            );
+
+            let (processed_data, raw_tags, _rawg_found) = {
+                let cache_conn = match state.cache_db.lock() {
+                    Ok(c) => c,
+                    Err(_) => continue,
+                };
+                tokio::task::block_in_place(|| {
+                    let rt = tokio::runtime::Handle::current();
+                    rt.block_on(async {
+                        enrich_game_metadata(
+                            &api_key,
+                            &game.game_id,
+                            &game.name,
+                            &game.platform,
+                            Some(game.platform_game_id.clone()),
+                            &cache_conn,
+                            &nexus_games,
+                        )
+                            .await
+                    })
                 })
-            })
-        };
+            };
 
-        for tag in raw_tags {
-            all_session_tags.insert(tag);
-        }
-        batch_results.push((game.name, processed_data));
-
-        sleep(Duration::from_millis(RAWG_RATE_LIMIT_MS)).await;
-    }
-
-    // bloco de persistência/transação
-    if let Ok(mut conn) = state.games_db.lock() {
-        if let Ok(tx) = conn.transaction() {
-            let mut success = 0;
-            let mut errors = 0;
-            for (name, data) in batch_results {
-                if let Err(e) = save_game_details(&tx, data) {
-                    warn!("enrich_newly_imported: erro ao salvar {}: {}", name, e);
-                    errors += 1;
-                } else {
-                    success += 1;
-                }
+            for tag in raw_tags {
+                all_session_tags.insert(tag);
             }
-            match tx.commit() {
-                Ok(_) => info!("enrich_newly_imported: {} ok, {} erros", success, errors),
-                Err(e) => warn!("enrich_newly_imported: commit falhou: {}", e),
+            batch_results.push((game.name.clone(), processed_data));
+        }
+
+        // Persiste este lote antes de seguir pro próximo — se o app fechar
+        // no meio, no máximo os jogos deste lote são reprocessados depois.
+        if let Ok(mut conn) = state.games_db.lock() {
+            if let Ok(tx) = conn.transaction() {
+                let mut success = 0;
+                let mut errors = 0;
+                for (name, data) in batch_results {
+                    if let Err(e) = save_game_details(&tx, data) {
+                        warn!("enrich_newly_imported: erro ao salvar {}: {}", name, e);
+                        errors += 1;
+                    } else {
+                        success += 1;
+                    }
+                }
+                match tx.commit() {
+                    Ok(_) => {
+                        total_success += success;
+                        total_errors += errors;
+                        info!(
+                            "enrich_newly_imported: lote salvo ({} ok, {} erros, {}/{} no total)",
+                            success, errors, processed_count, total
+                        );
+                    }
+                    Err(e) => {
+                        warn!("enrich_newly_imported: commit do lote falhou: {}", e);
+                        total_errors += success + errors;
+                    }
+                }
             }
         }
     }
@@ -141,6 +154,11 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
             platform: platform_label,
             message,
         },
+    );
+
+    info!(
+        "enrich_newly_imported: {} ok, {} erros (total processado: {})",
+        total_success, total_errors, processed_count
     );
 }
 

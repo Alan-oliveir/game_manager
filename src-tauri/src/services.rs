@@ -21,3 +21,4 @@ pub mod recommendation;
 pub mod subscriptions;
 pub mod tags;
 pub mod tools;
+pub mod achievements;

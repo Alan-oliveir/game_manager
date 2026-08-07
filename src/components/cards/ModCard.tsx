@@ -9,7 +9,7 @@ interface ModCardProps {
   mod: TrendingMod;
 }
 
-export function ModCard({ mod }: ModCardProps) {
+export function ModCard({ mod }: Readonly<ModCardProps>) {
   const { t } = useTranslation('game_detail');
   const [imgError, setImgError] = useState(false);
 

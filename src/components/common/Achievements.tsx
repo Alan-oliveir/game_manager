@@ -7,12 +7,23 @@ import { useTranslation } from 'react-i18next';
 
 import { Skeleton } from '@/ui/skeleton';
 
+type Platform = 'steam' | 'epic' | 'gog' | 'xbox';
+
 interface Achievement {
+  platform: Platform;
   game_name: string;
   achievement_name: string;
   unlock_time: number; // Timestamp Unix
   game_id: string;
 }
+
+const PLATFORM_STYLES: Record<Platform, { label: string; className: string }> =
+  {
+    steam: { label: 'Steam', className: 'bg-sky-500/10 text-sky-500' },
+    epic: { label: 'Epic', className: 'bg-neutral-500/10 text-neutral-400' },
+    gog: { label: 'GOG', className: 'bg-purple-500/10 text-purple-400' },
+    xbox: { label: 'Xbox', className: 'bg-green-500/10 text-green-500' },
+  };
 
 export default function Achievements() {
   const { t } = useTranslation('common');
@@ -35,18 +46,34 @@ export default function Achievements() {
     );
   }
 
-  if (achievements.length != 0) {
+  if (achievements.length === 0) {
     return (
       <div className="space-y-3">
         <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
           <Trophy className="text-yellow-500" size={20} />
           {t('achievements_recent')}
         </h3>
+        <p className="text-muted-foreground text-sm">
+          {t('achievements_empty')}
+        </p>
+      </div>
+    );
+  }
 
-        <div className="space-y-2">
-          {achievements.map((ach, i) => (
+  return (
+    <div className="space-y-3">
+      <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
+        <Trophy className="text-yellow-500" size={20} />
+        {t('achievements_recent')}
+      </h3>
+
+      <div className="space-y-2">
+        {achievements.map(ach => {
+          const platform = PLATFORM_STYLES[ach.platform];
+
+          return (
             <div
-              key={i}
+              key={`${ach.platform}-${ach.game_id}-${ach.achievement_name}`}
               className="bg-card hover:bg-accent/5 flex items-center justify-between rounded-lg border p-3 transition-colors"
             >
               <div className="flex items-center gap-3 overflow-hidden">
@@ -57,9 +84,16 @@ export default function Achievements() {
                   <p className="truncate text-sm font-semibold">
                     {ach.achievement_name}
                   </p>
-                  <p className="text-muted-foreground truncate text-xs">
-                    {ach.game_name}
-                  </p>
+                  <div className="flex items-center gap-1.5 overflow-hidden">
+                    <span
+                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${platform.className}`}
+                    >
+                      {platform.label}
+                    </span>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {ach.game_name}
+                    </p>
+                  </div>
                 </div>
               </div>
               <span className="text-muted-foreground ml-2 shrink-0 text-[10px] whitespace-nowrap">
@@ -69,9 +103,9 @@ export default function Achievements() {
                 })}
               </span>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
-    );
-  }
+    </div>
+  );
 }
