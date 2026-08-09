@@ -9,11 +9,13 @@ import { toast } from '@/utils/toast';
  * Hook para gerenciar a seleção e o salvamento de um executável descoberto
  * pelo scanner local (usado pelo modal ExecutableSelection).
  *
+ * @param rootFolderPath - Caminho da pasta raiz onde os jogos foram encontrados
  * @param discovery - Descoberta de jogo cujo executável será selecionado
  * @param onSuccess - Callback chamado após adicionar o jogo com sucesso (ex: fechar o modal)
  * @returns Estado de salvamento e função de seleção
  */
 export function useExecutableSelection(
+  rootFolderPath: string,
   discovery: GameDiscovery,
   onSuccess: () => void
 ) {
@@ -24,7 +26,7 @@ export function useExecutableSelection(
     setIsSaving(true);
 
     try {
-      await addGameFromScan(discovery, executable);
+      await addGameFromScan(rootFolderPath, discovery, executable);
       toast.success(
         t('executable_added_to_library', { name: discovery.suggestedName })
       );

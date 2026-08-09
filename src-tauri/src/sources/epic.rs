@@ -194,6 +194,7 @@ impl EpicSource {
             install_path: Some(install_location),
             playtime_minutes: None,
             last_played: None,
+            source_label: None,
         })
     }
 
@@ -335,6 +336,7 @@ impl EpicSource {
                 install_path: None,
                 playtime_minutes: None,
                 last_played: None,
+                source_label: None,
             })
             .collect();
 

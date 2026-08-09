@@ -144,6 +144,7 @@ export interface Game {
 
   // Identificação
   platform: Platform;
+  sourceLabel?: string;
   platformGameId: string;
   genres?: string;
   developer?: string;

@@ -52,7 +52,7 @@ pub fn fetch_backup_data(state: &State<AppState>) -> Result<BackupDataTuple, App
 /// Busca todos os jogos na biblioteca
 fn fetch_games(conn: &Connection) -> Result<Vec<Game>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, slug, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, playtime_source, last_played, added_at, alternative_names FROM games"
+        "SELECT id, name, slug, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, playtime_source, last_played, added_at, alternative_names, source_label FROM games"
     )?;
 
     let game_iter = stmt.query_map([], |row| {
@@ -86,6 +86,7 @@ fn fetch_games(conn: &Connection) -> Result<Vec<Game>, AppError> {
             last_played: row.get(16)?,
             added_at: row.get(17)?,
             is_adult: false,
+            source_label: row.get(19)?,
         })
     })?;
 

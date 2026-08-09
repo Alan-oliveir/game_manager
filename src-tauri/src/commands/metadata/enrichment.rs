@@ -17,13 +17,13 @@ use super::shared::{
 use crate::commands::platforms::core::NewlyImportedGame;
 use crate::database;
 use crate::database::AppState;
+use crate::providers::metadata::igdb;
+use crate::providers::mods::nexus::{find_best_nexus_match, NexusGame};
 use crate::services::cache;
-use crate::services::integration::nexus::{find_best_nexus_match, NexusGame};
-use crate::services::integration::{igdb, steam_api};
+use crate::services::integration::steam_api;
 use std::collections::{HashMap, HashSet};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tracing::{info, warn};
-
 // === ESTRUTURAS DE DADOS ===
 
 #[derive(serde::Serialize)]

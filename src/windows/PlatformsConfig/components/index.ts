@@ -9,4 +9,5 @@ export { PlatformActionsFooter } from './PlatformActionsFooter';
 export { PlatformHeader } from './PlatformHeader';
 export { PlatformHelpBox } from './PlatformHelpBox';
 export { ScanResultBanner } from './ScanResultBanner';
+export { ScanSourcesList } from './ScanSourcesList';
 export { WarningBox } from './WarningBox';

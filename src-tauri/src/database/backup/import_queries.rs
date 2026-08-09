@@ -23,8 +23,8 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
 
     // Prepared statements para melhor desempenho
     let mut game_stmt = conn.prepare(
-        "INSERT OR REPLACE INTO games (id, name, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, last_played, added_at, alternative_names)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)"
+        "INSERT OR REPLACE INTO games (id, name, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, last_played, added_at, alternative_names, source_label)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)"
     )?;
 
     let mut details_stmt = conn.prepare(
@@ -69,7 +69,8 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             game.playtime,
             game.last_played,
             game.added_at,
-            alt_names_json
+            alt_names_json,
+            game.source_label,
         ])?;
     }
 

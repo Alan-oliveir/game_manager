@@ -95,6 +95,7 @@ impl GogSource {
                 install_path: None,
                 playtime_minutes: None,
                 last_played: None,
+                source_label: None,
             })
             .collect();
 
@@ -134,43 +135,43 @@ impl OAuthGameSource for GogSource {
             "gog_oauth_login",
             WebviewUrl::External(auth_url),
         )
-        .title("Login GOG")
-        .inner_size(480.0, 720.0)
-        .on_navigation(move |url| {
-            let url_str = url.as_str();
-            if url_str.starts_with(&redirect_uri) {
-                let code = url
-                    .query_pairs()
-                    .find(|(k, _)| k == "code")
-                    .map(|(_, v)| v.to_string());
-                let state = url
-                    .query_pairs()
-                    .find(|(k, _)| k == "state")
-                    .map(|(_, v)| v.to_string());
+            .title("Login GOG")
+            .inner_size(480.0, 720.0)
+            .on_navigation(move |url| {
+                let url_str = url.as_str();
+                if url_str.starts_with(&redirect_uri) {
+                    let code = url
+                        .query_pairs()
+                        .find(|(k, _)| k == "code")
+                        .map(|(_, v)| v.to_string());
+                    let state = url
+                        .query_pairs()
+                        .find(|(k, _)| k == "state")
+                        .map(|(_, v)| v.to_string());
 
-                let result = match code {
-                    Some(code) => Ok(AuthCallbackResult { code, state }),
-                    None => Err("Redirect alcançado, mas sem 'code' na URL".to_string()),
-                };
-                let _ = tx.send(result);
-                return false;
-            }
-            true
-        })
-        .build()
-        .map_err(|e| {
-            AppError::OAuthConfigError(format!("Falha ao abrir janela de login GOG: {e}"))
-        })?;
+                    let result = match code {
+                        Some(code) => Ok(AuthCallbackResult { code, state }),
+                        None => Err("Redirect alcançado, mas sem 'code' na URL".to_string()),
+                    };
+                    let _ = tx.send(result);
+                    return false;
+                }
+                true
+            })
+            .build()
+            .map_err(|e| {
+                AppError::OAuthConfigError(format!("Falha ao abrir janela de login GOG: {e}"))
+            })?;
 
         let callback = tokio::task::spawn_blocking(move || {
             rx.recv_timeout(Duration::from_secs(
                 crate::constants::OAUTH_CALLBACK_TIMEOUT_SECS,
             ))
         })
-        .await
-        .map_err(|e| AppError::OAuthConfigError(format!("Task de callback falhou: {e}")))?
-        .map_err(|_| AppError::OAuthConfigError("Tempo limite de login excedido".to_string()))?
-        .map_err(AppError::OAuthConfigError)?;
+            .await
+            .map_err(|e| AppError::OAuthConfigError(format!("Task de callback falhou: {e}")))?
+            .map_err(|_| AppError::OAuthConfigError("Tempo limite de login excedido".to_string()))?
+            .map_err(AppError::OAuthConfigError)?;
 
         let _ = window.close();
 

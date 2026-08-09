@@ -114,6 +114,7 @@ impl EaSource {
                         install_path: Some(path.to_string_lossy().to_string()),
                         playtime_minutes: None,
                         last_played: None,
+                        source_label: None,
                     });
                 }
             } else if install_dir.exists() {
@@ -137,6 +138,7 @@ impl EaSource {
                 install_path: None,
                 playtime_minutes: None,
                 last_played: None,
+                source_label: None,
             });
         }
 

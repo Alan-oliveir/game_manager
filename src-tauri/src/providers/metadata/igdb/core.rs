@@ -1,5 +1,5 @@
 use crate::commands::metadata::shared::ProcessedGameDetails;
-use crate::services::integration::igdb::models::IgdbGame;
+use crate::providers::metadata::igdb::models::IgdbGame;
 use std::collections::HashMap;
 
 pub struct IgdbDlc {

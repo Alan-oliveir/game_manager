@@ -173,6 +173,7 @@ impl BattleNetSource {
                 install_path: Some(install_path.clone()),
                 playtime_minutes: None,
                 last_played,
+                source_label: None,
             });
         }
 

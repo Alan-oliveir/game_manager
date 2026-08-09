@@ -22,6 +22,7 @@ mod security;
 pub mod services;
 pub mod sources;
 pub mod utils;
+pub mod providers;
 
 use crate::initialization::initialize_app;
 use crate::utils::logger;
@@ -119,6 +120,9 @@ pub fn run() {
             commands::platforms::scanner::scan_games_folder,
             commands::platforms::scanner::add_game_from_scan,
             commands::platforms::scanner::add_games_from_scan,
+            commands::platforms::scanner::list_scan_sources,
+            commands::platforms::scanner::rename_scan_source,
+            commands::platforms::scanner::delete_scan_source,
             commands::platforms::steam::import_steam_library,
             commands::platforms::epic::epic_login,
             commands::platforms::epic::epic_logout,

@@ -104,6 +104,7 @@ export const LibraryGameCard = memo(function LibraryGameCard({
         title={game.name}
         coverUrl={game.coverUrl}
         platform={PlatformDisplayNames[game.platform]}
+        sourceLabel={game.sourceLabel}
         subtitle={subtitle}
         rating={game.userRating || undefined}
         onClick={handleClick}

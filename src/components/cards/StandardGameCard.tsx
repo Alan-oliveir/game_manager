@@ -11,6 +11,7 @@ interface StandardGameCardProps {
   coverUrl?: string | null;
   subtitle?: string;
   platform?: string;
+  sourceLabel?: string;
   badge?: ReactNode;
   rating?: number;
   onClick?: () => void;
@@ -39,6 +40,7 @@ function StandardGameCard({
   coverUrl,
   subtitle,
   platform,
+  sourceLabel,
   badge,
   rating,
   onClick,
@@ -48,8 +50,9 @@ function StandardGameCard({
 }: Readonly<StandardGameCardProps>) {
   const [imageError, setImageError] = useState(false);
   const { t } = useTranslation('library');
-
   const handleImageError = useCallback(() => setImageError(true), []);
+  const label =
+    platform && sourceLabel ? `${platform} • ${sourceLabel}` : platform;
 
   return (
     <div
@@ -85,9 +88,12 @@ function StandardGameCard({
           </div>
         )}
 
-        {platform && (
-          <div className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-md">
-            {platform}
+        {label && (
+          <div
+            className="absolute top-2 right-2 z-10 flex max-w-[75%] items-center gap-1 truncate rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-md"
+            title={label}
+          >
+            {label}
           </div>
         )}
 

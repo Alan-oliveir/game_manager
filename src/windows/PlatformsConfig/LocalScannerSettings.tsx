@@ -4,11 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { SettingsRow } from '@/components/common';
 import { useScanner } from '@/hooks';
 import { Button } from '@/ui/button';
+import { DiscoveriesList } from '@/windows';
+import { ScanSourcesList } from '@/windows/PlatformsConfig/components';
 
 import { PlatformActionButton } from './components/PlatformActionButton';
 import { PlatformHeader } from './components/PlatformHeader';
 import { ScanResultBanner } from './components/ScanResultBanner';
-import { DiscoveriesList } from './DiscoveriesList';
 
 export function LocalScannerSettings() {
   const { t } = useTranslation('platforms');
@@ -92,7 +93,10 @@ export function LocalScannerSettings() {
                     {t('scanner_choose_executables')}
                   </h3>
                 </div>
-                <DiscoveriesList discoveries={result.discoveries} />
+                <DiscoveriesList
+                  discoveries={result.discoveries}
+                  rootFolderPath={selectedFolder}
+                />
               </div>
             )}
           </div>
@@ -106,6 +110,11 @@ export function LocalScannerSettings() {
             </p>
           </div>
         )}
+
+        {/* Seção de gerenciamento das fontes de scan salvas */}
+        <div className="space-y-3 border-t pt-6">
+          <ScanSourcesList />
+        </div>
       </div>
     </div>
   );

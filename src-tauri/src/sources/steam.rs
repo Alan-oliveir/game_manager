@@ -612,6 +612,7 @@ impl GameSource for SteamSource {
                     install_path: game.install_path,
                     playtime_minutes: Some(game.playtime_forever as u32),
                     last_played: Some(game.rtime_last_played),
+                    source_label: None,
                 }
             })
             .collect();

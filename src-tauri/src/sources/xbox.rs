@@ -203,5 +203,6 @@ fn parse_game_folder(game_folder: &Path) -> Result<Option<SourceGame>, AppError>
         install_path: Some(game_folder.join("content").to_string_lossy().to_string()),
         playtime_minutes: None,
         last_played: None,
+        source_label: None,
     }))
 }

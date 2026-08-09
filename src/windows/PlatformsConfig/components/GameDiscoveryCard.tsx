@@ -11,6 +11,7 @@ import { ExecutableSelection } from '@/windows';
 
 interface GameDiscoveryCardProps {
   discovery: GameDiscovery;
+  rootFolderPath: string;
 }
 
 /**
@@ -21,6 +22,7 @@ interface GameDiscoveryCardProps {
  */
 export function GameDiscoveryCard({
   discovery,
+  rootFolderPath,
 }: Readonly<GameDiscoveryCardProps>) {
   const { t } = useTranslation('platforms');
   const [showModal, setShowModal] = useState(false);
@@ -73,6 +75,7 @@ export function GameDiscoveryCard({
       <ExecutableSelection
         open={showModal}
         discovery={discovery}
+        rootFolderPath={rootFolderPath}
         onClose={() => setShowModal(false)}
       />
     </>

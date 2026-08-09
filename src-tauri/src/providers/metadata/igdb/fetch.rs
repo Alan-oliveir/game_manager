@@ -1,5 +1,5 @@
-use crate::services::integration::igdb::client::igdb_request;
-use crate::services::integration::igdb::models::IgdbGame;
+use crate::providers::metadata::igdb::client::igdb_request;
+use crate::providers::metadata::igdb::models::IgdbGame;
 use tauri::AppHandle;
 
 const CANONICAL_FIELDS: &str = "\

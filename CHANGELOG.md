@@ -2,10 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-## [4.4.0] - 2026-08-05
+## [4.4.0] - 2026-08-09
 
 ### Added
 
+- Scan sources for the local folder scanner: each scanned root folder is now saved as a named source (defaulting to the
+  folder name), letting locally-imported games be tracked, labeled, and managed independently of a one-off scan.
+- New `scan_sources` table and a `source_label` column on `games`, propagated through the import pipeline so manually
+  scanned games carry their originating folder's label.
+- Local Scanner settings screen now includes a section listing all saved scan sources, with rename and delete actions
+  (deleting a source can optionally remove its associated games) and a manual refresh control.
+- Folder re-scans now flag previously imported games (`alreadyImported`), so the discovery list distinguishes new finds
+  from games already in the library instead of re-presenting everything for manual selection.
+- Game cards for locally scanned games now display their source label alongside the platform badge.
 - Platform grouping view for the Libraries screen: games can now be grouped by platform (Steam, Epic, GOG, etc.) in the
   virtualized grid, with collapsible section headers showing the game count per platform.
 - New "Hide not installed" view filter, consolidated into a single dropdown menu alongside the existing "hide
@@ -24,6 +33,8 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 
+- `add_game_from_scan` and `add_games_from_scan` now resolve and persist the originating scan source's label
+  automatically, falling back to the folder name if the source hasn't been explicitly labeled yet.
 - `normalize_for_matching` now also strips straight and typographic apostrophes (`'` / `’`), improving cross-source name
   matching (e.g. Steam Store data using typographic quotes) for series inference, Steam ID resolution and Nexus Mods
   matcher that share this utility.

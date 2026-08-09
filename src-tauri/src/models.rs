@@ -193,12 +193,17 @@ pub struct Game {
     pub id: String,
     pub name: String,
     pub slug: String,
-    pub cover_url: Option<String>,
+    pub alternative_names: Option<Vec<String>>,
+    pub source_label: Option<String>,
+    pub platform_game_id: String,
+
+    // Metadados básicos
     pub genres: Option<String>,
     pub developer: Option<String>,
     pub platform: Platform,
-    pub platform_game_id: String,
-    pub alternative_names: Option<Vec<String>>,
+
+    // Mídia
+    pub cover_url: Option<String>,
 
     // Execução
     pub installed: bool,

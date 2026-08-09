@@ -129,6 +129,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
             slug TEXT NOT NULL DEFAULT '',
             cover_url TEXT,
             platform TEXT NOT NULL,
+            source_label TEXT,
             platform_game_id TEXT NOT NULL,
             alternative_names TEXT,
             installed BOOLEAN DEFAULT 0,
@@ -238,6 +239,18 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         description TEXT,
         description_ptbr TEXT,
         FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
+    )",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS scan_sources (
+        id TEXT PRIMARY KEY,
+        folder_path TEXT NOT NULL UNIQUE,
+        label TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        last_scanned_at TEXT
     )",
         [],
     )

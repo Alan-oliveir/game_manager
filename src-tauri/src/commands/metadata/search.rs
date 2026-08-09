@@ -7,17 +7,17 @@ use crate::database;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::models::Game;
+use crate::providers::metadata::rawg;
+use crate::providers::mods::nexus::TrendingMod;
 use crate::services::cache;
+use crate::services::integration::gamebrain;
 use crate::services::integration::gamebrain::{GameMedia, SimilarGame};
 use crate::services::integration::gamerpower::{self, Giveaway};
 use crate::services::integration::hltb::{HltbClient, HltbEntry};
-use crate::services::integration::nexus::TrendingMod;
-use crate::services::integration::{gamebrain, rawg};
 use crate::services::recommendation::core::calculate_game_weight;
 use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
-
 // === ESTRUTURAS ===
 
 /// Jogo similar retornado para a seção de perfil em Trending.
@@ -235,7 +235,7 @@ pub async fn get_trending_mods(
         });
     };
 
-    let domain = crate::services::integration::nexus::extract_domain_from_nexus_url(&url)
+    let domain = crate::providers::mods::nexus::extract_domain_from_nexus_url(&url)
         .ok_or_else(|| AppError::ValidationError("URL da Nexus inválida".into()))?;
 
     let api_key = database::get_secret(&app, "nexus_api_key")?;
@@ -262,7 +262,7 @@ pub async fn get_trending_mods(
     }
 
     // Faz o fetch sem manter o guard
-    let mods = crate::services::integration::nexus::fetch_trending_mods(&api_key, domain)
+    let mods = crate::providers::mods::nexus::fetch_trending_mods(&api_key, domain)
         .await
         .map_err(|e| AppError::ExternalApiError(e.to_string()))?;
 

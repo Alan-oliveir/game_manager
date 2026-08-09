@@ -230,6 +230,7 @@ impl IndiegalaSource {
                 install_path,
                 playtime_minutes,
                 last_played: None,
+                source_label: None,
             };
 
             results.push(IndiegalaGame {
@@ -326,6 +327,7 @@ impl IndiegalaSource {
                 install_path: None,
                 playtime_minutes: None,
                 last_played: None,
+                source_label: None,
             };
 
             results.push(IndiegalaGame {

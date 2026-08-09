@@ -12,9 +12,11 @@ export interface ScanResult {
 export interface GameDiscovery {
   id: string;
   basePath: string;
+  executablePath: string;
   suggestedName: string;
   confidence: number;
   executables: ExecutableCandidate[];
+  alreadyImported: boolean;
 }
 
 export interface ExecutableCandidate {
@@ -23,4 +25,14 @@ export interface ExecutableCandidate {
   sizeMb: number;
   rankScore: number;
   executableType: 'WindowsExe' | 'LinuxElf' | 'Script' | 'Unknown';
+}
+
+// Espelha ScanSourceInfo do Rust
+export interface ScanSourceInfo {
+  id: string;
+  folderPath: string;
+  label: string;
+  createdAt: string;
+  lastScannedAt: string | null;
+  gameCount: number;
 }

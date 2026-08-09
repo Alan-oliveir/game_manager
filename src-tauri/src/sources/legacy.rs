@@ -361,6 +361,7 @@ impl LegacySource {
                 install_path,
                 playtime_minutes: Some(0),
                 last_played: None,
+                source_label: None,
             };
 
             results.push(LegacyGame {

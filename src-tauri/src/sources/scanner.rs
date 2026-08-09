@@ -29,6 +29,7 @@ use std::time::SystemTime;
 
 pub struct ScanSource {
     pub folder_path: String,
+    pub label: String,
 }
 
 /// Representa uma sessão de escaneamento de pastas
@@ -49,6 +50,8 @@ pub struct GameDiscovery {
     pub suggested_name: String,
     pub confidence: i32,
     pub executables: Vec<ExecutableCandidate>,
+    #[serde(default)]
+    pub already_imported: bool,
 }
 
 /// Representa um executável candidato a ser o launcher do jogo
@@ -148,6 +151,7 @@ fn scan_game_folder(_session_id: &str, folder: &Path) -> Result<Option<GameDisco
         suggested_name: folder_name,
         confidence,
         executables,
+        already_imported: false,
     }))
 }
 
@@ -452,6 +456,7 @@ impl GameSource for ScanSource {
                 install_path: Some(game.base_path),
                 playtime_minutes: Some(0),
                 last_played: None,
+                source_label: Some(self.label.clone()),
             })
             .collect();
 

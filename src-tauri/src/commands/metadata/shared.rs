@@ -5,13 +5,13 @@
 use crate::constants::NOT_FOUND_MARKER;
 use crate::database;
 use crate::models::{GameDescription, ImportConfidence};
+use crate::providers::metadata::rawg;
 use crate::services::cache;
-use crate::services::integration::{hltb, rawg, steam_api};
+use crate::services::integration::{hltb, steam_api};
 use crate::utils::text::{is_likely_non_base_game, normalize_for_matching, strip_edition_suffix};
 use rusqlite::params;
 use std::collections::HashMap;
 use tracing::warn;
-
 // === ESTRUTURAS COMPARTILHADAS ===
 
 /// Progresso de enriquecimento de metadados

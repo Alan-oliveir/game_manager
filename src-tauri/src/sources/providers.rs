@@ -25,6 +25,7 @@ pub struct SourceGame {
     pub install_path: Option<String>,
     pub playtime_minutes: Option<u32>,
     pub last_played: Option<i64>, // Unix timestamp
+    pub source_label: Option<String>,
 }
 
 #[async_trait]

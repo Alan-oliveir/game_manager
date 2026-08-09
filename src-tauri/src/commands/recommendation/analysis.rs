@@ -194,6 +194,7 @@ fn fetch_games_with_details(
                 genres: None,
                 developer: None,
                 is_adult: false,
+                source_label: None,
             };
 
             let genres_json: Option<String> = row.get(13)?;

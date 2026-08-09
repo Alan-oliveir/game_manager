@@ -208,6 +208,7 @@ impl UbisoftSource {
                 install_path,
                 playtime_minutes: None,
                 last_played: None,
+                source_label: None,
             });
         };
 

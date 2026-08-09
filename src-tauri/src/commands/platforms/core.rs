@@ -112,10 +112,10 @@ pub(crate) async fn persist_source_games(
 
             tx.execute(
                 "INSERT INTO games (
-                id, name, slug, cover_url, platform, platform_game_id,
-                installed, status, playtime, playtime_source, last_played, added_at,
-                favorite, user_rating, install_path, executable_path
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, NULL, ?13, ?14)",
+                        id, name, slug, cover_url, platform, platform_game_id,
+                        installed, status, playtime, playtime_source, last_played, added_at,
+                        favorite, user_rating, install_path, executable_path, source_label
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, NULL, ?13, ?14, ?15)",
                 params![
                     new_id,
                     display_name,
@@ -131,6 +131,7 @@ pub(crate) async fn persist_source_games(
                     now,
                     game.install_path,
                     game.executable_path,
+                    game.source_label,
                 ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
@@ -154,8 +155,9 @@ pub(crate) async fn persist_source_games(
                     playtime_source = ?4,
                     last_played = ?5,
                     install_path = COALESCE(?6, install_path),
-                    executable_path = COALESCE(?7, executable_path)
-                WHERE platform = ?8 AND platform_game_id = ?9",
+                    executable_path = COALESCE(?7, executable_path),
+                    source_label = COALESCE(?8, source_label)
+                WHERE platform = ?9 AND platform_game_id = ?10",
                     params![
                         game.installed,
                         status,
@@ -165,6 +167,7 @@ pub(crate) async fn persist_source_games(
                         last_played_iso,
                         game.install_path,
                         game.executable_path,
+                        game.source_label,
                         game.platform,
                         game.platform_game_id
                     ],
@@ -179,14 +182,16 @@ pub(crate) async fn persist_source_games(
                     status = ?2,
                     last_played = ?3,
                     install_path = COALESCE(?4, install_path),
-                    executable_path = COALESCE(?5, executable_path)
-                WHERE platform = ?6 AND platform_game_id = ?7",
+                    executable_path = COALESCE(?5, executable_path),
+                    source_label = COALESCE(?6, source_label)
+                WHERE platform = ?7 AND platform_game_id = ?8",
                     params![
                         game.installed,
                         status,
                         last_played_iso,
                         game.install_path,
                         game.executable_path,
+                        game.source_label,
                         game.platform,
                         game.platform_game_id
                     ],

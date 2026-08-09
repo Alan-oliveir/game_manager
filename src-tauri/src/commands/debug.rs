@@ -2,8 +2,8 @@
 //!
 //! Usaado apenas durante o desenvolvimento.
 
-use crate::services::integration::igdb::client::test_connection;
-use crate::services::integration::igdb::{core::map_igdb_game, fetch::search_and_resolve};
+use crate::providers::metadata::igdb::client::test_connection;
+use crate::providers::metadata::igdb::{core::map_igdb_game, fetch::search_and_resolve};
 use tauri::AppHandle;
 
 // === IGDB - Auth ===

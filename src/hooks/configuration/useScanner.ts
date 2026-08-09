@@ -55,6 +55,7 @@ export function useScanner() {
 
     try {
       const games = result.discoveries
+        .filter(d => !d.alreadyImported) // Filtra apenas jogos que ainda não foram importados
         .map(d => {
           const best = getBestExecutable(d);
 
@@ -76,7 +77,13 @@ export function useScanner() {
           } => game !== null
         );
 
-      const message = await addGamesFromScan(games);
+      if (games.length === 0) {
+        toast.info(t('scanner_no_new_games'));
+
+        return;
+      }
+
+      const message = await addGamesFromScan(selectedFolder, games);
       setResult({ ...result, message });
     } catch (error) {
       toast.error(t('scanner_add_all_failed'));

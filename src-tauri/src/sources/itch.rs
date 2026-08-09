@@ -292,6 +292,7 @@ impl ItchioSource {
             install_path: (!install_path.is_empty()).then_some(install_path),
             playtime_minutes,
             last_played: playtime.last_touched_unix,
+            source_label: None,
         };
 
         ItchioGame {
@@ -389,6 +390,7 @@ impl ItchioSource {
                 install_path: None,
                 playtime_minutes: None,
                 last_played: None,
+                source_label: None,
             };
 
             results.push(ItchioGame {

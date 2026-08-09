@@ -27,15 +27,21 @@ interface ExecutableSelectionProps {
   open: boolean;
   onClose: () => void;
   discovery: GameDiscovery;
+  rootFolderPath: string;
 }
 
 export function ExecutableSelection({
   open,
   onClose,
   discovery,
+  rootFolderPath,
 }: Readonly<ExecutableSelectionProps>) {
   const { t } = useTranslation('platforms');
-  const { isSaving, handleSelect } = useExecutableSelection(discovery, onClose);
+  const { isSaving, handleSelect } = useExecutableSelection(
+    rootFolderPath,
+    discovery,
+    onClose
+  );
 
   const sortedExecutables = useMemo(
     () => [...discovery.executables].sort((a, b) => b.rankScore - a.rankScore),

@@ -160,36 +160,36 @@ impl AmazonSource {
             "amazon_oauth_login",
             WebviewUrl::External(auth_url),
         )
-        .title("Login Amazon Games")
-        .inner_size(480.0, 720.0)
-        .on_navigation(move |url| {
-            let url_str = url.as_str();
-            if url_str.starts_with(AMAZON_REDIRECT_PREFIX) {
-                let code = url
-                    .query_pairs()
-                    .find(|(k, _)| k == "openid.oa2.authorization_code")
-                    .map(|(_, v)| v.to_string());
-                let result = code.ok_or_else(|| {
-                    "Redirect da Amazon alcançado, mas sem 'openid.oa2.authorization_code' na URL"
-                        .to_string()
-                });
-                let _ = tx.send(result);
-                return false;
-            }
-            true
-        })
-        .build()
-        .map_err(|e| {
-            AppError::OAuthConfigError(format!("Falha ao abrir janela de login Amazon: {e}"))
-        })?;
+            .title("Login Amazon Games")
+            .inner_size(480.0, 720.0)
+            .on_navigation(move |url| {
+                let url_str = url.as_str();
+                if url_str.starts_with(AMAZON_REDIRECT_PREFIX) {
+                    let code = url
+                        .query_pairs()
+                        .find(|(k, _)| k == "openid.oa2.authorization_code")
+                        .map(|(_, v)| v.to_string());
+                    let result = code.ok_or_else(|| {
+                        "Redirect da Amazon alcançado, mas sem 'openid.oa2.authorization_code' na URL"
+                            .to_string()
+                    });
+                    let _ = tx.send(result);
+                    return false;
+                }
+                true
+            })
+            .build()
+            .map_err(|e| {
+                AppError::OAuthConfigError(format!("Falha ao abrir janela de login Amazon: {e}"))
+            })?;
 
         let code = tokio::task::spawn_blocking(move || {
             rx.recv_timeout(Duration::from_secs(OAUTH_CALLBACK_TIMEOUT_SECS))
         })
-        .await
-        .map_err(|e| AppError::OAuthConfigError(format!("Task de callback falhou: {e}")))?
-        .map_err(|_| AppError::OAuthConfigError("Tempo limite de login excedido".to_string()))?
-        .map_err(AppError::OAuthConfigError)?;
+            .await
+            .map_err(|e| AppError::OAuthConfigError(format!("Task de callback falhou: {e}")))?
+            .map_err(|_| AppError::OAuthConfigError("Tempo limite de login excedido".to_string()))?
+            .map_err(AppError::OAuthConfigError)?;
 
         let _ = window.close();
 
@@ -428,6 +428,7 @@ impl AmazonSource {
                 install_path: None,
                 playtime_minutes: None,
                 last_played: None,
+                source_label: None,
             })
             .collect();
 
@@ -624,6 +625,7 @@ pub fn import_installed() -> Result<Vec<SourceGame>, AppError> {
                 install_path: install_dir,
                 playtime_minutes: None,
                 last_played: None,
+                source_label: None,
             })
         })?
         .filter_map(|r| r.ok())

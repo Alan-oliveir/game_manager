@@ -10,8 +10,9 @@ use crate::constants::{
 use crate::database::{self, AppState};
 use crate::errors::AppError;
 use crate::models::WishlistGame;
+use crate::providers::metadata::rawg;
 use crate::services::integration::gamebrain::{self, GameBrainSearchParams};
-use crate::services::integration::{itad, rawg};
+use crate::services::integration::itad;
 use chrono::NaiveDate;
 use rusqlite::{params, Connection};
 use serde::Deserialize;
@@ -355,8 +356,8 @@ pub async fn search_wishlist_game_by_features(
             ..Default::default()
         },
     )
-    .await
-    .map_err(AppError::NetworkError)?;
+        .await
+        .map_err(AppError::NetworkError)?;
 
     Ok(results
         .into_iter()
