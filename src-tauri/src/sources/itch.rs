@@ -26,7 +26,7 @@ use std::time::Duration;
 #[derive(Debug, Clone)]
 pub struct ItchioGame {
     pub source: SourceGame,
-    pub description_raw: Option<String>,
+    pub description: Option<String>,
     pub cover_url: Option<String>,
 }
 
@@ -296,7 +296,7 @@ impl ItchioSource {
 
         ItchioGame {
             source,
-            description_raw: game.short_text.clone(),
+            description: game.short_text.clone(),
             cover_url: game.cover_url.clone(),
         }
     }
@@ -393,7 +393,7 @@ impl ItchioSource {
 
             results.push(ItchioGame {
                 source,
-                description_raw: game.short_text.clone(),
+                description: game.short_text.clone(),
                 cover_url: game.cover_url.clone(),
             });
         }

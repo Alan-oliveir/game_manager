@@ -7,7 +7,9 @@
 
 use crate::database::core::{delete_secret, get_secret, set_secret};
 use crate::errors::AppError;
-use crate::utils::oauth::config::{refresh_access_token, OAuthProviderConfig, OAuthToken};
+use crate::utils::oauth::config::{
+    fetch_app_access_token, refresh_access_token, OAuthProviderConfig, OAuthToken,
+};
 use tauri::AppHandle;
 
 /// Prefixo usado para não colidir com as demais chaves de `encrypted_keys` (steam_api_key, rawg_api_key, etc.).
@@ -82,6 +84,26 @@ pub async fn get_valid_access_token(
         new_token.refresh_token = stored.refresh_token.clone();
     }
 
+    save_oauth_token(app, config.provider_id, &new_token)?;
+
+    Ok(new_token.access_token)
+}
+
+/// Retorna um `access_token` válido para provedores Client Credentials (sem
+/// refresh_token). Se não houver token salvo, ou se o salvo estiver expirado,
+/// busca um novo do zero.
+pub async fn get_valid_app_token(
+    app: &AppHandle,
+    config: &OAuthProviderConfig,
+) -> Result<String, AppError> {
+    if let Some(stored) = load_oauth_token(app, config.provider_id)? {
+        if !stored.is_expired() {
+            return Ok(stored.access_token);
+        }
+    }
+
+    let fetched = fetch_app_access_token(config).await?;
+    let new_token: OAuthToken = fetched.into();
     save_oauth_token(app, config.provider_id, &new_token)?;
 
     Ok(new_token.access_token)

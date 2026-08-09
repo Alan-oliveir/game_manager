@@ -32,11 +32,18 @@ export function GameDescription({
 
   // Sincroniza estado local quando os detalhes mudam (ao trocar de jogo)
   useEffect(() => {
-    if (details) {
-      setLocalPtBr(details.descriptionPtbr);
-      setActiveLang(details.descriptionPtbr ? 'pt' : 'en');
+    if (details?.description) {
+      setLocalPtBr(details.description.descriptionPtbr);
+      setActiveLang(details.description.descriptionPtbr ? 'pt' : 'en');
     }
   }, [details]);
+
+  // Texto original resolvido usando optional chaining rigoroso (prioridade: summary > description > shortDescription > storyline)
+  const originalText =
+    details?.description?.summary ??
+    details?.description?.description ??
+    details?.description?.shortDescription ??
+    details?.description?.storyline;
 
   if (loading) {
     return (
@@ -53,7 +60,7 @@ export function GameDescription({
     );
   }
 
-  if (!details) {
+  if (!details || !details.description) {
     return (
       <div className="text-muted-foreground flex h-40 items-center justify-center">
         {t('description_select_game')}
@@ -78,7 +85,7 @@ export function GameDescription({
       }
 
       // Cenário B: Precisamos traduzir (Chamar Rust)
-      if (!details.descriptionRaw) {
+      if (!originalText) {
         toast.error(t('description_no_original_text'));
 
         return;
@@ -89,7 +96,7 @@ export function GameDescription({
       try {
         const translatedText = await invoke<string>('translate_description', {
           gameId: gameId,
-          text: details.descriptionRaw,
+          text: originalText,
         });
 
         setLocalPtBr(translatedText);
@@ -110,7 +117,7 @@ export function GameDescription({
   const textToShow =
     activeLang === 'pt' && localPtBr
       ? localPtBr
-      : details.descriptionRaw || t('description_no_description');
+      : originalText || t('description_no_description');
 
   return (
     <div className="pr-4">
@@ -121,7 +128,7 @@ export function GameDescription({
         </h2>
 
         {/* Toggle de Idioma */}
-        {details.descriptionRaw && (
+        {originalText && (
           <div className="bg-muted border-border flex items-center rounded-lg border p-1">
             <Button
               variant="ghost"
@@ -151,7 +158,7 @@ export function GameDescription({
               {isTranslating ? (
                 <Loader2 size={10} className="animate-spin" />
               ) : !localPtBr ? (
-                <Sparkles size={10} /> // Ícone indicando que vai gerar/traduzir
+                <Sparkles size={10} />
               ) : (
                 <Languages size={10} />
               )}
@@ -164,7 +171,6 @@ export function GameDescription({
       </div>
 
       {/* CONTEÚDO */}
-
       <div className="text-foreground/90 pb-8 text-sm leading-relaxed transition-opacity duration-300 lg:text-base">
         <p className="text-secondary-foreground font-light whitespace-pre-line">
           {textToShow}

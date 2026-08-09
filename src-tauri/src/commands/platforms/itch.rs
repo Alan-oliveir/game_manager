@@ -80,11 +80,11 @@ async fn persist_itch_games(
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
             // Salva a descrição (se existir) na tabela de detalhes
-            if itchio_game.description_raw.is_some() {
+            if let Some(desc) = &itchio_game.description {
                 tx.execute(
-                    "INSERT OR IGNORE INTO game_details (game_id, description_raw)
-                     VALUES (?1, ?2)",
-                    params![new_id, itchio_game.description_raw],
+                    "INSERT INTO game_descriptions (game_id, description) VALUES (?1, ?2)
+                        ON CONFLICT(game_id) DO UPDATE SET description = COALESCE(game_descriptions.description, excluded.description)",
+                    params![new_id, desc],
                 )
                     .map_err(|e| AppError::DatabaseError(e.to_string()))?;
             }
@@ -126,11 +126,11 @@ async fn persist_itch_games(
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
             // Atualiza a descrição caso o jogo já exista e não tenha (ou tenha mudado)
-            if let Some(desc) = &itchio_game.description_raw {
+            if let Some(desc) = &itchio_game.description {
                 tx.execute(
-                    "INSERT INTO game_details (game_id, description_raw)
-                     VALUES ((SELECT id FROM games WHERE platform = ?1 AND platform_game_id = ?2), ?3)
-                     ON CONFLICT(game_id) DO UPDATE SET description_raw = excluded.description_raw",
+                    "INSERT INTO game_descriptions (game_id, description)
+                        VALUES ((SELECT id FROM games WHERE platform = ?1 AND platform_game_id = ?2), ?3)
+                        ON CONFLICT(game_id) DO UPDATE SET description = excluded.description",
                     params![game.platform, game.platform_game_id, desc],
                 ).map_err(|e| AppError::DatabaseError(e.to_string()))?;
             }

@@ -79,11 +79,19 @@ async fn persist_indiegala_games(
                 .as_ref()
                 .and_then(|tags| crate::database::serialize_tags(tags).ok());
 
-            if indiegala_game.description_raw.is_some() || tags_json.is_some() {
+            if let Some(tags) = &tags_json {
                 tx.execute(
-                    "INSERT OR IGNORE INTO game_details (game_id, description_raw, tags)
-                     VALUES (?1, ?2, ?3)",
-                    params![new_id, indiegala_game.description_raw, tags_json],
+                    "INSERT OR IGNORE INTO game_details (game_id, tags) VALUES (?1, ?2)",
+                    params![new_id, tags],
+                )
+                    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+            }
+
+            if let Some(desc) = &indiegala_game.description {
+                tx.execute(
+                    "INSERT INTO game_descriptions (game_id, description) VALUES (?1, ?2)
+                        ON CONFLICT(game_id) DO UPDATE SET description = COALESCE(game_descriptions.description, excluded.description)",
+                    params![new_id, desc],
                 )
                     .map_err(|e| AppError::DatabaseError(e.to_string()))?;
             }
@@ -107,14 +115,15 @@ async fn persist_indiegala_games(
                         executable_path = COALESCE(?6, executable_path)
                     WHERE platform = ?7 AND platform_game_id = ?8",
                 params![
-                        game.installed,
-                        status,
-                        game.playtime_minutes,
-                        crate::models::PlaytimeSource::Platform(crate::models::Platform::Indiegala).as_db_str(),
-                        game.install_path,
-                        game.executable_path,
-                        game.platform,
-                        game.platform_game_id,
+                    game.installed,
+                    status,
+                    game.playtime_minutes,
+                    crate::models::PlaytimeSource::Platform(crate::models::Platform::Indiegala)
+                        .as_db_str(),
+                    game.install_path,
+                    game.executable_path,
+                    game.platform,
+                    game.platform_game_id,
                 ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;

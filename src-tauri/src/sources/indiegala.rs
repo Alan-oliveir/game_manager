@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Clone)]
 pub struct IndiegalaGame {
     pub source: SourceGame,
-    pub description_raw: Option<String>,
+    pub description: Option<String>,
     /// Tags já classificadas via `services::tags` — a IndieGala não separa gênero de tag de forma
     /// consistente entre `installed.json` e `config.json`, então usamos só tags (como as demais
     /// plataformas fazem com dados vindos da RAWG) em vez de um campo de gênero em paralelo.
@@ -234,7 +234,7 @@ impl IndiegalaSource {
 
             results.push(IndiegalaGame {
                 source,
-                description_raw: game_data.description_short.clone(),
+                description: game_data.description_short.clone(),
                 tags,
             });
         }
@@ -330,7 +330,7 @@ impl IndiegalaSource {
 
             results.push(IndiegalaGame {
                 source,
-                description_raw: extra.and_then(|e| e.description_short.clone()),
+                description: extra.and_then(|e| e.description_short.clone()),
                 tags,
             });
         }

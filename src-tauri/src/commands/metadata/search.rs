@@ -245,10 +245,7 @@ pub async fn get_trending_mods(
     let cached_mods = {
         if let Ok(cache_conn) = state.cache_db.lock() {
             if let Some(cached) = cache::get_cached_api_data(&cache_conn, "nexus", &cache_key) {
-                serde_json::from_str::<Vec<TrendingMod>>(
-                    &cached,
-                )
-                    .ok()
+                serde_json::from_str::<Vec<TrendingMod>>(&cached).ok()
             } else {
                 None
             }

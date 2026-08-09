@@ -249,3 +249,16 @@ pub async fn refresh_access_token(
     let response = build_token_request(config, params).send().await?;
     parse_token_response(response, config.provider_id, "refresh").await
 }
+
+/// Obtém um App Access Token via Client Credentials Grant.
+///
+/// Usado por provedores sem interação do usuário (ex: IGDB/Twitch), onde
+/// não existe `authorize_endpoint`, `redirect_uri` nem `refresh_token` —
+/// a "renovação" é simplesmente pedir um token novo com as mesmas credenciais.
+pub async fn fetch_app_access_token(
+    config: &OAuthProviderConfig,
+) -> Result<TokenResponse, AppError> {
+    let params = vec![("grant_type", "client_credentials".to_string())];
+    let response = build_token_request(config, params).send().await?;
+    parse_token_response(response, config.provider_id, "client_credentials").await
+}

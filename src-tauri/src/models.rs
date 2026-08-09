@@ -159,6 +159,28 @@ pub enum ToolSource {
     Managed,
 }
 
+// models.rs
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct GameDescription {
+    pub summary: Option<String>,           // IGDB
+    pub storyline: Option<String>,         // IGDB
+    pub short_description: Option<String>, // Steam
+    pub description: Option<String>,       // RAWG / Indiegala / Itch / Legacy Games (fallback genérico)
+    pub description_ptbr: Option<String>,  // Tradução (Gemini)
+}
+
+impl GameDescription {
+    /// Resolve qual texto exibir quando a UI só tem espaço pra um — usado
+    /// como fallback antes da tradução PT-BR estar disponível.
+    pub fn primary(&self) -> Option<&str> {
+        self.summary.as_deref()
+            .or(self.description.as_deref())
+            .or(self.short_description.as_deref())
+            .or(self.storyline.as_deref())
+    }
+}
+
 // === Modelos de Dados ===
 
 /// Jogo na biblioteca do usuário.
@@ -209,6 +231,7 @@ pub struct Game {
 pub struct GameDetails {
     pub game_id: String,
     pub steam_app_id: Option<String>,
+    pub display_name: Option<String>,
 
     // Metadados Básicos
     pub developer: Option<String>,
@@ -217,12 +240,16 @@ pub struct GameDetails {
 
     // Categorização
     pub genres: Option<String>,
-    pub tags: Option<Vec<GameTag>>,
+    pub themes: Option<Vec<String>>,
     pub series: Option<String>,
+    pub franchise: Option<Vec<String>>,
+    pub game_modes: Option<Vec<String>>,
+    pub player_perspectives: Option<Vec<String>>,
+    pub keywords: Option<Vec<String>>,
+    pub tags: Option<Vec<GameTag>>, // OLD
 
     // Descrição
-    pub description_raw: Option<String>,
-    pub description_ptbr: Option<String>,
+    pub description: GameDescription,
 
     // Mídia
     pub background_image: Option<String>,
@@ -237,7 +264,8 @@ pub struct GameDetails {
     pub steam_review_updated_at: Option<String>,
 
     // Conteúdo Adulto
-    pub esrb_rating: Option<String>,
+    pub esrb_rating: Option<String>, // OLD
+    pub age_ratings: Option<HashMap<String, String>>,
     pub is_adult: bool,
     pub adult_tags: Option<String>,
 

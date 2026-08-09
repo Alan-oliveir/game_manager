@@ -70,11 +70,11 @@ async fn persist_legacy_games(
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
             // Insere metadados na tabela game_details
-            if legacy_game.description_raw.is_some() {
+            if let Some(desc) = &legacy_game.description {
                 tx.execute(
-                    "INSERT OR IGNORE INTO game_details (game_id, description_raw)
-                     VALUES (?1, ?2)",
-                    params![new_id, legacy_game.description_raw],
+                    "INSERT INTO game_descriptions (game_id, description) VALUES (?1, ?2)
+                        ON CONFLICT(game_id) DO UPDATE SET description = COALESCE(game_descriptions.description, excluded.description)",
+                    params![new_id, desc],
                 )
                     .map_err(|e| AppError::DatabaseError(e.to_string()))?;
             }

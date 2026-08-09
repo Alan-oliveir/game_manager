@@ -18,7 +18,7 @@ use tracing::warn;
 pub struct LegacyGame {
     pub source: SourceGame,
     pub cover_url: Option<String>,
-    pub description_raw: Option<String>,
+    pub description: Option<String>,
 }
 
 // === ESTRUTURAS INTERNAS PARA DESSERIALIZAÇÃO DO JSON DE ESTADO DO LAUNCHER ===
@@ -366,7 +366,7 @@ impl LegacySource {
             results.push(LegacyGame {
                 source,
                 cover_url: catalog_game.game_coverart.clone(),
-                description_raw: catalog_game.game_description.clone(),
+                description: catalog_game.game_description.clone(),
             });
         }
 

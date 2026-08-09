@@ -136,6 +136,7 @@ pub fn run() {
             commands::platforms::amazon::amazon_logout,
             commands::platforms::amazon::amazon_is_authenticated,
             commands::platforms::amazon::import_amazon_games,
+            commands::platforms::xbox::xbox_live_login,
             commands::platforms::xbox::import_xbox_games,
             commands::platforms::indiegala::import_indiegala_games,
             commands::platforms::itch::import_itch_games,
@@ -197,7 +198,10 @@ pub fn run() {
             commands::subscriptions::get_ea_play_catalog,
             commands::subscriptions::get_ubisoft_plus_catalog,
             commands::subscriptions::get_subscription_settings,
-            commands::subscriptions::save_subscription_settings
+            commands::subscriptions::save_subscription_settings,
+            // Comandos de Debug (apenas para desenvolvimento)
+            commands::debug::test_igdb_auth,
+            commands::debug::debug_igdb_fetch,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -48,7 +48,7 @@ pub struct NewlyImportedGame {
 /// Retorna o número de jogos inseridos e atualizados.
 pub(crate) async fn persist_source_games(
     state: &AppState,
-    games: Vec<crate::sources::providers::SourceGame>,
+    games: Vec<SourceGame>,
 ) -> Result<(u32, u32, Vec<NewlyImportedGame>), AppError> {
     let mut conn = state.games_db.lock().map_err(|_| AppError::MutexError)?;
 

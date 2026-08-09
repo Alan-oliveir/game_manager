@@ -22,6 +22,10 @@ export function useSettings(onLibraryUpdate: () => void) {
     geminiApiKey: '',
     gamebrainApiKey: '',
     nexusApiKey: '',
+    igdbClientId: '',
+    igdbClientSecret: '',
+    xboxLiveClientId: '',
+    xboxLiveClientSecret: '',
   });
 
   const [loading, setLoading] = useState({
@@ -72,6 +76,10 @@ export function useSettings(onLibraryUpdate: () => void) {
           geminiApiKey: data.geminiApiKey || '',
           gamebrainApiKey: data.gamebrainApiKey || '',
           nexusApiKey: data.nexusApiKey || '',
+          igdbClientId: data.igdbClientId || '',
+          igdbClientSecret: data.igdbClientSecret || '',
+          xboxLiveClientId: data.xboxLiveClientId || '',
+          xboxLiveClientSecret: data.xboxLiveClientSecret || '',
         });
       })
       .catch(e => console.error('Erro ao carregar settings', e))
@@ -93,6 +101,10 @@ export function useSettings(onLibraryUpdate: () => void) {
         geminiApiKey: keys.geminiApiKey.trim() || null,
         gamebrainApiKey: keys.gamebrainApiKey.trim() || null,
         nexusApiKey: keys.nexusApiKey.trim() || null,
+        igdbClientId: keys.igdbClientId.trim() || null,
+        igdbClientSecret: keys.igdbClientSecret.trim() || null,
+        xboxLiveClientId: keys.xboxLiveClientId.trim() || null,
+        xboxLiveClientSecret: keys.xboxLiveClientSecret.trim() || null,
       });
       setStatus({
         type: 'success',

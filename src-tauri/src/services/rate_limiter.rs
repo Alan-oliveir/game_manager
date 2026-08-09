@@ -6,6 +6,7 @@
 //! único fluxo de import/enrichment.
 
 use crate::constants::{
+    IGDB_BACKOFF_BASE_MS, IGDB_BACKOFF_MAX_RETRIES, IGDB_MAX_CONCURRENT_REQUESTS,
     RAWG_BACKOFF_BASE_MS, RAWG_BACKOFF_MAX_RETRIES, RAWG_MAX_CONCURRENT_REQUESTS,
     STEAM_BACKOFF_BASE_MS, STEAM_BACKOFF_MAX_RETRIES, STEAM_MAX_CONCURRENT_REQUESTS,
 };
@@ -80,6 +81,12 @@ lazy_static! {
         STEAM_BACKOFF_MAX_RETRIES,
         STEAM_BACKOFF_BASE_MS,
         "Steam",
+    );
+    pub static ref IGDB_LIMITER: ApiRateLimiter = ApiRateLimiter::new(
+        IGDB_MAX_CONCURRENT_REQUESTS as usize,
+        IGDB_BACKOFF_MAX_RETRIES,
+        IGDB_BACKOFF_BASE_MS,
+        "IGDB",
     );
 }
 

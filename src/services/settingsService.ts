@@ -27,6 +27,10 @@ export const settingsService = {
     geminiApiKey: string | null;
     gamebrainApiKey: string | null;
     nexusApiKey: string | null;
+    igdbClientId: string | null;
+    igdbClientSecret: string | null;
+    xboxLiveClientId: string | null;
+    xboxLiveClientSecret: string | null;
   }): Promise<void> => {
     await invoke('set_secrets', keys);
   },

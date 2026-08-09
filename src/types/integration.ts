@@ -12,10 +12,14 @@ export interface RawgGame {
 export interface KeysBatch {
   steamId: string;
   steamApiKey: string;
+  igdbClientId: string;
+  igdbClientSecret?: string;
   rawgApiKey: string;
   geminiApiKey?: string;
   gamebrainApiKey?: string;
   nexusApiKey?: string;
+  xboxLiveClientId?: string;
+  xboxLiveClientSecret?: string;
 }
 
 export interface ImportSummary {
@@ -25,6 +29,7 @@ export interface ImportSummary {
   message: string;
   errors: string[];
 }
+
 export interface Giveaway {
   id: number;
   title: string;

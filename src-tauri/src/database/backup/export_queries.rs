@@ -96,47 +96,66 @@ fn fetch_games(conn: &Connection) -> Result<Vec<Game>, AppError> {
 fn fetch_game_details(conn: &Connection) -> Result<Vec<GameDetails>, AppError> {
     let mut stmt = conn.prepare(
         "SELECT
-        game_id, steam_app_id, developer, publisher, release_date, genres, tags, series,
-        description_raw, description_ptbr, background_image, critic_score,
-        steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
-        esrb_rating, is_adult, adult_tags, external_links, hltb_main_story,
+        game_id, steam_app_id, display_name, developer, publisher, release_date, genres, themes,
+        series, franchise, game_modes, player_perspectives, keywords, tags,
+        summary, storyline, short_description, description_raw, description_ptbr, background_image,
+        critic_score, steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
+        esrb_rating, age_ratings, is_adult, adult_tags, external_links, hltb_main_story,
         hltb_main_extra, hltb_completionist, hltb_coop_time, updated_at
      FROM game_details",
     )?;
 
-    let details_iter = stmt.query_map([], |row| {
-        let links_json: Option<String> = row.get(19)?;
-        let external_links = links_json.and_then(|s| serde_json::from_str(&s).ok());
+    // Auxiliares para ler JSON do banco e converter para Vec ou HashMap
+    let parse_json_vec = |s: Option<String>| -> Option<Vec<String>> {
+        s.and_then(|v| serde_json::from_str(&v).ok())
+    };
 
-        let tags_json: Option<String> = row.get(6)?;
+    let parse_json_map = |s: Option<String>| -> Option<std::collections::HashMap<String, String>> {
+        s.and_then(|v| serde_json::from_str(&v).ok())
+    };
+
+    let details_iter = stmt.query_map([], |row| {
+        let tags_json: Option<String> = row.get(13)?;
         let tags = tags_json.map(|s| crate::database::deserialize_tags(&s));
 
         Ok(GameDetails {
             game_id: row.get(0)?,
             steam_app_id: row.get(1)?,
-            developer: row.get(2)?,
-            publisher: row.get(3)?,
-            release_date: row.get(4)?,
-            genres: row.get(5)?,
+            display_name: row.get(2)?,
+            developer: row.get(3)?,
+            publisher: row.get(4)?,
+            release_date: row.get(5)?,
+            genres: row.get(6)?,
+            themes: parse_json_vec(row.get(7)?),
+            series: row.get(8)?,
+            franchise: parse_json_vec(row.get(9)?),
+            game_modes: parse_json_vec(row.get(10)?),
+            player_perspectives: parse_json_vec(row.get(11)?),
+            keywords: parse_json_vec(row.get(12)?),
             tags,
-            series: row.get(7)?,
-            description_raw: row.get(8)?,
-            description_ptbr: row.get(9)?,
-            background_image: row.get(10)?,
-            critic_score: row.get(11)?,
-            steam_review_label: row.get(12)?,
-            steam_review_count: row.get(13)?,
-            steam_review_score: row.get(14)?,
-            steam_review_updated_at: row.get(15)?,
-            esrb_rating: row.get(16)?,
-            is_adult: row.get(17).unwrap_or(false),
-            adult_tags: row.get(18)?,
-            external_links,
-            hltb_main_story: row.get(20)?,
-            hltb_main_extra: row.get(21)?,
-            hltb_completionist: row.get(22)?,
-            hltb_coop_time: row.get(23)?,
-            updated_at: row.get(24)?,
+            description: crate::models::GameDescription {
+                summary: row.get(14)?,
+                storyline: row.get(15)?,
+                short_description: row.get(16)?,
+                description: row.get(17)?,
+                description_ptbr: row.get(18)?,
+            },
+            background_image: row.get(19)?,
+            critic_score: row.get(20)?,
+            steam_review_label: row.get(21)?,
+            steam_review_count: row.get(22)?,
+            steam_review_score: row.get(23)?,
+            steam_review_updated_at: row.get(24)?,
+            esrb_rating: row.get(25)?,
+            age_ratings: parse_json_map(row.get(26)?),
+            is_adult: row.get(27).unwrap_or(false),
+            adult_tags: row.get(28)?,
+            external_links: parse_json_map(row.get(29)?),
+            hltb_main_story: row.get(30)?,
+            hltb_main_extra: row.get(31)?,
+            hltb_completionist: row.get(32)?,
+            hltb_coop_time: row.get(33)?,
+            updated_at: row.get(34)?,
         })
     })?;
 

@@ -158,8 +158,6 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
             genres TEXT,
             tags TEXT,
             series TEXT,
-            description_raw TEXT,
-            description_ptbr TEXT,
             background_image TEXT,
             critic_score INTEGER,
             steam_review_label TEXT,
@@ -174,6 +172,13 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
             hltb_main_extra REAL,
             hltb_completionist REAL,
             hltb_coop_time REAL,
+            franchise TEXT,
+            game_modes TEXT,
+            player_perspectives TEXT,
+            themes TEXT,
+            keywords TEXT,
+            age_ratings TEXT,
+            display_name TEXT,
             updated_at TEXT,
             FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
         )",
@@ -206,6 +211,33 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         service TEXT PRIMARY KEY,   -- 'prime_gaming', 'game_pass', etc.
         enabled BOOLEAN DEFAULT 0,
         last_synced TEXT            -- ISO timestamp do último fetch
+    )",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS game_dlcs (
+        game_id TEXT NOT NULL,     -- FK para games.id (jogo base na biblioteca)
+        igdb_id INTEGER NOT NULL,  -- id do DLC/expansion no IGDB
+        name TEXT NOT NULL,
+        kind TEXT NOT NULL,        -- 'expansion' | 'standalone_expansion'
+        owned INTEGER NOT NULL DEFAULT 0, -- se o standalone já foi importado como jogo próprio
+        PRIMARY KEY (game_id, igdb_id)
+    )",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS game_descriptions (
+        game_id TEXT PRIMARY KEY,
+        summary TEXT,
+        storyline TEXT,
+        short_description TEXT,
+        description TEXT,
+        description_ptbr TEXT,
+        FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
     )",
         [],
     )
@@ -392,5 +424,9 @@ pub fn list_supported_keys() -> Vec<&'static str> {
         "gemini_api_key",
         "gamebrain_api_key",
         "nexus_api_key",
+        "igdb_client_id",
+        "igdb_client_secret",
+        "xbox_live_client_id",
+        "xbox_live_client_secret",
     ]
 }

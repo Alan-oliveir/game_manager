@@ -121,6 +121,14 @@ export type PlaytimeSource = 'local' | { platform: Platform };
 
 // === MODELOS DE DADOS (SCHEMA 3.0 - Game e GameDetails) ===
 
+export interface GameDescription {
+  summary?: string;
+  storyline?: string;
+  shortDescription?: string;
+  description?: string;
+  descriptionPtbr?: string;
+}
+
 /**
  * Informações básicas do jogo - Schema 4.0
  *
@@ -174,8 +182,7 @@ export interface GameDetails {
   steamAppId?: string;
 
   // Metadados
-  descriptionRaw?: string;
-  descriptionPtbr?: string;
+  description?: GameDescription;
   releaseDate?: string;
   developer?: string;
   publisher?: string;

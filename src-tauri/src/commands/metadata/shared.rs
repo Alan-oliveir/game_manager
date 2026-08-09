@@ -4,7 +4,7 @@
 
 use crate::constants::NOT_FOUND_MARKER;
 use crate::database;
-use crate::models::ImportConfidence;
+use crate::models::{GameDescription, ImportConfidence};
 use crate::services::cache;
 use crate::services::integration::{hltb, rawg, steam_api};
 use crate::utils::text::{is_likely_non_base_game, normalize_for_matching, strip_edition_suffix};
@@ -38,10 +38,9 @@ pub struct EnrichCompletePayload {
 /// Estrutura intermediária de metadados dos jogos
 pub struct ProcessedGameDetails {
     pub game_id: String,
-    pub description_raw: Option<String>,
-    pub description_ptbr: Option<String>,
+    pub description: GameDescription,
     pub release_date: Option<String>,
-    pub genres: String,
+    pub genres: Vec<String>,
     pub tags: Vec<crate::models::GameTag>,
     pub developer: Option<String>,
     pub publisher: Option<String>,
@@ -62,6 +61,13 @@ pub struct ProcessedGameDetails {
     pub hltb_completionist: Option<f64>,
     pub hltb_coop_time: Option<f64>,
     pub alternative_names: Option<Vec<String>>,
+    pub franchise: Option<Vec<String>>,
+    pub game_modes: Option<Vec<String>>,
+    pub player_perspectives: Option<Vec<String>>,
+    pub themes: Option<Vec<String>>,
+    pub keywords: Option<Vec<String>>, // keywords crus, antes de virar GameTag
+    pub age_ratings: Option<String>, // JSON de HashMap<String,String>, como external_links
+    pub display_name: Option<String>, // nome canônico do IGDB
     pub updated_at: Option<String>,
 }
 
@@ -346,71 +352,61 @@ where
     C: std::ops::Deref<Target=rusqlite::Connection>,
 {
     let tags_json = database::serialize_tags(&d.tags).unwrap_or_else(|_| "[]".to_string());
+    let genres_json = serde_json::to_string(&d.genres).unwrap_or_else(|_| "[]".to_string());
 
-    // Garante que a linha existe antes do UPDATE (para jogos que já têm
-    // description_raw da Legacy Games, o INSERT OR IGNORE preserva o valor).
     conn.execute(
         "INSERT OR IGNORE INTO game_details (game_id) VALUES (?1)",
         params![d.game_id],
     )?;
 
-    // Atualiza todos os campos usando COALESCE nos campos de texto para nunca
-    // sobrescrever um valor existente com NULL vindo da RAWG.
     conn.execute(
         "UPDATE game_details SET
-            description_raw     = COALESCE(?2,  description_raw),
-            description_ptbr    = COALESCE(?3,  description_ptbr),
-            release_date        = COALESCE(?4,  release_date),
-            genres              = COALESCE(NULLIF(?5, ''), genres),
-            tags                = COALESCE(NULLIF(?6, '[]'), tags),
-            developer           = COALESCE(?7,  developer),
-            publisher           = COALESCE(?8,  publisher),
-            critic_score        = COALESCE(?9,  critic_score),
-            background_image    = COALESCE(?10, background_image),
-            series              = COALESCE(?11, series),
-            steam_review_label  = COALESCE(?12, steam_review_label),
-            steam_review_count  = COALESCE(?13, steam_review_count),
-            steam_review_score  = COALESCE(?14, steam_review_score),
-            steam_review_updated_at = COALESCE(?15, steam_review_updated_at),
-            esrb_rating         = COALESCE(?16, esrb_rating),
-            is_adult            = ?17,
-            adult_tags          = COALESCE(?18, adult_tags),
-            external_links      = COALESCE(?19, external_links),
-            steam_app_id        = COALESCE(?20, steam_app_id),
-            hltb_main_story     = COALESCE(?21, hltb_main_story),
-            hltb_main_extra     = COALESCE(?22, hltb_main_extra),
-            hltb_completionist  = COALESCE(?23, hltb_completionist),
-            hltb_coop_time      = COALESCE(?24, hltb_coop_time),
-            updated_at          = ?25
+            release_date        = COALESCE(?2,  release_date),
+            genres              = COALESCE(NULLIF(?3, '[]'), genres),
+            tags                = COALESCE(NULLIF(?4, '[]'), tags),
+            developer           = COALESCE(?5,  developer),
+            publisher           = COALESCE(?6,  publisher),
+            critic_score        = COALESCE(?7,  critic_score),
+            background_image    = COALESCE(?8,  background_image),
+            series              = COALESCE(?9,  series),
+            steam_review_label  = COALESCE(?10, steam_review_label),
+            steam_review_count  = COALESCE(?11, steam_review_count),
+            steam_review_score  = COALESCE(?12, steam_review_score),
+            steam_review_updated_at = COALESCE(?13, steam_review_updated_at),
+            esrb_rating         = COALESCE(?14, esrb_rating),
+            is_adult            = ?15,
+            adult_tags          = COALESCE(?16, adult_tags),
+            external_links      = COALESCE(?17, external_links),
+            steam_app_id        = COALESCE(?18, steam_app_id),
+            hltb_main_story     = COALESCE(?19, hltb_main_story),
+            hltb_main_extra     = COALESCE(?20, hltb_main_extra),
+            hltb_completionist  = COALESCE(?21, hltb_completionist),
+            hltb_coop_time      = COALESCE(?22, hltb_coop_time),
+            franchise           = COALESCE(?23, franchise),
+            game_modes          = COALESCE(?24, game_modes),
+            player_perspectives = COALESCE(?25, player_perspectives),
+            themes              = COALESCE(?26, themes),
+            keywords            = COALESCE(?27, keywords),
+            age_ratings         = COALESCE(?28, age_ratings),
+            display_name        = COALESCE(?29, display_name),
+            updated_at          = ?30
          WHERE game_id = ?1",
         params![
-            d.game_id,
-            d.description_raw,
-            d.description_ptbr,
-            d.release_date,
-            d.genres,
-            tags_json,
-            d.developer,
-            d.publisher,
-            d.critic_score,
-            d.background_image.clone(),
-            d.series,
-            d.steam_review_label,
-            d.steam_review_count,
-            d.steam_review_score,
-            d.steam_review_updated_at,
-            d.esrb_rating,
-            d.is_adult,
-            d.adult_tags,
-            d.external_links,
-            d.steam_app_id,
-            d.hltb_main_story,
-            d.hltb_main_extra,
-            d.hltb_completionist,
-            d.hltb_coop_time,
-            d.updated_at
+            d.game_id, d.release_date, genres_json, tags_json, d.developer, d.publisher,
+            d.critic_score, d.background_image.clone(), d.series, d.steam_review_label,
+            d.steam_review_count, d.steam_review_score, d.steam_review_updated_at,
+            d.esrb_rating, d.is_adult, d.adult_tags, d.external_links, d.steam_app_id,
+            d.hltb_main_story, d.hltb_main_extra, d.hltb_completionist, d.hltb_coop_time,
+            d.franchise.as_ref().and_then(|v| serde_json::to_string(v).ok()),
+            d.game_modes.as_ref().and_then(|v| serde_json::to_string(v).ok()),
+            d.player_perspectives.as_ref().and_then(|v| serde_json::to_string(v).ok()),
+            d.themes.as_ref().and_then(|v| serde_json::to_string(v).ok()),
+            d.keywords.as_ref().and_then(|v| serde_json::to_string(v).ok()),
+            d.age_ratings, d.display_name, d.updated_at
         ],
     )?;
+
+    save_game_description(conn, &d.game_id, &d.description)?;
 
     if let Some(img) = d.background_image {
         conn.execute(
@@ -429,5 +425,26 @@ where
         }
     }
 
+    Ok(())
+}
+
+pub(crate) fn save_game_description<C>(conn: &C, game_id: &str, d: &GameDescription) -> Result<(), rusqlite::Error>
+where
+    C: std::ops::Deref<Target=rusqlite::Connection>,
+{
+    conn.execute(
+        "INSERT OR IGNORE INTO game_descriptions (game_id) VALUES (?1)",
+        params![game_id],
+    )?;
+    conn.execute(
+        "UPDATE game_descriptions SET
+            summary            = COALESCE(?2, summary),
+            storyline          = COALESCE(?3, storyline),
+            short_description  = COALESCE(?4, short_description),
+            description        = COALESCE(?5, description),
+            description_ptbr   = COALESCE(?6, description_ptbr)
+         WHERE game_id = ?1",
+        params![game_id, d.summary, d.storyline, d.short_description, d.description, d.description_ptbr],
+    )?;
     Ok(())
 }

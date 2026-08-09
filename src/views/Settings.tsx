@@ -6,6 +6,7 @@ import {
   FileJson,
   Gamepad2,
   GamepadDirectional,
+  Globe,
   HardDrive,
   History,
   ImageIcon,
@@ -173,7 +174,7 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
           </div>
         </SettingsRow>
 
-        {/* Configurações de API para metadados */}
+        {/* Configurações de API para metadados - RAWG */}
         <SettingsRow
           icon={Search}
           title={t('rawg_title')}
@@ -199,6 +200,66 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
               >
                 {t('get_api_key_button_rawg')} <ExternalLink size={10} />
               </a>
+            </div>
+          </div>
+        </SettingsRow>
+
+        {/* Configurações de API para metadados - IGBD */}
+        <SettingsRow
+          icon={Globe}
+          title={t('igdb_title')}
+          description={t('igdb_description')}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              <Input
+                type="text"
+                value={keys.igdbClientId}
+                onChange={e =>
+                  setKeys({ ...keys, igdbClientId: e.target.value })
+                }
+                placeholder={t('igdb_client_id_placeholder')}
+                className="bg-background/50"
+              />
+              <Input
+                type="password"
+                placeholder={t('igdb_api_key_placeholder')}
+                value={keys.igdbClientSecret}
+                onChange={e =>
+                  setKeys({ ...keys, igdbClientSecret: e.target.value })
+                }
+                className="bg-background/50"
+              />
+            </div>
+          </div>
+        </SettingsRow>
+
+        {/* Configurações de API Xbox Live para Conquistas */}
+        <SettingsRow
+          icon={Globe}
+          title={t('xbox_live_title')}
+          description={t('xbox_live_description')}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              <Input
+                type="text"
+                value={keys.xboxLiveClientId}
+                onChange={e =>
+                  setKeys({ ...keys, xboxLiveClientId: e.target.value })
+                }
+                placeholder={t('xbox_live_client_id_placeholder')}
+                className="bg-background/50"
+              />
+              <Input
+                type="password"
+                placeholder={t('xbox_live_api_key_placeholder')}
+                value={keys.xboxLiveClientSecret}
+                onChange={e =>
+                  setKeys({ ...keys, xboxLiveClientSecret: e.target.value })
+                }
+                className="bg-background/50"
+              />
             </div>
           </div>
         </SettingsRow>

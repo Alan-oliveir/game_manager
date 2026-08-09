@@ -298,21 +298,29 @@ pub fn get_library_game_details(
 
     let mut stmt = conn.prepare(
         "SELECT
-                game_id, steam_app_id, developer, publisher, release_date, genres, tags, series,
-                description_raw, description_ptbr, background_image, critic_score,
-                steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
-                esrb_rating, is_adult, adult_tags, external_links, hltb_main_story,
-                hltb_main_extra, hltb_completionist, hltb_coop_time, updated_at
-             FROM game_details
-             WHERE game_id = ?1",
+            gd.game_id, gd.steam_app_id, gd.developer, gd.publisher, gd.release_date,
+            gd.genres, gd.tags, gd.series, gd.franchise, gd.game_modes, gd.player_perspectives,
+            gd.themes, gd.keywords, gd.background_image, gd.critic_score,
+            gd.steam_review_label, gd.steam_review_count, gd.steam_review_score, gd.steam_review_updated_at,
+            gd.esrb_rating, gd.age_ratings, gd.is_adult, gd.adult_tags, gd.external_links,
+            gd.hltb_main_story, gd.hltb_main_extra, gd.hltb_completionist, gd.hltb_coop_time,
+            gd.display_name, gd.updated_at,
+            gdesc.summary, gdesc.storyline, gdesc.short_description, gdesc.description, gdesc.description_ptbr
+         FROM game_details gd
+         LEFT JOIN game_descriptions gdesc ON gd.game_id = gdesc.game_id
+         WHERE gd.game_id = ?1",
     )?;
 
     let mut rows = stmt.query_map(params![game_id], |row| {
-        let links_json: Option<String> = row.get(19)?;
-        let external_links = links_json.and_then(|json| serde_json::from_str(&json).ok());
-
+        let genres_json: Option<String> = row.get(5)?;
         let tags_json: Option<String> = row.get(6)?;
-        let tags = tags_json.map(|s| database::deserialize_tags(&s));
+        let franchise_json: Option<String> = row.get(8)?;
+        let game_modes_json: Option<String> = row.get(9)?;
+        let perspectives_json: Option<String> = row.get(10)?;
+        let themes_json: Option<String> = row.get(11)?;
+        let keywords_json: Option<String> = row.get(12)?;
+        let age_ratings_json: Option<String> = row.get(20)?;
+        let links_json: Option<String> = row.get(23)?;
 
         Ok(models::GameDetails {
             game_id: row.get(0)?,
@@ -320,26 +328,38 @@ pub fn get_library_game_details(
             developer: row.get(2)?,
             publisher: row.get(3)?,
             release_date: row.get(4)?,
-            genres: row.get(5)?,
-            tags,
+            genres: genres_json.and_then(|s| serde_json::from_str(&s).ok()),
+            tags: tags_json.map(|s| database::deserialize_tags(&s)),
             series: row.get(7)?,
-            description_raw: row.get(8)?,
-            description_ptbr: row.get(9)?,
-            background_image: row.get(10)?,
-            critic_score: row.get(11)?,
-            steam_review_label: row.get(12)?,
-            steam_review_count: row.get(13)?,
-            steam_review_score: row.get(14)?,
-            steam_review_updated_at: row.get(15)?,
-            esrb_rating: row.get(16)?,
-            is_adult: row.get(17).unwrap_or(false),
-            adult_tags: row.get(18)?,
-            external_links,
-            hltb_main_story: row.get(20)?,
-            hltb_main_extra: row.get(21)?,
-            hltb_completionist: row.get(22)?,
-            hltb_coop_time: row.get(23)?,
-            updated_at: row.get(24)?,
+            franchise: franchise_json.and_then(|s| serde_json::from_str(&s).ok()),
+            game_modes: game_modes_json.and_then(|s| serde_json::from_str(&s).ok()),
+            player_perspectives: perspectives_json.and_then(|s| serde_json::from_str(&s).ok()),
+            themes: themes_json.and_then(|s| serde_json::from_str(&s).ok()),
+            keywords: keywords_json.and_then(|s| serde_json::from_str(&s).ok()),
+            background_image: row.get(13)?,
+            critic_score: row.get(14)?,
+            steam_review_label: row.get(15)?,
+            steam_review_count: row.get(16)?,
+            steam_review_score: row.get(17)?,
+            steam_review_updated_at: row.get(18)?,
+            esrb_rating: row.get(19)?,
+            age_ratings: age_ratings_json.and_then(|s| serde_json::from_str(&s).ok()),
+            is_adult: row.get(21).unwrap_or(false),
+            adult_tags: row.get(22)?,
+            external_links: links_json.and_then(|s| serde_json::from_str(&s).ok()),
+            hltb_main_story: row.get(24)?,
+            hltb_main_extra: row.get(25)?,
+            hltb_completionist: row.get(26)?,
+            hltb_coop_time: row.get(27)?,
+            display_name: row.get(28)?,
+            updated_at: row.get(29)?,
+            description: models::GameDescription {
+                summary: row.get(30)?,
+                storyline: row.get(31)?,
+                short_description: row.get(32)?,
+                description: row.get(33)?,
+                description_ptbr: row.get(34)?,
+            },
         })
     })?;
 

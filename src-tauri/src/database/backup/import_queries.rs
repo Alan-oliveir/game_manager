@@ -13,6 +13,14 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
     // Transação única para todas as operações
     conn.execute("BEGIN IMMEDIATE TRANSACTION", [])?;
 
+    let serialize_vec = |v: &Option<Vec<String>>| -> Option<String> {
+        v.as_ref().and_then(|list| serde_json::to_string(list).ok())
+    };
+
+    let serialize_map = |v: &Option<std::collections::HashMap<String, String>>| -> Option<String> {
+        v.as_ref().and_then(|map| serde_json::to_string(map).ok())
+    };
+
     // Prepared statements para melhor desempenho
     let mut game_stmt = conn.prepare(
         "INSERT OR REPLACE INTO games (id, name, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, last_played, added_at, alternative_names)
@@ -21,12 +29,16 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
 
     let mut details_stmt = conn.prepare(
         "INSERT OR REPLACE INTO game_details (
-        game_id, steam_app_id, developer, publisher, release_date, genres, tags, series,
-        description_raw, description_ptbr, background_image, critic_score, steam_review_label,
-        steam_review_count, steam_review_score, steam_review_updated_at, esrb_rating, is_adult,
-        adult_tags, external_links, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_coop_time, updated_at
-    )
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)"
+            game_id, steam_app_id, display_name, developer, publisher, release_date, genres, themes,
+            series, franchise, game_modes, player_perspectives, keywords, tags,
+            summary, storyline, short_description, description_raw, description_ptbr, background_image,
+            critic_score, steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
+            esrb_rating, age_ratings, is_adult, adult_tags, external_links, hltb_main_story,
+            hltb_main_extra, hltb_completionist, hltb_coop_time, updated_at
+        ) VALUES (
+            ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20,
+            ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35
+        )"
     )?;
 
     let mut wishlist_stmt = conn.prepare(
@@ -62,11 +74,6 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
     }
 
     for detail in &backup.game_details {
-        let links_json = detail
-            .external_links
-            .as_ref()
-            .and_then(|links| serde_json::to_string(links).ok());
-
         let tags_json = detail
             .tags
             .as_ref()
@@ -75,14 +82,23 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
         details_stmt.execute(params![
             detail.game_id,
             detail.steam_app_id,
+            detail.display_name,
             detail.developer,
             detail.publisher,
             detail.release_date,
             detail.genres,
-            tags_json,
+            serialize_vec(&detail.themes),
             detail.series,
-            detail.description_raw,
-            detail.description_ptbr,
+            serialize_vec(&detail.franchise),
+            serialize_vec(&detail.game_modes),
+            serialize_vec(&detail.player_perspectives),
+            serialize_vec(&detail.keywords),
+            tags_json,
+            detail.description.summary,
+            detail.description.storyline,
+            detail.description.short_description,
+            detail.description.description,
+            detail.description.description_ptbr,
             detail.background_image,
             detail.critic_score,
             detail.steam_review_label,
@@ -90,9 +106,10 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             detail.steam_review_score,
             detail.steam_review_updated_at,
             detail.esrb_rating,
+            serialize_map(&detail.age_ratings),
             detail.is_adult,
             detail.adult_tags,
-            links_json,
+            serialize_map(&detail.external_links),
             detail.hltb_main_story,
             detail.hltb_main_extra,
             detail.hltb_completionist,
@@ -165,10 +182,6 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
         "INSERT INTO game_data_paths (steam_app_id, kind, os, raw_path, fetched_at)
          VALUES (?1, ?2, ?3, ?4, ?5)",
     )?;
-
-    let serialize_vec = |v: &Option<Vec<String>>| -> Option<String> {
-        v.as_ref().and_then(|list| serde_json::to_string(list).ok())
-    };
 
     let now = Utc::now().to_rfc3339();
 

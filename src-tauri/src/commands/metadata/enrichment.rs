@@ -1,7 +1,7 @@
 //! Comandos para enriquecimento automático de metadados
 //!
 //! Este módulo contém comandos Tauri para atualizar metadados de jogos na biblioteca
-//! do usuário, buscando informações de APIs externas como RAWG e Steam.
+//! do usuário, buscando informações de APIs externas como IGDB e Steam.
 //! Versão otimizada com cache SQLite e processamento em batch.
 //!
 //! Design notes:
@@ -19,8 +19,7 @@ use crate::database;
 use crate::database::AppState;
 use crate::services::cache;
 use crate::services::integration::nexus::{find_best_nexus_match, NexusGame};
-use crate::services::integration::steam_api;
-use crate::utils::series;
+use crate::services::integration::{igdb, steam_api};
 use std::collections::{HashMap, HashSet};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tracing::{info, warn};
@@ -36,16 +35,17 @@ pub struct ImportSummary {
     pub errors: Vec<String>,
 }
 
+struct MissingMetadataBatchItem {
+    game_id: String,
+    game_name: String,
+    processed_data: ProcessedGameDetails,
+    dlcs: Vec<igdb::core::IgdbDlc>,
+}
+
 // === LÓGICA CORE (REFATORADA) ===
 
 pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>) {
-    let api_key = match database::get_secret(&app, "rawg_api_key") {
-        Ok(key) if !key.is_empty() => key,
-        _ => {
-            warn!("Enrichment pós-import ignorado: API Key da RAWG não configurada.");
-            return;
-        }
-    };
+    let rawg_api_key = database::get_secret(&app, "rawg_api_key").unwrap_or_default();
 
     let platform_label = games.first().map(|g| g.platform.clone());
 
@@ -66,7 +66,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
     let mut total_errors = 0usize;
 
     for chunk in games.chunks(batch_size) {
-        let mut batch_results = Vec::with_capacity(chunk.len());
+        let mut batch_results: Vec<MissingMetadataBatchItem> = Vec::new();
 
         for game in chunk {
             processed_count += 1;
@@ -82,7 +82,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                 },
             );
 
-            let (processed_data, raw_tags, _rawg_found) = {
+            let (processed_data, raw_tags, dlcs, _igdb_found) = {
                 let cache_conn = match state.cache_db.lock() {
                     Ok(c) => c,
                     Err(_) => continue,
@@ -91,7 +91,8 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                     let rt = tokio::runtime::Handle::current();
                     rt.block_on(async {
                         enrich_game_metadata(
-                            &api_key,
+                            &app,
+                            &rawg_api_key,
                             &game.game_id,
                             &game.name,
                             &game.platform,
@@ -107,7 +108,12 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
             for tag in raw_tags {
                 all_session_tags.insert(tag);
             }
-            batch_results.push((game.name.clone(), processed_data));
+            batch_results.push(MissingMetadataBatchItem {
+                game_id: game.game_id.clone(),
+                game_name: game.name.clone(),
+                processed_data,
+                dlcs,
+            });
         }
 
         // Persiste este lote antes de seguir pro próximo — se o app fechar
@@ -116,11 +122,12 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
             if let Ok(tx) = conn.transaction() {
                 let mut success = 0;
                 let mut errors = 0;
-                for (name, data) in batch_results {
-                    if let Err(e) = save_game_details(&tx, data) {
-                        warn!("enrich_newly_imported: erro ao salvar {}: {}", name, e);
+                for item in batch_results {
+                    if let Err(e) = save_game_details(&tx, item.processed_data) {
+                        warn!("enrich_newly_imported: erro ao salvar {}: {}", item.game_name, e);
                         errors += 1;
                     } else {
+                        let _ = igdb::core::save_game_dlcs(&tx, &item.game_id, &item.dlcs);
                         success += 1;
                     }
                 }
@@ -164,27 +171,31 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
 
 /// Processa um único jogo com cache integrado (sem manter lock)
 async fn enrich_game_metadata(
-    api_key: &str,
+    app: &AppHandle,
+    rawg_api_key: &str,
     game_id: &str,
     name: &str,
     platform: &str,
     platform_game_id: Option<String>,
     cache_conn: &rusqlite::Connection,
     nexus_games: &[NexusGame],
-) -> (ProcessedGameDetails, Vec<String>, bool) {
-    let series_name = series::infer_series(name);
+) -> (
+    ProcessedGameDetails,
+    Vec<String>,
+    Vec<igdb::core::IgdbDlc>,
+    bool,
+) {
     let mut details = ProcessedGameDetails {
         game_id: game_id.to_string(),
-        description_raw: None,
-        description_ptbr: None,
+        description: crate::models::GameDescription::default(),
         release_date: None,
-        genres: String::new(),
+        genres: Vec::new(),
         tags: Vec::new(),
         developer: None,
         publisher: None,
         critic_score: None,
         background_image: None,
-        series: series_name,
+        series: None,
         steam_review_label: None,
         steam_review_count: None,
         steam_review_score: None,
@@ -199,6 +210,13 @@ async fn enrich_game_metadata(
         hltb_completionist: None,
         hltb_coop_time: None,
         alternative_names: None,
+        franchise: None,
+        game_modes: None,
+        player_perspectives: None,
+        themes: None,
+        keywords: None,
+        age_ratings: None,
+        display_name: None,
         updated_at: Some(chrono::Utc::now().to_rfc3339()),
     };
 
@@ -209,11 +227,17 @@ async fn enrich_game_metadata(
         links_map.insert("nexus".to_string(), url);
     }
 
-    // A cadeia Steam (resolve ID → store_data + reviews em paralelo) não depende da RAWG,
-    // então roda inteira em paralelo com ela. Dentro da cadeia Steam, store_data e reviews
-    // só dependem do ID resolvido, não uma da outra.
-    let rawg_future = fetch_rawg_metadata(api_key, name, cache_conn);
+    // IGDB é a fonte principal. RAWG roda em paralelo como fallback — só é
+    // usada campo a campo pro que o IGDB não trouxer (ou não achar o jogo).
+    let igdb_future = igdb::fetch::search_and_resolve(app, name);
     let hltb_future = fetch_hltb_metadata(name, cache_conn);
+    let rawg_future = async {
+        if rawg_api_key.is_empty() {
+            None
+        } else {
+            fetch_rawg_metadata(rawg_api_key, name, cache_conn).await
+        }
+    };
 
     let steam_future = async {
         let target_steam_id =
@@ -233,50 +257,109 @@ async fn enrich_game_metadata(
         }
     };
 
-    let (rawg_result, (target_steam_id, store_data, reviews), hltb_result) =
-        tokio::join!(rawg_future, steam_future, hltb_future);
+    let (igdb_result, rawg_result, (target_steam_id, store_data, reviews), hltb_result) =
+        tokio::join!(igdb_future, rawg_future, steam_future, hltb_future);
 
     let mut found_raw_tags: Vec<String> = Vec::new();
-    let mut rawg_found = false;
+    let mut igdb_dlcs: Vec<igdb::core::IgdbDlc> = Vec::new();
+    let mut igdb_found = false;
 
+    match igdb_result {
+        Ok(Some(game)) => {
+            igdb_found = true;
+            let mapped = igdb::core::map_igdb_game(&game, game_id);
+            found_raw_tags = mapped.details.tags.iter().map(|t| t.slug.clone()).collect();
+            igdb_dlcs = mapped.dlcs;
+
+            if let Some(igdb_links_json) = &mapped.details.external_links {
+                if let Ok(igdb_links) =
+                    serde_json::from_str::<HashMap<String, String>>(igdb_links_json)
+                {
+                    for (k, v) in igdb_links {
+                        links_map.entry(k).or_insert(v);
+                    }
+                }
+            }
+
+            details.description = mapped.details.description;
+            details.release_date = mapped.details.release_date;
+            details.genres = mapped.details.genres;
+            details.tags = mapped.details.tags;
+            details.developer = mapped.details.developer;
+            details.publisher = mapped.details.publisher;
+            details.critic_score = mapped.details.critic_score;
+            details.background_image = mapped.details.background_image;
+            details.series = mapped.details.series;
+            details.esrb_rating = mapped.details.esrb_rating;
+            details.alternative_names = mapped.details.alternative_names;
+            details.franchise = mapped.details.franchise;
+            details.game_modes = mapped.details.game_modes;
+            details.player_perspectives = mapped.details.player_perspectives;
+            details.themes = mapped.details.themes;
+            details.keywords = mapped.details.keywords;
+            details.age_ratings = mapped.details.age_ratings;
+            details.display_name = mapped.details.display_name;
+        }
+        Ok(None) => warn!(
+            "IGDB: nenhum resultado para '{}', usando RAWG como fallback",
+            name
+        ),
+        Err(e) => warn!("IGDB search_and_resolve falhou para '{}': {}", name, e),
+    }
+
+    // RAWG só preenche o que o IGDB deixou em branco (fallback campo a campo, não "tudo ou nada").
     if let Some(rawg_det) = rawg_result {
-        rawg_found = true;
-        found_raw_tags = rawg_det.tags.iter().map(|t| t.slug.clone()).collect();
-
-        let raw_tag_slugs: Vec<String> = rawg_det.tags.iter().map(|t| t.slug.clone()).collect();
-
-        details.description_raw = rawg_det.description_raw;
-        details.release_date = rawg_det.released;
-        details.genres = rawg_det
-            .genres
-            .iter()
-            .map(|g| g.name.clone())
-            .collect::<Vec<_>>()
-            .join(", ");
-        details.tags = crate::services::tags::classify_and_sort_tags(raw_tag_slugs, 10);
-        details.developer = rawg_det.developers.first().map(|d| d.name.clone());
-        details.publisher = rawg_det.publishers.first().map(|p| p.name.clone());
-        details.critic_score = rawg_det.metacritic;
-        details.background_image = rawg_det.background_image;
-        details.esrb_rating = rawg_det.esrb_rating.as_ref().map(|r| r.name.clone());
-
-        if !rawg_det.alternative_names.is_empty() {
+        if found_raw_tags.is_empty() {
+            let raw_tag_slugs: Vec<String> = rawg_det.tags.iter().map(|t| t.slug.clone()).collect();
+            found_raw_tags = raw_tag_slugs.clone();
+            details.tags = crate::services::tags::classify_and_sort_tags(raw_tag_slugs, 10);
+        }
+        if details.description.summary.is_none() {
+            details.description.description = rawg_det.description_raw;
+        }
+        if details.release_date.is_none() {
+            details.release_date = rawg_det.released;
+        }
+        if details.genres.is_empty() {
+            details.genres = rawg_det.genres.iter().map(|g| g.name.clone()).collect();
+        }
+        if details.developer.is_none() {
+            details.developer = rawg_det.developers.first().map(|d| d.name.clone());
+        }
+        if details.publisher.is_none() {
+            details.publisher = rawg_det.publishers.first().map(|p| p.name.clone());
+        }
+        if details.critic_score.is_none() {
+            details.critic_score = rawg_det.metacritic;
+        }
+        if details.background_image.is_none() {
+            details.background_image = rawg_det.background_image;
+        }
+        if details.esrb_rating.is_none() {
+            details.esrb_rating = rawg_det.esrb_rating.as_ref().map(|r| r.name.clone());
+        }
+        if details.alternative_names.is_none() && !rawg_det.alternative_names.is_empty() {
             details.alternative_names = Some(rawg_det.alternative_names.clone());
         }
 
         if let Some(url) = &rawg_det.website {
-            links_map.insert("website".to_string(), url.clone());
+            links_map
+                .entry("website".to_string())
+                .or_insert_with(|| url.clone());
         }
         if let Some(url) = &rawg_det.reddit_url {
-            links_map.insert("reddit".to_string(), url.clone());
+            links_map
+                .entry("reddit".to_string())
+                .or_insert_with(|| url.clone());
         }
         if let Some(url) = &rawg_det.metacritic_url {
-            links_map.insert("metacritic".to_string(), url.clone());
+            links_map
+                .entry("metacritic".to_string())
+                .or_insert_with(|| url.clone());
         }
-        links_map.insert(
-            "rawg".to_string(),
-            format!("https://rawg.io/games/{}", rawg_det.id),
-        );
+        links_map
+            .entry("rawg".to_string())
+            .or_insert_with(|| format!("https://rawg.io/games/{}", rawg_det.id));
     }
 
     if let Some(steam_id) = &target_steam_id {
@@ -291,9 +374,10 @@ async fn enrich_game_metadata(
             if !flags.is_empty() {
                 details.adult_tags = serde_json::to_string(&flags).ok();
             }
-            if details.description_raw.is_none() {
-                details.description_raw = Some(store_data.short_description);
-            }
+            details
+                .description
+                .short_description
+                .get_or_insert(store_data.short_description);
             if details.release_date.is_none() {
                 details.release_date = store_data.release_date;
             }
@@ -322,5 +406,5 @@ async fn enrich_game_metadata(
         apply_hltb_metadata(&mut details, &hltb_det);
     }
 
-    (details, found_raw_tags, rawg_found)
+    (details, found_raw_tags, igdb_dlcs, igdb_found)
 }

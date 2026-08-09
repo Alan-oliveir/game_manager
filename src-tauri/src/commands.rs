@@ -31,3 +31,4 @@ pub mod subscriptions;
 pub mod system;
 pub mod version;
 pub mod wishlist;
+pub mod debug;

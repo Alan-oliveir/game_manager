@@ -27,3 +27,5 @@ pub mod pcgamingwiki;
 pub mod protondb;
 pub mod rawg;
 pub mod steam_api;
+pub mod igdb;
+pub mod xbox_live;
