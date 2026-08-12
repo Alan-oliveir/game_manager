@@ -2,15 +2,21 @@ import { useEffect, useState } from 'react';
 
 import { useNetworkStatus } from '@/hooks/common';
 import { trendingService } from '@/services/trendingService';
-import { RawgGame } from '@/types';
+import { UpcomingGame } from '@/types';
 
 const UPCOMING_TTL_MS = 30 * 60 * 1000; // 30 minutos
 
 interface UseUpcomingOptions {
-  cachedGames: RawgGame[];
-  setCachedGames: (games: RawgGame[]) => void;
+  cachedGames: UpcomingGame[];
+  setCachedGames: (games: UpcomingGame[]) => void;
   cachedFetchedAt: number | null;
   setCachedFetchedAt: (value: number | null) => void;
+}
+
+interface UseUpcomingResult {
+  upcomingGames: UpcomingGame[];
+  loading: boolean;
+  error: string | null;
 }
 
 /**
@@ -22,8 +28,8 @@ interface UseUpcomingOptions {
  *   - loading: Estado de carregamento
  *   - error: Mensagem de erro, se houver
  */
-export function useUpcoming(options?: UseUpcomingOptions) {
-  const [upcomingGames, setUpcomingGames] = useState<RawgGame[]>(
+export function useUpcoming(options?: UseUpcomingOptions): UseUpcomingResult {
+  const [upcomingGames, setUpcomingGames] = useState<UpcomingGame[]>(
     options?.cachedGames ?? []
   );
   const [loading, setLoading] = useState(true);
@@ -57,15 +63,7 @@ export function useUpcoming(options?: UseUpcomingOptions) {
       }
 
       try {
-        const apiKey = await trendingService.getApiKey();
-
-        if (!apiKey || apiKey.trim() === '') {
-          setError('API Key inválida ou ausente. Verifique as configurações.');
-
-          return;
-        }
-
-        const upcoming = await trendingService.getUpcoming(apiKey);
+        const upcoming = await trendingService.getUpcoming();
         setUpcomingGames(upcoming);
         options?.setCachedGames(upcoming);
         options?.setCachedFetchedAt(Date.now());

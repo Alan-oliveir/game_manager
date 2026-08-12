@@ -119,8 +119,6 @@ export type ImportConfidence = 'High' | 'Medium' | 'Low';
 
 export type PlaytimeSource = 'local' | { platform: Platform };
 
-// === MODELOS DE DADOS (SCHEMA 3.0 - Game e GameDetails) ===
-
 export interface GameDescription {
   summary?: string;
   storyline?: string;
@@ -128,6 +126,8 @@ export interface GameDescription {
   description?: string;
   descriptionPtbr?: string;
 }
+
+// === MODELOS DE DADOS (SCHEMA 4.0 - Game e GameDetails) ===
 
 /**
  * Informações básicas do jogo - Schema 4.0

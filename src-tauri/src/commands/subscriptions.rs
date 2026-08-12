@@ -1,10 +1,10 @@
 //! Comamdos para obter catálogo de jogos de serviços assinados.
 
 use crate::database::AppState;
-use crate::scrapers::amazon_luna::LunaGame;
-use crate::scrapers::ea_play::EAPlayGame;
-use crate::scrapers::game_pass::GamePassGame;
-use crate::scrapers::ubisoft_plus::UbisoftGame;
+use crate::providers::subscriptions::amazon_luna::LunaGame;
+use crate::providers::subscriptions::ea_play::EAPlayGame;
+use crate::providers::subscriptions::game_pass::GamePassGame;
+use crate::providers::subscriptions::ubisoft_plus::UbisoftGame;
 use crate::services::subscriptions;
 use tauri::State;
 

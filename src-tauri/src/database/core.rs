@@ -12,8 +12,8 @@ use crate::constants::{
     DB_FILENAME_CACHE, DB_FILENAME_GAMES, DB_FILENAME_SECRETS, DB_JOURNAL_MODE,
 };
 use crate::errors::AppError;
+use crate::providers::technical::pcgamingwiki::db::initialize_pcgamingwiki_tables;
 use crate::security;
-use crate::services::integration::pcgamingwiki::db::initialize_pcgamingwiki_tables;
 use crate::services::playtime::PlaytimeRegistry;
 use rusqlite::{params, Connection};
 use std::sync::Mutex;
@@ -281,7 +281,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
     conn.execute("CREATE INDEX IF NOT EXISTS idx_slug ON games(slug)", [])
         .map_err(|e| e.to_string())?;
 
-    // Tabelas extras - PCGamingWiki e scrapers relacionados
+    // Tabelas extras - PCGamingWiki e subscriptions relacionados
     initialize_pcgamingwiki_tables(conn).map_err(|e| e.to_string())?;
 
     // Marca versão do schema

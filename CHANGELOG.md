@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- IGDB integration as the primary metadata source (genres, description, developer/publisher, critic score, cover art,
+  alternative names, franchise, game modes, player perspectives, themes, keywords, age ratings, and expansion/DLC
+  listings), replacing RAWG after the RAWG API became unreachable.
+- New `game_dlcs` table storing IGDB-reported expansions and standalone expansions per game.
+- ProtonDB integration: Linux/Steam Deck compatibility tier (Platinum/Gold/Silver/Bronze/Borked) shown in the Extras tab
+  when running on Linux, fetched on demand and cached locally. Complements PCGamingWiki's static technical data with
+  real-world Proton compatibility reports.
+- Automatic post-import metadata enrichment: newly imported games from any platform (Steam, Epic, GOG, Ubisoft,
+  Battle.net, EA, Amazon, Xbox, IndieGala, Itch.io, Legacy Games) are now enriched with metadata immediately after
+  import, without requiring a separate manual "update metadata" action.
+- Shared API rate limiter with per-service concurrency limits and exponential backoff on throttling responses (HTTP
+  429/403/502/503/504), applied to RAWG, Steam Store, and IGDB requests, replacing fixed per-call delays.
+- Toast notifications for platform imports and metadata enrichment (import started/completed/failed, in progress, and
+  completed per platform), routed to native OS notifications when the app window is unfocused.
 - Scan sources for the local folder scanner: each scanned root folder is now saved as a named source (defaulting to the
   folder name), letting locally-imported games be tracked, labeled, and managed independently of a one-off scan.
 - New `scan_sources` table and a `source_label` column on `games`, propagated through the import pipeline so manually
@@ -33,6 +47,16 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 
+- Steam library import: name resolution for non-installed games (read from the Steam library cache) now runs
+  concurrently instead of one request at a time, reducing import time for libraries with many non-installed titles.
+- `steam_app_id` resolution for non-Steam platforms: games imported from other stores are now correlated to their Steam
+  counterpart via the public Steam Store Search endpoint, with staged fallback matching (exact name, then
+  edition-suffix-stripped name, then best remaining non-DLC candidate) and a confidence level recorded per match.
+- Post-import enrichment now commits results in incremental batches instead of a single transaction at the end, limiting
+  potential data loss to at most one batch if the app closes or crashes mid-run.
+- DLC/demo/edition keyword filtering (used when importing from GOG, Ubisoft, and when correlating Steam IDs) now
+  respects word boundaries for short keywords, preventing titles like "Soulstice" or "Trials Fusion" from being
+  misclassified as demos or trials.
 - `add_game_from_scan` and `add_games_from_scan` now resolve and persist the originating scan source's label
   automatically, falling back to the folder name if the source hasn't been explicitly labeled yet.
 - `normalize_for_matching` now also strips straight and typographic apostrophes (`'` / `’`), improving cross-source name
@@ -44,10 +68,19 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Steam Store Search requests were silently returning empty results due to a missing `User-Agent` header, causing
+  `steam_app_id` resolution to fail for every non-Steam game without any visible error.
+- Steam library name-resolution requests (for non-installed games) were not covered by the shared Steam rate limiter,
+  occasionally triggering temporary throttling from the Steam Store during large imports.
 - Duplicate filter ("hide duplicates") no longer fails to group the same game across platforms with differing name
   formatting — e.g. trademark symbols (™, ®), colons, or other punctuation (`BioShock™` vs `BioShock`, `BioShock
   Infinite: Complete Edition` vs `BioShock Infinite Complete Edition`) previously caused an exact-name comparison to
   treat them as different games.
+
+### Removed
+
+- SteamSpy integration (previously used to estimate median playtime): the service has stopped returning
+  `median_forever`/`average_forever` data for all games, making it non-functional as a data source.
 
 ## [4.3.0] - 2026-07-25
 

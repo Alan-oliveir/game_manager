@@ -6,18 +6,23 @@
 use crate::database;
 use crate::database::AppState;
 use crate::errors::AppError;
+use crate::integrations::gamebrain::models::{GameMedia, SimilarGame};
 use crate::models::Game;
+use crate::providers::discovery::gamebrain as gamebrain_discovery;
+use crate::providers::giveaways::gamerpower::{self, Giveaway};
+use crate::providers::media::gamebrain as gamebrain_media;
+use crate::providers::metadata::hltb::{HltbClient, HltbEntry};
 use crate::providers::metadata::rawg;
 use crate::providers::mods::nexus::TrendingMod;
+use crate::providers::trending::igdb::{
+    fetch_trending_inner, fetch_upcoming_games, TrendingGame, UpcomingGame,
+};
 use crate::services::cache;
-use crate::services::integration::gamebrain;
-use crate::services::integration::gamebrain::{GameMedia, SimilarGame};
-use crate::services::integration::gamerpower::{self, Giveaway};
-use crate::services::integration::hltb::{HltbClient, HltbEntry};
 use crate::services::recommendation::core::calculate_game_weight;
 use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
+
 // === ESTRUTURAS ===
 
 /// Jogo similar retornado para a seção de perfil em Trending.
@@ -97,9 +102,9 @@ pub async fn get_profile_similar_games(
 
     // Etapa 3: chamadas em paralelo para os 2 âncoras
     let (result_a, result_b) = tokio::join!(
-        gamebrain::fetch_similar_games(&app, &anchors[0].id, &anchors[0].name, Some(5)),
+        gamebrain_discovery::fetch_similar_games(&app, &anchors[0].id, &anchors[0].name, Some(5)),
         // Se só tiver 1 jogo, usa o mesmo para não falhar
-        gamebrain::fetch_similar_games(
+        gamebrain_discovery::fetch_similar_games(
             &app,
             &anchors.get(1).unwrap_or(&anchors[0]).id,
             &anchors.get(1).unwrap_or(&anchors[0]).name,
@@ -147,20 +152,18 @@ pub async fn get_profile_similar_games(
     Ok(results)
 }
 
-/// Busca jogos em tendência no momento na RAWG
+/// Busca jogos em alta na Steam (top sellers)
 #[tauri::command]
-pub async fn get_trending_games(app: AppHandle) -> Result<Vec<rawg::RawgGame>, AppError> {
-    let api_key = database::get_secret(&app, "rawg_api_key")?;
-    rawg::fetch_trending_games(&app, &api_key)
+pub async fn get_trending_games(app: AppHandle) -> Result<Vec<TrendingGame>, AppError> {
+    fetch_trending_inner(&app)
         .await
         .map_err(AppError::NetworkError)
 }
 
-/// Busca jogos que serão lançados em breve na RAWG
+/// Busca jogos com lançamento futuro via IGDB
 #[tauri::command]
-pub async fn get_upcoming_games(app: AppHandle) -> Result<Vec<rawg::RawgGame>, AppError> {
-    let api_key = database::get_secret(&app, "rawg_api_key")?;
-    rawg::fetch_upcoming_games(&app, &api_key)
+pub async fn get_upcoming_games(app: AppHandle) -> Result<Vec<UpcomingGame>, AppError> {
+    fetch_upcoming_games(&app)
         .await
         .map_err(AppError::NetworkError)
 }
@@ -172,17 +175,17 @@ pub async fn get_similar_games(
     game_id: String,
     game_name: String,
 ) -> Result<Vec<SimilarGame>, String> {
-    gamebrain::fetch_similar_games(&app, &game_id, &game_name, Some(12)).await
+    gamebrain_discovery::fetch_similar_games(&app, &game_id, &game_name, Some(12)).await
 }
 
-/// Busca midia de jogos (screenshots, trailers) usando a API do GameBrain
+/// Busca media de jogos (screenshots, trailers) usando a API do GameBrain
 #[tauri::command]
 pub async fn get_game_media(
     app: AppHandle,
     game_id: String,
     game_name: String,
 ) -> Result<GameMedia, String> {
-    gamebrain::fetch_game_media(&app, &game_id, &game_name).await
+    gamebrain_media::fetch_game_media(&app, &game_id, &game_name).await
 }
 
 /// Busca dados do HLTB para um jogo

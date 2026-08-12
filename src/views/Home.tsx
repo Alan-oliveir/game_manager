@@ -30,7 +30,7 @@ import {
 } from '@/components/subscriptions';
 import { Recommendation } from '@/components/tooltips';
 import { useHeroCarousel, useHome, useLaunchGame } from '@/hooks';
-import { Game, RawgGame, UserPreferenceVector } from '@/types';
+import { Game, TrendingGame, UserPreferenceVector } from '@/types';
 import { Button } from '@/ui/button';
 import { Separator } from '@/ui/separator';
 import { formatTime, openExternalLink } from '@/utils';
@@ -38,8 +38,8 @@ import { formatTime, openExternalLink } from '@/utils';
 interface HomeProps {
   onChangeTab: (tab: string) => void;
   games: Game[];
-  trendingCache: RawgGame[];
-  setTrendingCache: (games: RawgGame[]) => void;
+  trendingCache: TrendingGame[];
+  setTrendingCache: (games: TrendingGame[]) => void;
   onGameClick: (game: Game) => void;
   profileCache: UserPreferenceVector | null;
   setProfileCache: (profile: UserPreferenceVector) => void;
@@ -90,18 +90,19 @@ export default function Home(props: Readonly<HomeProps>) {
   const currentHero = heroSlides[currentIndex] || mostPlayed[0];
 
   // Helper para imagens
-  const getHeroImage = (game: Game | RawgGame) =>
+  const getHeroImage = (game: Game | TrendingGame) =>
     ('coverUrl' in game ? game.coverUrl : null) ||
-    ('backgroundImage' in game ? game.backgroundImage : null) ||
+    ('image' in game ? game.image : null) ||
     '';
 
   // Helper normalizar gêneros
-  const getGenresList = (game: Game | RawgGame): string[] => {
-    if (game.genres && Array.isArray(game.genres)) {
-      return game.genres.map((g: { name: string }) => g.name);
+  const getGenresList = (game: Game | TrendingGame): string[] => {
+    if (Array.isArray(game.genres)) {
+      return game.genres;
     }
 
-    if ('genres' in game && typeof game.genres === 'string') {
+    // Game (biblioteca local) guarda gêneros como string separada por vírgula
+    if (typeof game.genres === 'string') {
       return game.genres.split(',').map((g: string) => g.trim());
     }
 
@@ -109,7 +110,7 @@ export default function Home(props: Readonly<HomeProps>) {
   };
 
   // Helper isLocalGame
-  const isLocalGame = (game: Game | RawgGame): game is Game =>
+  const isLocalGame = (game: Game | TrendingGame): game is Game =>
     'playtime' in game;
 
   const recommendationsContent = (() => {
@@ -210,7 +211,9 @@ export default function Home(props: Readonly<HomeProps>) {
                 variant="outline"
                 className="gap-2 border-white/20 bg-transparent text-white hover:bg-white/10"
                 onClick={() =>
-                  openExternalLink(`https://rawg.io/games/${currentHero.id}`)
+                  openExternalLink(
+                    `https://www.igdb.com/games/${currentHero.slug}`
+                  )
                 }
               >
                 <ExternalLink size={18} /> {t('view_details_button')}

@@ -8,8 +8,10 @@ use crate::constants::{
 };
 use crate::database::AppState;
 use crate::errors::AppError;
+use crate::providers::giveaways::gamerpower;
+use crate::providers::metadata::steam::get_app_reviews;
+use crate::providers::pricing::itad;
 use crate::services::cache;
-use crate::services::integration::{gamerpower, itad, steam_api};
 use lazy_static::lazy_static;
 use rusqlite::params;
 use std::sync::Arc;
@@ -99,7 +101,7 @@ async fn refresh_steam_reviews_background(
                     let name: String = row.get(1)?;
                     Ok((id_str.parse::<u32>().unwrap_or(0), name))
                 })
-                .and_then(|mapped| mapped.collect::<Result<Vec<_>, _>>())
+                    .and_then(|mapped| mapped.collect::<Result<Vec<_>, _>>())
             })
             .map_err(|e| e.to_string())?
             .into_iter()
@@ -129,7 +131,7 @@ async fn refresh_steam_reviews_background(
         if should_update {
             let app_id_str = app_id.to_string();
             // C. Busca na API (Só se expirou)
-            match steam_api::get_app_reviews(&app_id_str).await {
+            match get_app_reviews(&app_id_str).await {
                 Ok(Some(summary)) => {
                     // D. Sucesso? Atualiza Library DB e Metadata Cache
                     {
@@ -186,7 +188,7 @@ async fn refresh_gamerpower_background(
             GAMERPOWER_CACHE_SOURCE,
             GAMERPOWER_LIST_ACTIVE_CACHE_KEY,
         )
-        .is_none()
+            .is_none()
     };
 
     if !should_refresh {
@@ -224,7 +226,7 @@ async fn refresh_wishlist_prices_background(
                         row.get::<_, Option<String>>(2)?,
                     ))
                 })
-                .and_then(|mapped| mapped.collect::<Result<Vec<_>, _>>())
+                    .and_then(|mapped| mapped.collect::<Result<Vec<_>, _>>())
             })
             .map_err(|e| e.to_string())?
     };

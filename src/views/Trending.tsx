@@ -37,7 +37,13 @@ import {
   useWishlist,
 } from '@/hooks';
 import { wishlistService } from '@/services/wishlistService';
-import { Game, Giveaway, RawgGame, SimilarGame } from '@/types';
+import {
+  Game,
+  Giveaway,
+  SimilarGame,
+  TrendingGame,
+  UpcomingGame,
+} from '@/types';
 import { Button } from '@/ui/button';
 import {
   DropdownMenu,
@@ -54,12 +60,12 @@ import { openExternalLink, toast } from '@/utils';
 interface TrendingProps {
   userGames: Game[];
   onChangeTab: (tab: string) => void;
-  cachedGames: RawgGame[];
-  setCachedGames: (games: RawgGame[]) => void;
+  cachedGames: TrendingGame[];
+  setCachedGames: (games: TrendingGame[]) => void;
   cachedFetchedAt: number | null;
   setCachedFetchedAt: (value: number | null) => void;
-  upcomingCache: RawgGame[];
-  setUpcomingCache: (games: RawgGame[]) => void;
+  upcomingCache: UpcomingGame[];
+  setUpcomingCache: (games: UpcomingGame[]) => void;
   upcomingFetchedAt: number | null;
   setUpcomingFetchedAt: (value: number | null) => void;
   giveawaysCache: Giveaway[];
@@ -184,7 +190,7 @@ export default function Trending(props: Readonly<TrendingProps>) {
     window.location.reload();
   };
 
-  const handleWishlistClick = async (game: RawgGame) => {
+  const handleTrendingWishlistClick = async (game: TrendingGame) => {
     try {
       await addToWishlist(game);
 
@@ -195,6 +201,19 @@ export default function Trending(props: Readonly<TrendingProps>) {
       toast.error(t('add_to_wishlist_error_title'), {
         description: t('add_to_wishlist_error_description'),
       });
+    }
+  };
+
+  const handleUpcomingWishlistClick = async (game: UpcomingGame) => {
+    try {
+      await wishlistService.addToWishlist({
+        id: game.slug,
+        name: game.name,
+        cover_url: game.coverUrl ?? undefined,
+      });
+      toast.success(t('game_added_to_wishlist_title', { name: game.name }));
+    } catch {
+      toast.error(t('add_to_wishlist_error_title'));
     }
   };
 
@@ -286,10 +305,9 @@ export default function Trending(props: Readonly<TrendingProps>) {
       <Hero
         gameId={currentHero.id.toString()}
         title={currentHero.name}
-        backgroundUrl={currentHero.backgroundImage}
-        coverUrl={currentHero.backgroundImage}
-        genres={currentHero.genres.map(g => g.name)}
-        rating={currentHero.rating}
+        backgroundUrl={currentHero.coverUrl ?? undefined}
+        coverUrl={currentHero.coverUrl ?? undefined}
+        genres={currentHero.genres}
         showNavigation={heroGames.length > 1}
         onNext={nextHero}
         onPrev={prevHero}
@@ -303,7 +321,7 @@ export default function Trending(props: Readonly<TrendingProps>) {
             <Button
               variant="secondary"
               className="gap-2"
-              onClick={() => handleWishlistClick(currentHero)}
+              onClick={() => handleTrendingWishlistClick(currentHero)}
             >
               <Heart
                 size={18}
@@ -315,7 +333,9 @@ export default function Trending(props: Readonly<TrendingProps>) {
               variant="outline"
               className="gap-2 border-white/20 bg-transparent text-white hover:bg-white/10"
               onClick={() =>
-                openExternalLink(`https://rawg.io/games/${currentHero.id}`)
+                openExternalLink(
+                  `https://www.igdb.com/games/${currentHero.slug}`
+                )
               }
             >
               <ExternalLink size={18} /> {t('view_details_button')}
@@ -529,8 +549,7 @@ export default function Trending(props: Readonly<TrendingProps>) {
                 id={game.id.toString()}
                 key={game.id}
                 title={game.name}
-                coverUrl={game.backgroundImage}
-                rating={game.rating}
+                coverUrl={game.coverUrl ?? undefined}
                 subtitle={genres.slice(0, 2).join(', ')}
                 badge={
                   badge ? (
@@ -548,7 +567,7 @@ export default function Trending(props: Readonly<TrendingProps>) {
                     <ActionButton
                       icon={Heart}
                       variant={isInWishlist ? 'glass-destructive' : 'glass'}
-                      onClick={() => handleWishlistClick(game)}
+                      onClick={() => handleTrendingWishlistClick(game)}
                       tooltip={t('wishlist_button')}
                     />
                     <ActionButton
@@ -556,7 +575,9 @@ export default function Trending(props: Readonly<TrendingProps>) {
                       variant="secondary"
                       size={16}
                       onClick={() =>
-                        openExternalLink(`https://rawg.io/games/${game.id}`)
+                        openExternalLink(
+                          `https://www.igdb.com/games/${game.slug}`
+                        )
                       }
                       tooltip={t('view_details_button')}
                     />
@@ -581,19 +602,19 @@ export default function Trending(props: Readonly<TrendingProps>) {
 
             <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-5">
               {upcomingGamesWithAffinity.map(({ game, badge }) => {
-                const isInWishlist = wishlistIds.has(game.id.toString());
+                const isInWishlist = wishlistIds.has(game.slug);
 
                 return (
                   <StandardGameCard
-                    id={game.id.toString()}
-                    key={game.id}
+                    id={game.slug}
+                    key={game.slug}
                     title={game.name}
-                    coverUrl={game.backgroundImage}
+                    coverUrl={game.coverUrl ?? undefined}
                     subtitle={
-                      game.released
+                      game.releaseDate
                         ? t('release_label') +
                           ': ' +
-                          new Date(game.released).toLocaleDateString()
+                          new Date(game.releaseDate).toLocaleDateString()
                         : t('coming_soon')
                     }
                     badge={
@@ -612,7 +633,7 @@ export default function Trending(props: Readonly<TrendingProps>) {
                         <ActionButton
                           icon={Heart}
                           variant={isInWishlist ? 'glass-destructive' : 'glass'}
-                          onClick={() => handleWishlistClick(game)}
+                          onClick={() => handleUpcomingWishlistClick(game)}
                           tooltip={t('wishlist_button')}
                         />
                         <ActionButton
@@ -620,7 +641,9 @@ export default function Trending(props: Readonly<TrendingProps>) {
                           variant="secondary"
                           size={16}
                           onClick={() =>
-                            openExternalLink(`https://rawg.io/games/${game.id}`)
+                            openExternalLink(
+                              `https://www.igdb.com/games/${game.slug}`
+                            )
                           }
                           tooltip={t('view_details_button')}
                         />

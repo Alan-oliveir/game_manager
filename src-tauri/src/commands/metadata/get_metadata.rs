@@ -10,23 +10,22 @@
 //! - Reutiliza `ProcessedGameDetails` e `save_game_details` de `enrichment.rs`.
 
 use crate::commands::metadata::shared::{
-    apply_hltb_metadata, fetch_hltb_metadata, fetch_rawg_metadata, fetch_steam_reviews,
-    fetch_steam_store_data, resolve_steam_app_id, save_game_details, EnrichCompletePayload,
-    EnrichProgress, ProcessedGameDetails,
+    apply_hltb_metadata, fetch_hltb_metadata, fetch_steam_reviews, fetch_steam_store_data,
+    resolve_steam_app_id, save_game_details, EnrichCompletePayload, EnrichProgress,
+    ProcessedGameDetails,
 };
-use crate::constants::{RAWG_RATE_LIMIT_MS, RAWG_REQUISITIONS_PER_BATCH};
-use crate::database;
+use crate::constants::REQUISITIONS_PER_BATCH;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::providers::metadata::igdb;
-use crate::providers::mods::nexus::{find_best_nexus_match, NexusGame};
-use crate::services::integration::steam_api;
+use crate::providers::metadata::steam::detect_adult_content;
+use crate::providers::mods::nexus::{find_best_nexus_match, get_cached_nexus_games, NexusGame};
 use rusqlite::Connection;
 use std::collections::{HashMap, HashSet};
-use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, State};
-use tokio::time::sleep;
 use tracing::{info, warn};
+
+// === ESTRUTURAS DE DADOS ===
 
 struct MissingMetadataBatchItem {
     game_id: String,
@@ -34,6 +33,8 @@ struct MissingMetadataBatchItem {
     processed_data: ProcessedGameDetails,
     dlcs: Vec<igdb::core::IgdbDlc>,
 }
+
+// === LÓGICA CORE (REFATORADA) ===
 
 /// Retorna um lote de jogos que possuem campos vazios, ignorando os IDs que já foram processados.
 fn get_games_to_fill(
@@ -106,7 +107,6 @@ fn get_games_to_fill(
 /// Processa um único jogo priorizando IGDB, com RAWG e Steam como fallback.
 async fn process_missing_metadata(
     app: &AppHandle,
-    rawg_api_key: &str,
     game_id: &str,
     name: &str,
     platform: &str,
@@ -161,14 +161,6 @@ async fn process_missing_metadata(
     let igdb_future = igdb::fetch::search_and_resolve(app, name);
     let hltb_future = fetch_hltb_metadata(name, cache_conn);
 
-    let rawg_future = async {
-        if rawg_api_key.is_empty() {
-            None
-        } else {
-            fetch_rawg_metadata(rawg_api_key, name, cache_conn).await
-        }
-    };
-
     let steam_future = async {
         let target_steam_id =
             resolve_steam_app_id(&name, &platform, platform_game_id.as_deref(), cache_conn)
@@ -187,8 +179,8 @@ async fn process_missing_metadata(
         }
     };
 
-    let (igdb_result, rawg_result, (target_steam_id, store_data, reviews), hltb_result) =
-        tokio::join!(igdb_future, rawg_future, steam_future, hltb_future);
+    let (igdb_result, (target_steam_id, store_data, reviews), hltb_result) =
+        tokio::join!(igdb_future, steam_future, hltb_future);
 
     let mut found_raw_tags: Vec<String> = Vec::new();
     let mut igdb_dlcs: Vec<igdb::core::IgdbDlc> = Vec::new();
@@ -237,61 +229,6 @@ async fn process_missing_metadata(
         Err(e) => warn!("IGDB search_and_resolve falhou para '{}': {}", name, e),
     }
 
-    // RAWG só preenche o que o IGDB deixou em branco (fallback campo a campo, não "tudo ou nada").
-    if let Some(rawg_det) = rawg_result {
-        if found_raw_tags.is_empty() {
-            let raw_tag_slugs: Vec<String> = rawg_det.tags.iter().map(|t| t.slug.clone()).collect();
-            found_raw_tags = raw_tag_slugs.clone();
-            details.tags = crate::services::tags::classify_and_sort_tags(raw_tag_slugs, 10);
-        }
-        if details.description.summary.is_none() {
-            details.description.description = rawg_det.description_raw;
-        }
-        if details.release_date.is_none() {
-            details.release_date = rawg_det.released;
-        }
-        if details.genres.is_empty() {
-            details.genres = rawg_det.genres.iter().map(|g| g.name.clone()).collect();
-        }
-        if details.developer.is_none() {
-            details.developer = rawg_det.developers.first().map(|d| d.name.clone());
-        }
-        if details.publisher.is_none() {
-            details.publisher = rawg_det.publishers.first().map(|p| p.name.clone());
-        }
-        if details.critic_score.is_none() {
-            details.critic_score = rawg_det.metacritic;
-        }
-        if details.background_image.is_none() {
-            details.background_image = rawg_det.background_image;
-        }
-        if details.esrb_rating.is_none() {
-            details.esrb_rating = rawg_det.esrb_rating.as_ref().map(|r| r.name.clone());
-        }
-        if details.alternative_names.is_none() && !rawg_det.alternative_names.is_empty() {
-            details.alternative_names = Some(rawg_det.alternative_names.clone());
-        }
-
-        if let Some(url) = &rawg_det.website {
-            links_map
-                .entry("website".to_string())
-                .or_insert_with(|| url.clone());
-        }
-        if let Some(url) = &rawg_det.reddit_url {
-            links_map
-                .entry("reddit".to_string())
-                .or_insert_with(|| url.clone());
-        }
-        if let Some(url) = &rawg_det.metacritic_url {
-            links_map
-                .entry("metacritic".to_string())
-                .or_insert_with(|| url.clone());
-        }
-        links_map
-            .entry("rawg".to_string())
-            .or_insert_with(|| format!("https://rawg.io/games/{}", rawg_det.id));
-    }
-
     if let Some(steam_id) = &target_steam_id {
         links_map
             .entry("steam".to_string())
@@ -299,7 +236,7 @@ async fn process_missing_metadata(
         details.steam_app_id = Some(steam_id.clone());
 
         if let Some(store_data) = store_data {
-            let (detected_adult, flags) = steam_api::detect_adult_content(&store_data);
+            let (detected_adult, flags) = detect_adult_content(&store_data);
             details.is_adult = detected_adult;
             if !flags.is_empty() {
                 details.adult_tags = serde_json::to_string(&flags).ok();
@@ -342,7 +279,6 @@ async fn process_missing_metadata(
 #[tauri::command]
 pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
     let app_handle = app.clone();
-    let rawg_api_key = database::get_secret(&app, "rawg_api_key").unwrap_or_default();
 
     tauri::async_runtime::spawn(async move {
         info!("Iniciando preenchimento de campos vazios (fresh RAWG)...");
@@ -356,13 +292,13 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
             .cache_db
             .lock()
             .ok()
-            .and_then(|conn| crate::services::cache::get_cached_nexus_games(&conn).ok())
+            .and_then(|conn| get_cached_nexus_games(&conn).ok())
             .unwrap_or_default();
 
         loop {
             // 1. Busca os jogos usando nossa nova função de extração
             let games_to_fill = match state.games_db.lock() {
-                Ok(conn) => get_games_to_fill(&conn, &processed_ids, RAWG_REQUISITIONS_PER_BATCH),
+                Ok(conn) => get_games_to_fill(&conn, &processed_ids, REQUISITIONS_PER_BATCH),
                 Err(_) => break,
             };
 
@@ -405,7 +341,6 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                     rt.block_on(async {
                         process_missing_metadata(
                             &app,
-                            &rawg_api_key,
                             &game_id,
                             &name,
                             &platform,
@@ -453,8 +388,6 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                     }
                 }
             }
-
-            sleep(Duration::from_millis(RAWG_RATE_LIMIT_MS)).await;
         }
 
         let _ = crate::services::tags::generate_analysis_report(&app_handle, all_session_tags);

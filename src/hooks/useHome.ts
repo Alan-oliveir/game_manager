@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNetworkStatus } from '@/hooks/common';
 import { useLibraryStats } from '@/hooks/library';
 import { useRecommendation } from '@/hooks/recommendation';
-import { Game, RawgGame, UserPreferenceVector } from '@/types';
+import { Game, TrendingGame, UserPreferenceVector } from '@/types';
 
 import { trendingService } from '../services/trendingService';
 
@@ -11,8 +11,8 @@ const HOME_TRENDING_TTL_MS = 10 * 60 * 1000;
 
 interface UseHomeProps {
   games: Game[];
-  trendingCache: RawgGame[];
-  setTrendingCache: (games: RawgGame[]) => void;
+  trendingCache: TrendingGame[];
+  setTrendingCache: (games: TrendingGame[]) => void;
   profileCache: UserPreferenceVector | null;
   setProfileCache: (profile: UserPreferenceVector) => void;
   trendingFetchedAt: number | null;
@@ -78,8 +78,8 @@ export function useHome({
 
   const isOnline = useNetworkStatus();
 
-  // === TRENDING (RAWG API) ===
-  const [trending, setTrending] = useState<RawgGame[]>(trendingCache);
+  // === TRENDING (IGDB API) ===
+  const [trending, setTrending] = useState<TrendingGame[]>(trendingCache);
   const [loadingTrending, setLoadingTrending] = useState(false);
 
   useEffect(() => {
@@ -107,14 +107,10 @@ export function useHome({
       setLoadingTrending(true);
 
       try {
-        const apiKey = await trendingService.getApiKey();
-
-        if (apiKey && apiKey.trim() !== '') {
-          const result = await trendingService.getTrending(apiKey);
-          setTrending(result);
-          setTrendingCache(result);
-          setTrendingFetchedAt(Date.now());
-        }
+        const result = await trendingService.getTrending();
+        setTrending(result);
+        setTrendingCache(result);
+        setTrendingFetchedAt(Date.now());
       } catch (error) {
         console.error('Erro ao carregar trending:', error);
       } finally {

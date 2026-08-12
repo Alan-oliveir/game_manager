@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useNetworkStatus } from '@/hooks/common';
 import { trendingService } from '@/services/trendingService';
-import { Game, RawgGame } from '@/types';
+import { Game, TrendingGame } from '@/types';
 
 const TRENDING_TTL_MS = 10 * 60 * 1000; // 10 minutos
 
 interface UseTrendingProps {
   userGames: Game[];
-  cachedGames: RawgGame[];
-  setCachedGames: (games: RawgGame[]) => void;
+  cachedGames: TrendingGame[];
+  setCachedGames: (games: TrendingGame[]) => void;
   cachedFetchedAt: number | null;
   setCachedFetchedAt: (value: number | null) => void;
 }
@@ -66,27 +66,14 @@ export function useTrending({
     setError(null);
 
     try {
-      const apiKey = await trendingService.getApiKey();
-
-      if (!apiKey || apiKey.trim() === '') {
-        setError('API Key inválida ou ausente. Verifique as configurações.');
-
-        return;
-      }
-
-      console.log('Buscando jogos na RAWG...');
-      const result = await trendingService.getTrending(apiKey);
-      setCachedGames(result); // Atualiza o cache no App.tsx via prop
+      const result = await trendingService.getTrending();
+      setCachedGames(result);
       setCachedFetchedAt(Date.now());
     } catch (err) {
       console.error('Erro no hook useTrending:', err);
-      const msg = err instanceof Error ? err.message : String(err);
-
-      if (msg.includes('não configurada') || msg.includes('401')) {
-        setError('API Key inválida ou ausente. Verifique as configurações.');
-      } else {
-        setError(`Erro ao buscar jogos: ${msg}`);
-      }
+      setError(
+        `Erro ao buscar jogos: ${err instanceof Error ? err.message : String(err)}`
+      );
     } finally {
       setLoading(false);
     }
@@ -104,22 +91,21 @@ export function useTrending({
       userGames.map(g => g.name.toLowerCase().replace(/[^a-z0-9]/g, ''))
     );
 
-    const available = cachedGames.filter(rawgGame => {
-      const rawgName = rawgGame.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const available = cachedGames.filter(game => {
+      const normalized = game.name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-      return !userGameNames.has(rawgName);
+      return !userGameNames.has(normalized);
     });
 
     // Extrai gêneros únicos para o filtro
     const genres = Array.from(
-      new Set(cachedGames.flatMap(g => g.genres.map(genre => genre.name)))
+      new Set(cachedGames.flatMap(g => g.genres))
     ).sort();
 
-    // Aplica o filtro de gênero selecionado
     const filtered = available.filter(game => {
       if (selectedGenre === 'all') return true;
 
-      return game.genres.some(g => g.name === selectedGenre);
+      return game.genres.includes(selectedGenre);
     });
 
     return { filteredGames: filtered, allGenres: genres };

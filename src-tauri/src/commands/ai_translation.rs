@@ -8,7 +8,7 @@
 use crate::database;
 use crate::database::AppState;
 use crate::errors::AppError;
-use crate::services::integration::gemini;
+use crate::providers::translation::gemini;
 use rusqlite::params;
 use tauri::{AppHandle, Manager, State};
 use tracing::{error, info};

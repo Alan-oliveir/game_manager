@@ -1,0 +1,126 @@
+[
+  {
+    "name": "Counter-Strike 2",
+    "igdb_slug": "counter-strike-2",
+    "steam_app_id": 730
+  },
+  { "name": "Dota 2", "igdb_slug": "dota-2", "steam_app_id": 570 },
+  {
+    "name": "Team Fortress 2",
+    "igdb_slug": "team-fortress-2",
+    "steam_app_id": 440
+  },
+  {
+    "name": "PUBG: Battlegrounds",
+    "igdb_slug": "pubg-battlegrounds",
+    "steam_app_id": 578080
+  },
+  {
+    "name": "Apex Legends",
+    "igdb_slug": "apex-legends",
+    "steam_app_id": 1172470
+  },
+  { "name": "Warframe", "igdb_slug": "warframe", "steam_app_id": 230410 },
+  { "name": "Destiny 2", "igdb_slug": "destiny-2", "steam_app_id": 1085660 },
+  { "name": "War Thunder", "igdb_slug": "war-thunder", "steam_app_id": 236390 },
+  {
+    "name": "Path of Exile",
+    "igdb_slug": "path-of-exile",
+    "steam_app_id": 238960
+  },
+  {
+    "name": "Rocket League",
+    "igdb_slug": "rocket-league",
+    "steam_app_id": 252950
+  },
+  { "name": "Brawlhalla", "igdb_slug": "brawlhalla", "steam_app_id": 291550 },
+  { "name": "Smite", "igdb_slug": "smite", "steam_app_id": 386360 },
+  { "name": "Fall Guys", "igdb_slug": "fall-guys", "steam_app_id": 1097150 },
+  {
+    "name": "Halo Infinite",
+    "igdb_slug": "halo-infinite",
+    "steam_app_id": 1240440
+  },
+  {
+    "name": "World of Tanks",
+    "igdb_slug": "world-of-tanks",
+    "steam_app_id": 444200
+  },
+  {
+    "name": "World of Warships",
+    "igdb_slug": "world-of-warships",
+    "steam_app_id": 552990
+  },
+  { "name": "Lost Ark", "igdb_slug": "lost-ark", "steam_app_id": 1599340 },
+  { "name": "The Finals", "igdb_slug": "the-finals", "steam_app_id": 2073850 },
+  {
+    "name": "Marvel Rivals",
+    "igdb_slug": "marvel-rivals",
+    "steam_app_id": 2767030
+  },
+  {
+    "name": "Magic: The Gathering Arena",
+    "igdb_slug": "magic-the-gathering-arena",
+    "steam_app_id": 2141910
+  },
+  {
+    "name": "eFootball",
+    "igdb_slug": "efootball-2022",
+    "steam_app_id": 1665460
+  },
+  {
+    "name": "Wuthering Waves",
+    "igdb_slug": "wuthering-waves",
+    "steam_app_id": 3513350
+  },
+  {
+    "name": "Overwatch 2",
+    "igdb_slug": "overwatch-2",
+    "steam_app_id": 2357570
+  },
+  {
+    "name": "Delta Force",
+    "igdb_slug": "delta-force--1",
+    "steam_app_id": 2507950
+  },
+  {
+    "name": "The Sims 4",
+    "igdb_slug": "the-sims-4",
+    "steam_app_id": 1222670
+  },
+  {
+    "name": "Zenless Zone Zero",
+    "igdb_slug": "zenless-zone-zero",
+    "steam_app_id": 4162040
+  },
+  {
+    "name": "Ragnarok: The New World",
+    "igdb_slug": "ragnarok-the-new-world",
+    "steam_app_id": 4212480
+  },
+  {
+    "name": "Where Winds Meet",
+    "igdb_slug": "where-winds-meet",
+    "steam_app_id": 3564740
+  },
+  {
+    "name": "Yu-Gi-Oh! Master Duel",
+    "igdb_slug": "yu-gi-oh-master-duel",
+    "steam_app_id": 1449850
+  },
+  {
+    "name": "Once Human",
+    "igdb_slug": "once-human",
+    "steam_app_id": 2139460
+  },
+  {
+    "name": "Arena Breakout: Infinite",
+    "igdb_slug": "arena-breakout-infinite",
+    "steam_app_id": 2073620
+  },
+  {
+    "name": "SMITE 2",
+    "igdb_slug": "smite-2",
+    "steam_app_id": 2437170
+  }
+]

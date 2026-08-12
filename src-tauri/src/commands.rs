@@ -10,7 +10,7 @@
 //! - `games`: Comandos CRUD para a biblioteca de jogos.
 //! - `launcher`: Comandos para lançar jogos e interagir com plataformas de jogos.
 //! - `metadata`: Comandos para enriquecimento, atualização e busca de metadados via RAWG/Steam API.
-//! - `platforms`: Comandos para gerenciar plataformas de jogos.
+//! - `libraries`: Comandos para gerenciar plataformas de jogos.
 //! - `recommendation`: Comandos para gerenciar recomendações de jogos.
 //! - `settings`: Comandos para gerenciar configurações e segredos do usuário.
 //! - `subscriptions`: Comandos para gerenciar assinaturas de serviços de jogos e buscar catálogos.
@@ -24,7 +24,7 @@ pub mod caches;
 pub mod games;
 pub mod launcher;
 pub mod metadata;
-pub mod platforms;
+pub mod libraries;
 pub mod recommendation;
 pub mod settings;
 pub mod subscriptions;

@@ -7,6 +7,7 @@
 use crate::database::AppState;
 use crate::errors::AppError;
 use rusqlite::{params, Connection};
+use sys_locale::get_locale;
 use tauri::{AppHandle, Manager, State};
 
 // === GERENCIAMENTO GENÉRICO DE CONFIGURAÇÃO (app_config) ===
@@ -20,7 +21,7 @@ fn ensure_config_table(conn: &Connection) -> Result<(), AppError> {
         )",
         [],
     )
-    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
     Ok(())
 }
 
@@ -31,7 +32,7 @@ pub fn set_config(conn: &Connection, key: &str, value: &str) -> Result<(), AppEr
         "INSERT OR REPLACE INTO app_config (key, value) VALUES (?1, ?2)",
         params![key, value],
     )
-    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
     Ok(())
 }
 
@@ -63,7 +64,8 @@ pub fn store_app_version(app: &AppHandle, version: &str) -> Result<(), AppError>
     conn.execute(
         "INSERT OR REPLACE INTO app_config (key, value) VALUES ('app_version', ?1)",
         params![version],
-    )?;
+    )
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
     Ok(())
 }
@@ -98,7 +100,8 @@ pub fn store_schema_version(app: &AppHandle, schema_version: u32) -> Result<(), 
     conn.execute(
         "INSERT OR REPLACE INTO app_config (key, value) VALUES ('schema_version', ?1)",
         params![schema_version],
-    )?;
+    )
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
     Ok(())
 }
@@ -121,4 +124,43 @@ pub fn get_stored_schema_version(app: &AppHandle) -> Result<u32, AppError> {
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(0),
         Err(e) => Err(AppError::DatabaseError(e.to_string())),
     }
+}
+
+// === REGIÃO (usado pela ITAD e futuramente outras APIs) ===
+
+const CONFIG_KEY_REGION: &str = "region";
+
+/// Detecta a região a partir do locale do sistema operacional (BCP 47).
+/// Fallback "US" se não conseguir detectar ou vier um formato inesperado.
+fn detect_region_from_system() -> String {
+    get_locale()
+        .and_then(|tag| {
+            tag.split(['-', '_'])
+                .nth(1)
+                .map(|region| region.to_uppercase())
+        })
+        .filter(|r| r.len() == 2)
+        .unwrap_or_else(|| "US".to_string())
+}
+
+/// Retorna a região configurada em app_config. Se ainda não existir,
+/// detecta via sys-locale, persiste e retorna o valor detectado.
+pub fn get_or_detect_region(app: &AppHandle) -> Result<String, AppError> {
+    let state: State<AppState> = app.state();
+    let conn = state.cache_db.lock().map_err(|_| AppError::MutexError)?;
+
+    if let Some(region) = get_config(&conn, CONFIG_KEY_REGION)? {
+        return Ok(region);
+    }
+
+    let detected = detect_region_from_system();
+    set_config(&conn, CONFIG_KEY_REGION, &detected)?;
+    Ok(detected)
+}
+
+/// Permite sobrescrever a região manualmente (futura tela de settings).
+pub fn set_region(app: &AppHandle, region: &str) -> Result<(), AppError> {
+    let state: State<AppState> = app.state();
+    let conn = state.cache_db.lock().map_err(|_| AppError::MutexError)?;
+    set_config(&conn, CONFIG_KEY_REGION, &region.to_uppercase())
 }

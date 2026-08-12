@@ -1,2 +1,12 @@
 pub mod metadata;
 pub mod mods;
+pub mod libraries;
+pub mod subscriptions;
+pub mod pricing;
+pub mod achievements;
+pub mod giveaways;
+pub mod translation;
+pub mod technical;
+pub mod discovery;
+pub mod media;
+pub mod trending;

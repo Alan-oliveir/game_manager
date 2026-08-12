@@ -5,13 +5,16 @@
 use crate::constants::NOT_FOUND_MARKER;
 use crate::database;
 use crate::models::{GameDescription, ImportConfidence};
-use crate::providers::metadata::rawg;
+use crate::providers::metadata::steam::{
+    get_app_details, get_app_reviews, search_app_by_name, SteamReviewSummary, SteamStoreData,
+};
+use crate::providers::metadata::{hltb, rawg};
 use crate::services::cache;
-use crate::services::integration::{hltb, steam_api};
 use crate::utils::text::{is_likely_non_base_game, normalize_for_matching, strip_edition_suffix};
 use rusqlite::params;
 use std::collections::HashMap;
 use tracing::warn;
+
 // === ESTRUTURAS COMPARTILHADAS ===
 
 /// Progresso de enriquecimento de metadados
@@ -66,8 +69,8 @@ pub struct ProcessedGameDetails {
     pub player_perspectives: Option<Vec<String>>,
     pub themes: Option<Vec<String>>,
     pub keywords: Option<Vec<String>>, // keywords crus, antes de virar GameTag
-    pub age_ratings: Option<String>, // JSON de HashMap<String,String>, como external_links
-    pub display_name: Option<String>, // nome canônico do IGDB
+    pub age_ratings: Option<String>,   // JSON de HashMap<String,String>, como external_links
+    pub display_name: Option<String>,  // nome canônico do IGDB
     pub updated_at: Option<String>,
 }
 
@@ -203,7 +206,7 @@ pub async fn resolve_steam_app_id(
         return None;
     }
 
-    let candidates = match steam_api::search_app_by_name(name).await {
+    let candidates = match search_app_by_name(name).await {
         Ok(c) => c,
         Err(e) => {
             warn!("search_app_by_name falhou para '{}': {}", name, e);
@@ -258,16 +261,16 @@ pub async fn resolve_steam_app_id(
 pub(crate) async fn fetch_steam_store_data(
     steam_id: &str,
     cache_conn: &rusqlite::Connection,
-) -> Option<steam_api::SteamStoreData> {
+) -> Option<SteamStoreData> {
     let cache_key = format!("store_{}", steam_id);
 
     if let Some(cached) = cache::get_cached_api_data(cache_conn, "steam", &cache_key) {
-        if let Ok(data) = serde_json::from_str::<steam_api::SteamStoreData>(&cached) {
+        if let Ok(data) = serde_json::from_str::<SteamStoreData>(&cached) {
             return Some(data);
         }
     }
 
-    match steam_api::get_app_details(steam_id).await {
+    match get_app_details(steam_id).await {
         Ok(Some(data)) => {
             if let Ok(json) = serde_json::to_string(&data) {
                 let _ = cache::save_cached_api_data(cache_conn, "steam", &cache_key, &json);
@@ -282,16 +285,16 @@ pub(crate) async fn fetch_steam_store_data(
 pub(crate) async fn fetch_steam_reviews(
     steam_id: &str,
     cache_conn: &rusqlite::Connection,
-) -> Option<steam_api::SteamReviewSummary> {
+) -> Option<SteamReviewSummary> {
     let cache_key = format!("reviews_{}", steam_id);
 
     if let Some(cached) = cache::get_cached_api_data(cache_conn, "steam", &cache_key) {
-        if let Ok(reviews) = serde_json::from_str::<steam_api::SteamReviewSummary>(&cached) {
+        if let Ok(reviews) = serde_json::from_str::<SteamReviewSummary>(&cached) {
             return Some(reviews);
         }
     }
 
-    match steam_api::get_app_reviews(steam_id).await {
+    match get_app_reviews(steam_id).await {
         Ok(Some(reviews)) => {
             if let Ok(json) = serde_json::to_string(&reviews) {
                 let _ = cache::save_cached_api_data(cache_conn, "steam", &cache_key, &json);
@@ -392,17 +395,46 @@ where
             updated_at          = ?30
          WHERE game_id = ?1",
         params![
-            d.game_id, d.release_date, genres_json, tags_json, d.developer, d.publisher,
-            d.critic_score, d.background_image.clone(), d.series, d.steam_review_label,
-            d.steam_review_count, d.steam_review_score, d.steam_review_updated_at,
-            d.esrb_rating, d.is_adult, d.adult_tags, d.external_links, d.steam_app_id,
-            d.hltb_main_story, d.hltb_main_extra, d.hltb_completionist, d.hltb_coop_time,
-            d.franchise.as_ref().and_then(|v| serde_json::to_string(v).ok()),
-            d.game_modes.as_ref().and_then(|v| serde_json::to_string(v).ok()),
-            d.player_perspectives.as_ref().and_then(|v| serde_json::to_string(v).ok()),
-            d.themes.as_ref().and_then(|v| serde_json::to_string(v).ok()),
-            d.keywords.as_ref().and_then(|v| serde_json::to_string(v).ok()),
-            d.age_ratings, d.display_name, d.updated_at
+            d.game_id,
+            d.release_date,
+            genres_json,
+            tags_json,
+            d.developer,
+            d.publisher,
+            d.critic_score,
+            d.background_image.clone(),
+            d.series,
+            d.steam_review_label,
+            d.steam_review_count,
+            d.steam_review_score,
+            d.steam_review_updated_at,
+            d.esrb_rating,
+            d.is_adult,
+            d.adult_tags,
+            d.external_links,
+            d.steam_app_id,
+            d.hltb_main_story,
+            d.hltb_main_extra,
+            d.hltb_completionist,
+            d.hltb_coop_time,
+            d.franchise
+                .as_ref()
+                .and_then(|v| serde_json::to_string(v).ok()),
+            d.game_modes
+                .as_ref()
+                .and_then(|v| serde_json::to_string(v).ok()),
+            d.player_perspectives
+                .as_ref()
+                .and_then(|v| serde_json::to_string(v).ok()),
+            d.themes
+                .as_ref()
+                .and_then(|v| serde_json::to_string(v).ok()),
+            d.keywords
+                .as_ref()
+                .and_then(|v| serde_json::to_string(v).ok()),
+            d.age_ratings,
+            d.display_name,
+            d.updated_at
         ],
     )?;
 
@@ -428,7 +460,11 @@ where
     Ok(())
 }
 
-pub(crate) fn save_game_description<C>(conn: &C, game_id: &str, d: &GameDescription) -> Result<(), rusqlite::Error>
+pub(crate) fn save_game_description<C>(
+    conn: &C,
+    game_id: &str,
+    d: &GameDescription,
+) -> Result<(), rusqlite::Error>
 where
     C: std::ops::Deref<Target=rusqlite::Connection>,
 {
@@ -444,7 +480,14 @@ where
             description        = COALESCE(?5, description),
             description_ptbr   = COALESCE(?6, description_ptbr)
          WHERE game_id = ?1",
-        params![game_id, d.summary, d.storyline, d.short_description, d.description, d.description_ptbr],
+        params![
+            game_id,
+            d.summary,
+            d.storyline,
+            d.short_description,
+            d.description,
+            d.description_ptbr
+        ],
     )?;
     Ok(())
 }

@@ -1,5 +1,6 @@
 use crate::providers::metadata::igdb::client::igdb_request;
-use crate::providers::metadata::igdb::models::IgdbGame;
+use crate::providers::metadata::igdb::models::{IgdbGame, IgdbNamed};
+use serde::Deserialize;
 use tauri::AppHandle;
 
 const CANONICAL_FIELDS: &str = "\
@@ -18,14 +19,17 @@ expansions.name, standalone_expansions.name, \
 parent_game.name, version_parent.name, version_title, \
 websites.url, websites.type.type";
 
-async fn fetch_game_by_id(app: &AppHandle, id: i64) -> Result<IgdbGame, String> {
-    let query = format!("fields {CANONICAL_FIELDS}; where id = {id};");
-    let body = igdb_request(app, "games", &query).await?;
-    let mut games: Vec<IgdbGame> = serde_json::from_str(&body).map_err(|e| e.to_string())?;
-    games
-        .pop()
-        .ok_or_else(|| format!("IGDB: id {id} não encontrado"))
+// === STRUCTS ===
+
+#[derive(Debug, Deserialize)]
+struct IgdbGenreLookup {
+    #[serde(default)]
+    genres: Vec<IgdbNamed>,
+    #[serde(default)]
+    collections: Vec<IgdbNamed>,
 }
+
+// === FUNCTIONS ===
 
 /// Rank de qualidade do candidato — menor é melhor. Usado como desempate
 /// quando múltiplos resultados têm o mesmo nome exato (ex: jogo base vs.

@@ -16,13 +16,12 @@ pub mod database;
 mod errors;
 pub mod initialization;
 pub mod models;
-pub mod scrapers;
 mod secrets;
 mod security;
 pub mod services;
-pub mod sources;
 pub mod utils;
 pub mod providers;
+pub mod integrations;
 
 use crate::initialization::initialize_app;
 use crate::utils::logger;
@@ -117,33 +116,33 @@ pub fn run() {
             commands::wishlist::import_wishlist,
             commands::wishlist::fetch_wishlist_covers,
             // Comandos de Importação de Plataformas
-            commands::platforms::scanner::scan_games_folder,
-            commands::platforms::scanner::add_game_from_scan,
-            commands::platforms::scanner::add_games_from_scan,
-            commands::platforms::scanner::list_scan_sources,
-            commands::platforms::scanner::rename_scan_source,
-            commands::platforms::scanner::delete_scan_source,
-            commands::platforms::steam::import_steam_library,
-            commands::platforms::epic::epic_login,
-            commands::platforms::epic::epic_logout,
-            commands::platforms::epic::epic_is_authenticated,
-            commands::platforms::epic::import_epic_games,
-            commands::platforms::ubisoft::import_ubisoft_games,
-            commands::platforms::legacy::import_legacy_games,
-            commands::platforms::gog::gog_login,
-            commands::platforms::gog::gog_logout,
-            commands::platforms::gog::gog_is_authenticated,
-            commands::platforms::gog::import_gog_games,
-            commands::platforms::battle_net::import_battle_net_games,
-            commands::platforms::ea::import_ea_games,
-            commands::platforms::amazon::amazon_login,
-            commands::platforms::amazon::amazon_logout,
-            commands::platforms::amazon::amazon_is_authenticated,
-            commands::platforms::amazon::import_amazon_games,
-            commands::platforms::xbox::xbox_live_login,
-            commands::platforms::xbox::import_xbox_games,
-            commands::platforms::indiegala::import_indiegala_games,
-            commands::platforms::itch::import_itch_games,
+            commands::libraries::scanner::scan_games_folder,
+            commands::libraries::scanner::add_game_from_scan,
+            commands::libraries::scanner::add_games_from_scan,
+            commands::libraries::scanner::list_scan_sources,
+            commands::libraries::scanner::rename_scan_source,
+            commands::libraries::scanner::delete_scan_source,
+            commands::libraries::steam::import_steam_library,
+            commands::libraries::epic::epic_login,
+            commands::libraries::epic::epic_logout,
+            commands::libraries::epic::epic_is_authenticated,
+            commands::libraries::epic::import_epic_games,
+            commands::libraries::ubisoft::import_ubisoft_games,
+            commands::libraries::legacy::import_legacy_games,
+            commands::libraries::gog::gog_login,
+            commands::libraries::gog::gog_logout,
+            commands::libraries::gog::gog_is_authenticated,
+            commands::libraries::gog::import_gog_games,
+            commands::libraries::battle_net::import_battle_net_games,
+            commands::libraries::ea::import_ea_games,
+            commands::libraries::amazon::amazon_login,
+            commands::libraries::amazon::amazon_logout,
+            commands::libraries::amazon::amazon_is_authenticated,
+            commands::libraries::amazon::import_amazon_games,
+            commands::libraries::xbox::xbox_live_login,
+            commands::libraries::xbox::import_xbox_games,
+            commands::libraries::indiegala::import_indiegala_games,
+            commands::libraries::itch::import_itch_games,
             // Comando para iniciar um jogo
             commands::launcher::launch_game,
             // Comandos de Metadados (Enriquecimento, Capas, Refresh, Busca)

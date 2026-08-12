@@ -4,23 +4,42 @@
 //! Centraliza a importação via arquivos JSON (Steam e ITAD).
 
 use crate::constants::{
-    DEFAULT_CURRENCY, RAWG_RATE_LIMIT_MS, STEAM_CDN_AKAMAI_URL, STEAM_HEADER_IMAGE_PATH,
-    STEAM_STORE_URL,
+    DEFAULT_CURRENCY, STEAM_CDN_AKAMAI_URL, STEAM_HEADER_IMAGE_PATH, STEAM_STORE_URL,
 };
-use crate::database::{self, AppState};
+use crate::database::AppState;
 use crate::errors::AppError;
+use crate::integrations::gamebrain::models::{
+    GameBrainSearchParams, GameBrainSort, GameBrainSortOrder,
+};
 use crate::models::WishlistGame;
-use crate::providers::metadata::rawg;
-use crate::services::integration::gamebrain::{self, GameBrainSearchParams};
-use crate::services::integration::itad;
+use crate::providers::discovery::gamebrain as gamebrain_discovery;
+use crate::providers::metadata::igdb::client::igdb_request;
+use crate::providers::metadata::igdb::models::IgdbCover;
+use crate::providers::pricing::itad;
 use chrono::NaiveDate;
 use rusqlite::{params, Connection};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
-use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, State};
-use tokio::time::sleep;
 use tracing::{error, info};
+
+// === STRUCTS ===
+
+#[derive(Debug, Deserialize)]
+struct IgdbSearchRaw {
+    id: i64,
+    name: String,
+    slug: String,
+    cover: Option<IgdbCover>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct IgdbSearchResult {
+    id: i64,
+    name: String,
+    slug: String,
+    cover_url: Option<String>,
+}
 
 // Adaptador local para retorno de busca (compatível com frontend)
 #[derive(serde::Serialize)]
@@ -230,18 +249,41 @@ pub async fn import_wishlist(
     Ok(total)
 }
 
-/// Função para buscar capas faltantes na RAWG para jogos na Wishlist.
+// === GERENCIAMENTO DA WISHLIST (CRUD , Covers e Preços) ===
+
+fn cover_url(cover: Option<IgdbCover>) -> Option<String> {
+    cover.map(|c| {
+        format!(
+            "https://images.igdb.com/igdb/image/upload/t_1080p/{}.jpg",
+            c.image_id
+        )
+    })
+}
+
+/// Busca jogos por nome na IGDB. Usado pera busca manual e preenchimento de capas faltantes.
+async fn search_games(app: &AppHandle, query: String) -> Result<Vec<IgdbSearchResult>, String> {
+    let sanitized = query.replace('"', "\\\"");
+    let search_query = format!(
+        "search \"{sanitized}\"; fields name, slug, cover.image_id; where game_type = 0; limit 10;"
+    );
+
+    let body = igdb_request(app, "games", &search_query).await?;
+    let raw: Vec<IgdbSearchRaw> = serde_json::from_str(&body).map_err(|e| e.to_string())?;
+
+    Ok(raw
+        .into_iter()
+        .map(|g| IgdbSearchResult {
+            id: g.id,
+            name: g.name,
+            slug: g.slug,
+            cover_url: cover_url(g.cover),
+        })
+        .collect())
+}
+
+/// Função para buscar capas faltantes na IGDB para jogos na Wishlist.
 #[tauri::command]
 pub async fn fetch_wishlist_covers(app: AppHandle) -> Result<(), AppError> {
-    // 1. Pega a API Key
-    let api_key = database::get_secret(&app, "rawg_api_key")?;
-    if api_key.is_empty() {
-        return Err(AppError::ValidationError(
-            "API Key da RAWG não configurada.".to_string(),
-        ));
-    }
-
-    // 2. Executa em background para não travar a interface
     tauri::async_runtime::spawn(async move {
         let state: State<AppState> = app.state();
 
@@ -264,14 +306,12 @@ pub async fn fetch_wishlist_covers(app: AppHandle) -> Result<(), AppError> {
 
         let mut updated_count = 0;
 
-        // B. Itera e busca na RAWG
+        // B. Itera e busca na IGDB
         for (id, name) in missing_covers {
-            match rawg::search_games(&api_key, &name).await {
+            match search_games(&app, name.clone()).await {
                 Ok(results) => {
-                    // Pega o primeiro resultado que tenha imagem
-                    if let Some(first_match) = results.iter().find(|g| g.background_image.is_some())
-                    {
-                        if let Some(cover) = &first_match.background_image {
+                    if let Some(first_match) = results.iter().find(|g| g.cover_url.is_some()) {
+                        if let Some(cover) = &first_match.cover_url {
                             if let Ok(conn) = state.games_db.lock() {
                                 if conn
                                     .execute(
@@ -286,11 +326,8 @@ pub async fn fetch_wishlist_covers(app: AppHandle) -> Result<(), AppError> {
                         }
                     }
                 }
-                Err(e) => error!("Erro RAWG para '{}': {}", name, e),
+                Err(e) => error!("Erro IGDB para '{}': {}", name, e),
             }
-
-            // Respeita o limite da API (importante!)
-            sleep(Duration::from_millis(RAWG_RATE_LIMIT_MS)).await;
         }
 
         // C. Log resumido e avisa o frontend
@@ -303,23 +340,13 @@ pub async fn fetch_wishlist_covers(app: AppHandle) -> Result<(), AppError> {
     Ok(())
 }
 
-// === GERENCIAMENTO DA WISHLIST (CRUD e Preços) ===
-
-/// Busca jogos na RAWG para adicionar à Wishlist.
+/// Busca jogos na IGDB para adicionar à Wishlist.
 #[tauri::command]
 pub async fn search_wishlist_game(
     app: AppHandle,
     query: String,
 ) -> Result<Vec<SearchResult>, AppError> {
-    // Usa RAWG para buscar o jogo e a capa
-    let api_key = database::get_secret(&app, "rawg_api_key")?;
-    if api_key.is_empty() {
-        return Err(AppError::ValidationError(
-            "Configure a chave da RAWG nas configurações.".to_string(),
-        ));
-    }
-
-    let results = rawg::search_games(&api_key, &query)
+    let results = search_games(&app, query)
         .await
         .map_err(AppError::NetworkError)?;
 
@@ -328,7 +355,7 @@ pub async fn search_wishlist_game(
         .map(|g| SearchResult {
             id: g.id.to_string(),
             name: g.name,
-            cover_url: g.background_image,
+            cover_url: g.cover_url,
         })
         .collect())
 }
@@ -346,12 +373,12 @@ pub async fn search_wishlist_game_by_features(
     app: AppHandle,
     query: String,
 ) -> Result<Vec<SearchResult>, AppError> {
-    let results = gamebrain::search_pc_games_by_features(
+    let results = gamebrain_discovery::search_pc_games_by_features(
         &app,
         &query,
         GameBrainSearchParams {
-            sort: Some(gamebrain::GameBrainSort::Rating),
-            sort_order: Some(gamebrain::GameBrainSortOrder::Desc),
+            sort: Some(GameBrainSort::Rating),
+            sort_order: Some(GameBrainSortOrder::Desc),
             limit: Some(20),
             ..Default::default()
         },

@@ -66,7 +66,7 @@ pub const DEFAULT_CURRENCY: &str = "BRL";
 // === LIMITES DE REQUISIÇÕES A SERVIÇOS EXTERNOS ===
 pub const RAWG_RATE_LIMIT_MS: u64 = 150;
 pub const RAWG_MAX_CONCURRENT_REQUESTS: u32 = 4;
-pub const RAWG_REQUISITIONS_PER_BATCH: u32 = 25;
+pub const REQUISITIONS_PER_BATCH: u32 = 25;
 pub const RAWG_BACKOFF_BASE_MS: u64 = 2000; // espera inicial após 429
 pub const RAWG_BACKOFF_MAX_RETRIES: u32 = 3; // 2s, 4s, 8s antes de desistir
 pub const RAWG_SEARCH_PAGE_SIZE: u32 = 10;
@@ -120,6 +120,8 @@ pub const NEXUS_CACHE_TTL_DAYS: i64 = 20;
 pub const CACHE_HLTB_TTL_DAYS: i64 = 30;
 pub const CACHE_DEFAULT_TTL_DAYS: i64 = 7;
 pub const CACHE_NEXUS_TRENDING_MODS_TTL_DAYS: i64 = 28;
+pub const CACHE_STEAM_TRENDING_TTL_DAYS: i64 = 7;
+pub const CACHE_IGDB_UPCOMING_TTL_DAYS: i64 = 14;
 
 // === CHAVES DE CACHE DE ASSINATURAS ===
 pub const AMAZON_LUNA_CACHE_SOURCE: &str = "amazon_luna";

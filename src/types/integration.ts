@@ -1,12 +1,19 @@
-export interface RawgGame {
+export interface TrendingGame {
   id: number;
   name: string;
-  backgroundImage: string | null;
-  rating: number;
-  released: string | null;
-  genres: { name: string }[];
-  tags?: { name: string }[];
-  series?: string | null;
+  slug: string;
+  coverUrl: string | null;
+  genres: string[];
+  series: string | null;
+}
+
+export interface UpcomingGame {
+  name: string;
+  slug: string;
+  releaseDate: string | null;
+  coverUrl: string | null;
+  genres: string[];
+  series: string | null;
 }
 
 export interface KeysBatch {

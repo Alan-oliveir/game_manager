@@ -3,10 +3,17 @@
 //! Gerencia cache persistente em SQLite para respostas de RAWG e Steam,
 //! reduzindo chamadas desnecessárias e melhorando performance.
 
-use crate::constants::{CACHE_AMAZON_LUNA_TTL_DAYS, CACHE_DEFAULT_TTL_DAYS, CACHE_EA_PLAY_TTL_DAYS, CACHE_GAMEBRAIN_ID_TTL_DAYS, CACHE_GAMEBRAIN_MEDIA_TTL_DAYS, CACHE_GAMEBRAIN_SIMILAR_TTL_DAYS, CACHE_GAMERPOWER_TTL_DAYS, CACHE_GAME_PASS_FULL_TTL_DAYS, CACHE_HLTB_TTL_DAYS, CACHE_NEXUS_TRENDING_MODS_TTL_DAYS, CACHE_PROTON_DB_TTL_DAYS, CACHE_RAWG_GAME_TTL_DAYS, CACHE_RAWG_LIST_TTL_DAYS, CACHE_STEAM_PLAYTIME_TTL_DAYS, CACHE_STEAM_RESOLVE_TTL_DAYS, CACHE_STEAM_REVIEWS_TTL_DAYS, CACHE_STEAM_STORE_TTL_DAYS, CACHE_UBISOFT_PLUS_TTL_DAYS, NEXUS_CACHE_TTL_DAYS};
+use crate::constants::{
+    CACHE_AMAZON_LUNA_TTL_DAYS, CACHE_DEFAULT_TTL_DAYS, CACHE_EA_PLAY_TTL_DAYS,
+    CACHE_GAMEBRAIN_ID_TTL_DAYS, CACHE_GAMEBRAIN_MEDIA_TTL_DAYS, CACHE_GAMEBRAIN_SIMILAR_TTL_DAYS,
+    CACHE_GAMERPOWER_TTL_DAYS, CACHE_GAME_PASS_FULL_TTL_DAYS, CACHE_HLTB_TTL_DAYS,
+    CACHE_IGDB_UPCOMING_TTL_DAYS, CACHE_NEXUS_TRENDING_MODS_TTL_DAYS, CACHE_PROTON_DB_TTL_DAYS,
+    CACHE_RAWG_GAME_TTL_DAYS, CACHE_RAWG_LIST_TTL_DAYS, CACHE_STEAM_PLAYTIME_TTL_DAYS,
+    CACHE_STEAM_RESOLVE_TTL_DAYS, CACHE_STEAM_REVIEWS_TTL_DAYS, CACHE_STEAM_STORE_TTL_DAYS,
+    CACHE_STEAM_TRENDING_TTL_DAYS, CACHE_UBISOFT_PLUS_TTL_DAYS,
+};
 use crate::errors::AppError;
-use crate::providers::mods::nexus::NexusGame;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{params, Connection};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
@@ -88,9 +95,13 @@ pub fn initialize_cache_db(conn: &Connection) -> Result<(), String> {
 
 /// Determina o TTL baseado no tipo de dado armazenado em cache.
 fn get_ttl_for_cache_type(cache_key: &str) -> i64 {
-    // TTL de 1 dia para listas (Em Alta, Gratuitos, Lançamentos, etc.)
+    // TTL de 1 dia para listas (Jogos gratuitos)
     if cache_key.contains("_list_") {
         CACHE_RAWG_LIST_TTL_DAYS * 24 * 60 * 60
+    } else if cache_key.starts_with("steam_trending") {
+        CACHE_STEAM_TRENDING_TTL_DAYS * 24 * 60 * 60
+    } else if cache_key.starts_with("igdb_upcoming") {
+        CACHE_IGDB_UPCOMING_TTL_DAYS * 24 * 60 * 60
     } else if cache_key.starts_with("resolve_") {
         CACHE_STEAM_RESOLVE_TTL_DAYS * 24 * 60 * 60
     } else if cache_key.starts_with("protondb_") {
@@ -206,6 +217,8 @@ pub fn cleanup_expired_cache(conn: &Connection) -> Result<usize, String> {
     let steam_resolve_cutoff = now - (CACHE_STEAM_RESOLVE_TTL_DAYS * 24 * 60 * 60);
     let protondb_cutoff = now - (CACHE_PROTON_DB_TTL_DAYS * 24 * 60 * 60);
     let hltb_cutoff = now - (CACHE_HLTB_TTL_DAYS * 24 * 60 * 60);
+    let steam_trending_cutoff = now - (CACHE_STEAM_TRENDING_TTL_DAYS * 24 * 60 * 60);
+    let igdb_upcoming_cutoff = now - (CACHE_IGDB_UPCOMING_TTL_DAYS * 24 * 60 * 60);
 
     let deleted = conn
         .execute(
@@ -224,7 +237,9 @@ pub fn cleanup_expired_cache(conn: &Connection) -> Result<usize, String> {
                 OR (source = 'steam' AND external_id LIKE 'playtime_%' AND updated_at < ?12)
                 OR (source = 'steam_resolve' AND updated_at < ?13)
                 OR (source = 'protondb' AND updated_at < ?14)
-                OR (source = 'hltb' AND external_id LIKE 'search_hltb_%' AND updated_at < ?15)",
+                OR (source = 'hltb' AND external_id LIKE 'search_hltb_%' AND updated_at < ?15)
+                OR (source = 'steam_trending' AND updated_at < ?16)
+                OR (source = 'igdb_upcoming' AND updated_at < ?17)",
             params![
                 rawg_cutoff,
                 gamebrain_id_cutoff,
@@ -241,6 +256,8 @@ pub fn cleanup_expired_cache(conn: &Connection) -> Result<usize, String> {
                 steam_resolve_cutoff,
                 protondb_cutoff,
                 hltb_cutoff,
+                steam_trending_cutoff,
+                igdb_upcoming_cutoff
             ],
         )
         .map_err(|e| AppError::CacheCleanupError(e.to_string()).to_string())?;
@@ -367,79 +384,4 @@ pub fn get_cache_stats(conn: &Connection) -> Result<CacheStats, String> {
         hltb_entries: hltb,
         expired_entries: expired,
     })
-}
-
-// === NEXUS MODS (Cache) ===
-
-pub fn save_nexus_games_cache(
-    conn: &Connection,
-    games: &[NexusGame],
-) -> Result<(), rusqlite::Error> {
-    let tx = conn.unchecked_transaction()?;
-
-    tx.execute("DELETE FROM nexus_games", [])?;
-
-    {
-        let mut stmt = tx.prepare(
-            "INSERT OR REPLACE INTO nexus_games (domain_name, nexus_id, name, genre, approved_date)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
-        )?;
-
-        for game in games {
-            stmt.execute(params![
-                game.domain_name,
-                game.id,
-                game.name,
-                game.genre,
-                game.approved_date,
-            ])?;
-        }
-    }
-
-    let now = chrono::Utc::now().timestamp();
-    tx.execute(
-        "INSERT OR REPLACE INTO nexus_games_cache_meta (id, fetched_at) VALUES (1, ?1)",
-        params![now],
-    )?;
-
-    tx.commit()
-}
-
-pub fn nexus_cache_is_stale(conn: &Connection) -> Result<bool, rusqlite::Error> {
-    let fetched_at: Option<i64> = conn
-        .query_row(
-            "SELECT fetched_at FROM nexus_games_cache_meta WHERE id = 1",
-            [],
-            |row| row.get(0),
-        )
-        .optional()?;
-
-    match fetched_at {
-        None => Ok(true),
-        Some(ts) => {
-            let now = chrono::Utc::now().timestamp();
-            Ok(now - ts > NEXUS_CACHE_TTL_DAYS * 24 * 60 * 60) // TTL expirado
-        }
-    }
-}
-
-/// Carrega todos os jogos do cache local do Nexus (tabela nexus_games)
-pub fn get_cached_nexus_games(conn: &Connection) -> Result<Vec<NexusGame>, rusqlite::Error> {
-    let mut stmt = conn.prepare(
-        "SELECT nexus_id, name, domain_name, genre, approved_date FROM nexus_games",
-    )?;
-
-    let games = stmt
-        .query_map([], |row| {
-            Ok(NexusGame {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                domain_name: row.get(2)?,
-                genre: row.get(3)?,
-                approved_date: row.get(4)?,
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
-
-    Ok(games)
 }

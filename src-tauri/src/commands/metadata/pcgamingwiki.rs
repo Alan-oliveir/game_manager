@@ -7,12 +7,12 @@
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::models::{GameDataPath, GameExtras, SystemRequirements};
-use crate::services::integration::pcgamingwiki::client::{search_pcgw_by_name, PcgwSearchResult};
-use crate::services::integration::pcgamingwiki::db::{
+use crate::providers::technical::pcgamingwiki::client::{search_pcgw_by_name, PcgwSearchResult};
+use crate::providers::technical::pcgamingwiki::db::{
     get_game_data_paths, get_pcgw_data, get_system_requirements, invalidate_pcgw_data,
     save_pcgw_data, save_scraped_data,
 };
-use crate::services::integration::pcgamingwiki::fetch::fetch_pcgw_data;
+use crate::providers::technical::pcgamingwiki::fetch::fetch_pcgw_data;
 use chrono::Utc;
 use tracing::warn;
 
