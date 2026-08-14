@@ -10,7 +10,7 @@ use crate::utils::http_client::HTTP_CLIENT;
 use serde::Deserialize;
 use serde_json::json;
 use std::time::Duration;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 #[derive(Deserialize, Debug)]
 struct GeminiResponse {
@@ -63,9 +63,8 @@ pub async fn translate_single(
     target_lang: &str,
     text: &str,
 ) -> Result<String, String> {
-    info!("Traduzindo campo único no Gemini -> {}", target_lang);
+    debug!("Traduzindo campo único no Gemini -> {}", target_lang);
 
-    let url = format!("{}?key={}", GEMINI_API_URL, api_key);
     let target_name = language_display_name(target_lang);
 
     let prompt = format!(
@@ -98,15 +97,18 @@ pub async fn translate_single(
         ]
     });
 
+    let url = GEMINI_API_URL.to_string();
+    
     let res = HTTP_CLIENT
         .post(&url)
+        .header("x-goog-api-key", api_key)
         .json(&body)
         .timeout(Duration::from_secs(60))
         .send()
         .await
         .map_err(|e| {
             error!("Erro de rede Gemini: {}", e);
-            format!("Erro de rede Gemini: {}", e)
+            "Erro de rede ao contatar o Gemini".to_string()
         })?;
 
     let status = res.status();
@@ -176,7 +178,7 @@ pub async fn translate_single(
 ///
 /// Se o texto já estiver em inglês, o modelo retorna sem alterações.
 pub async fn translate_query_to_english(api_key: &str, text: &str) -> Result<String, String> {
-    info!("Traduzindo query para inglês via Gemini...");
+    debug!("Traduzindo query para inglês via Gemini...");
 
     let url = format!("{}?key={}", GEMINI_API_URL, api_key);
 

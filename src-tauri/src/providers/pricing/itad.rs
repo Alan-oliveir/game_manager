@@ -91,13 +91,13 @@ pub async fn find_game_id(title: &str) -> Result<String, String> {
         .get(&url)
         .send()
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| sanitize_network_error(&e))?;
 
     if !res.status().is_success() {
         return Err(format!("Erro ITAD Lookup: {}", res.status()));
     }
 
-    let response_text = res.text().await.map_err(|e| e.to_string())?;
+    let response_text = res.text().await.map_err(|e| sanitize_network_error(&e))?;
 
     #[derive(Deserialize)]
     struct LookupResponse {
@@ -148,7 +148,7 @@ pub async fn get_prices(
         .json(&itad_ids)
         .send()
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| sanitize_network_error(&e))?;
 
     let status = res.status();
 
@@ -158,7 +158,7 @@ pub async fn get_prices(
         return Err(format!("Erro ITAD Prices: {}", status));
     }
 
-    let response_text = res.text().await.map_err(|e| e.to_string())?;
+    let response_text = res.text().await.map_err(|e| sanitize_network_error(&e))?;
 
     // 1. Deserializa para a estrutura bruta (Raw) que corresponde ao JSON
     let raw_response: RawItadResponse = serde_json::from_str(&response_text).map_err(|e| {
@@ -189,6 +189,8 @@ pub async fn get_prices(
     Ok(clean_overview)
 }
 
+// === HELPERS ===
+
 // Helper para converter o deal bruto para o limpo (achatando o preço)
 fn convert_deal(raw: RawItadDeal) -> ItadPrice {
     ItadPrice {
@@ -198,5 +200,13 @@ fn convert_deal(raw: RawItadDeal) -> ItadPrice {
         shop: raw.shop,
         url: raw.url,
         voucher: raw.voucher,
+    }
+}
+
+// Helper para sanitizar erros de rede da ITAD, removendo query string e detalhes sensíveis
+fn sanitize_network_error(e: &reqwest::Error) -> String {
+    match e.url() {
+        Some(url) => format!("Erro de rede ITAD ({})", url.path()), // path, sem query string
+        None => "Erro de rede ITAD".to_string(),
     }
 }

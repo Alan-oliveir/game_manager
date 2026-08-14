@@ -91,7 +91,9 @@ export function GameDescription({
   const targetLang = i18n.language;
 
   const [view, setView] = useState<'original' | 'translated'>('original');
-  const [localDescription, setLocalDescription] = useState<GameDescriptionData | undefined>(details?.description);
+  const [localDescription, setLocalDescription] = useState<
+    GameDescriptionData | undefined
+  >(details?.description);
   const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
@@ -103,6 +105,7 @@ export function GameDescription({
         details.description.translatedLang === targetLang &&
         sections.every(s => s.translated);
       setView(hasFullTranslation ? 'translated' : 'original');
+
       return;
     }
 
