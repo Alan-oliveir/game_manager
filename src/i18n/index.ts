@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/core';
 import i18n, { type BackendModule } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
@@ -109,6 +110,14 @@ void i18n
     },
   });
 
+const syncLanguageWithBackend = (language: string): void => {
+  const normalized = normalizeLanguage(language) ?? DEFAULT_LANGUAGE;
+  invoke('set_app_language', { language: normalized }).catch(error => {
+    console.error('Falha ao sincronizar idioma com o backend:', error);
+  });
+};
+
 i18n.on('languageChanged', setStoredLanguage);
+i18n.on('languageChanged', syncLanguageWithBackend);
 
 export default i18n;

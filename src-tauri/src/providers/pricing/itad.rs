@@ -120,7 +120,10 @@ pub async fn find_game_id(title: &str) -> Result<String, String> {
 }
 
 /// Busca informações de preço para uma lista de IDs da ITAD
-pub async fn get_prices(itad_ids: Vec<String>) -> Result<Vec<ItadGameOverview>, String> {
+pub async fn get_prices(
+    itad_ids: Vec<String>,
+    country: &str,
+) -> Result<Vec<ItadGameOverview>, String> {
     let key = security::get_itad_api_key();
     if key.is_empty() {
         return Err("API Key ausente".into());
@@ -129,9 +132,16 @@ pub async fn get_prices(itad_ids: Vec<String>) -> Result<Vec<ItadGameOverview>, 
         return Ok(vec![]);
     }
 
-    let url = format!("{}/games/overview/v2?key={}&country=BR", ITAD_API_URL, key);
+    let url = format!(
+        "{}/games/overview/v2?key={}&country={}",
+        ITAD_API_URL, key, country
+    );
 
-    tracing::debug!("ITAD Prices Request: {} items", itad_ids.len());
+    tracing::debug!(
+        "ITAD Prices Request: {} items, country={}",
+        itad_ids.len(),
+        country
+    );
 
     let res = HTTP_CLIENT
         .post(&url)

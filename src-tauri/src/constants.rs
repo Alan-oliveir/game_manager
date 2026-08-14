@@ -193,3 +193,10 @@ pub const LEGENDARY_BIN_NAME: &str = "legendary";
 // === Diretório de ferramentas gerenciadas ===
 pub const TOOLS_DIR_NAME: &str = "tools";
 pub const TOOL_CONFIG_KEY_PREFIX: &str = "tool_path_"; // ex: "tool_path_legendary"
+
+// === Região e idioma do sistema ===
+pub const CONFIG_KEY_REGION: &str = "region";
+pub const CONFIG_KEY_LANGUAGE: &str = "language";
+pub const DEFAULT_LANGUAGE: &str = "pt-BR";
+// lista sincronizada manualmente com SUPPORTED_LANGUAGES em frontend/src/i18n/index.ts
+pub const SUPPORTED_LANGUAGES: [&str; 2] = ["en", "pt-BR"];

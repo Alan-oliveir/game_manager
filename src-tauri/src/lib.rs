@@ -187,6 +187,10 @@ pub fn run() {
             // Comandos de Sistema
             commands::system::open_folder,
             commands::system::open_file,
+            commands::system::get_app_region,
+            commands::system::set_app_region,
+            commands::system::get_app_language,
+            commands::system::set_app_language,
             // Comandos de Versão e SO
             commands::version::get_app_version,
             commands::version::get_app_version_info,

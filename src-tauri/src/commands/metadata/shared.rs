@@ -474,19 +474,27 @@ where
     )?;
     conn.execute(
         "UPDATE game_descriptions SET
-            summary            = COALESCE(?2, summary),
-            storyline          = COALESCE(?3, storyline),
-            short_description  = COALESCE(?4, short_description),
-            description        = COALESCE(?5, description),
-            description_ptbr   = COALESCE(?6, description_ptbr)
+           summary                     = COALESCE(?2, summary),
+           storyline                   = COALESCE(?3, storyline),
+           short_description           = COALESCE(?4, short_description),
+           description                 = COALESCE(?5, description),
+           summary_translated          = COALESCE(?6, summary_translated),
+           storyline_translated        = COALESCE(?7, storyline_translated),
+           short_description_translated = COALESCE(?8, short_description_translated),
+           description_translated      = COALESCE(?9, description_translated),
+           translated_lang             = COALESCE(?10, translated_lang)
          WHERE game_id = ?1",
         params![
-            game_id,
-            d.summary,
-            d.storyline,
-            d.short_description,
-            d.description,
-            d.description_ptbr
+           game_id,
+           d.summary,
+           d.storyline,
+           d.short_description,
+           d.description,
+           d.summary_translated,
+           d.storyline_translated,
+           d.short_description_translated,
+           d.description_translated,
+           d.translated_lang,
         ],
     )?;
     Ok(())

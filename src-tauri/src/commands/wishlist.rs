@@ -6,6 +6,7 @@
 use crate::constants::{
     DEFAULT_CURRENCY, STEAM_CDN_AKAMAI_URL, STEAM_HEADER_IMAGE_PATH, STEAM_STORE_URL,
 };
+use crate::database;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::integrations::gamebrain::models::{
@@ -22,7 +23,6 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tracing::{error, info};
-
 // === STRUCTS ===
 
 #[derive(Debug, Deserialize)]
@@ -490,7 +490,7 @@ pub fn check_wishlist_status(state: State<AppState>, id: String) -> Result<bool,
 /// Atualiza os preços de todos os jogos na Wishlist usando a API da ITAD.
 #[tauri::command]
 pub async fn refresh_prices(
-    _app: AppHandle,
+    app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<String, AppError> {
     // 1. Busca todos os jogos da Wishlist local
@@ -549,7 +549,8 @@ pub async fn refresh_prices(
         return Ok("Nenhum jogo correspondente encontrado na ITAD.".to_string());
     }
 
-    let overviews = itad::get_prices(itad_ids_to_fetch)
+    let region = database::configs::get_or_detect_region(&app)?;
+    let overviews = itad::get_prices(itad_ids_to_fetch, &region)
         .await
         .map_err(AppError::NetworkError)?;
 

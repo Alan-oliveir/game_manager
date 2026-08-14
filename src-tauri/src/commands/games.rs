@@ -306,7 +306,9 @@ pub fn get_library_game_details(
             gd.esrb_rating, gd.age_ratings, gd.is_adult, gd.adult_tags, gd.external_links,
             gd.hltb_main_story, gd.hltb_main_extra, gd.hltb_completionist, gd.hltb_coop_time,
             gd.display_name, gd.updated_at,
-            gdesc.summary, gdesc.storyline, gdesc.short_description, gdesc.description, gdesc.description_ptbr
+            gdesc.summary, gdesc.storyline, gdesc.short_description, gdesc.description,
+            gdesc.summary_translated, gdesc.storyline_translated,
+            gdesc.short_description_translated, gdesc.description_translated, gdesc.translated_lang
          FROM game_details gd
          LEFT JOIN game_descriptions gdesc ON gd.game_id = gdesc.game_id
          WHERE gd.game_id = ?1",
@@ -359,7 +361,11 @@ pub fn get_library_game_details(
                 storyline: row.get(31)?,
                 short_description: row.get(32)?,
                 description: row.get(33)?,
-                description_ptbr: row.get(34)?,
+                summary_translated: row.get(34)?,
+                storyline_translated: row.get(35)?,
+                short_description_translated: row.get(36)?,
+                description_translated: row.get(37)?,
+                translated_lang: row.get(38)?,
             },
         })
     })?;
@@ -513,32 +519,46 @@ pub fn update_game_details(
     let conn = state.games_db.lock().map_err(|_| AppError::MutexError)?;
 
     // Verifica o estado atual do jogo no banco
-    let current_state: Option<(Option<String>, Option<String>)> = conn
+    let current_state: Option<(Option<String>, Option<String>, Option<String>, Option<String>)> = conn
         .query_row(
-            "SELECT description_ptbr, description_raw FROM game_details WHERE game_id = ?1",
+            "SELECT summary, storyline, short_description, description FROM game_descriptions WHERE game_id = ?1",
             params![payload.id],
-            |row| Ok((row.get(0)?, row.get(1)?)),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
         )
-        .optional()?; // O '?' converte erro de SQL para AppError
+        .optional()?;
 
     match current_state {
-        // CASO 1: Registro existe
-        Some((description_ptbr, description_raw)) => {
-            // VALIDAÇÃO: Se a descrição PT-BR for nula e description_raw não for nula, impede a edição
-            if description_ptbr.is_none() && description_raw.is_some() {
+        Some((summary, storyline, short_description, description)) => {
+            let has_original_description = summary.is_some() || storyline.is_some() || short_description.is_some();
+
+            if description.is_none() && has_original_description {
                 return Err(AppError::ValidationError(
                     "A descrição precisa ser traduzida (ou gerada) antes de ser editada manualmente.".to_string()
                 ));
             }
+
+            conn.execute(
+                "INSERT OR IGNORE INTO game_descriptions (game_id) VALUES (?1)",
+                params![payload.id],
+            )?;
+
+            conn.execute(
+                "UPDATE game_descriptions SET description = ?1 WHERE game_id = ?2",
+                params![payload.description, payload.id],
+            )?;
+
+            conn.execute(
+                "INSERT OR IGNORE INTO game_details (game_id) VALUES (?1)",
+                params![payload.id],
+            )?;
+
             conn.execute(
                 "UPDATE game_details SET
-                    description_ptbr = ?1,
-                    developer = ?2,
-                    publisher = ?3,
-                    release_date = ?4
-                 WHERE game_id = ?5",
+                    developer = ?1,
+                    publisher = ?2,
+                    release_date = ?3
+                 WHERE game_id = ?4",
                 params![
-                    payload.description,
                     payload.developer,
                     payload.publisher,
                     payload.released,
@@ -547,17 +567,28 @@ pub fn update_game_details(
             )?;
         }
 
-        // CASO 2: detalhes do jogo não existe (Novo Jogo Manual)
         None => {
             conn.execute(
-                "INSERT INTO game_details (game_id, description_ptbr, developer, publisher, release_date)
-                 VALUES (?1, ?2, ?3, ?4, ?5)",
+                "INSERT OR IGNORE INTO game_descriptions (game_id, description) VALUES (?1, ?2)",
+                params![payload.id, payload.description],
+            )?;
+
+            conn.execute(
+                "INSERT OR IGNORE INTO game_details (game_id) VALUES (?1)",
+                params![payload.id],
+            )?;
+
+            conn.execute(
+                "UPDATE game_details SET
+                    developer = ?1,
+                    publisher = ?2,
+                    release_date = ?3
+                 WHERE game_id = ?4",
                 params![
-                    payload.id,
-                    payload.description, // Define a primeira versão como "traduzida"
                     payload.developer,
                     payload.publisher,
-                    payload.released
+                    payload.released,
+                    payload.id
                 ],
             )?;
         }

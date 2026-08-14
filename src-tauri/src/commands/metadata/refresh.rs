@@ -6,6 +6,7 @@ use crate::constants::{
     BACKGROUND_TASK_INTERVAL_SECS, GAMERPOWER_CACHE_SOURCE, GAMERPOWER_LIST_ACTIVE_CACHE_KEY,
     STARTUP_DELAY_SECS,
 };
+use crate::database;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::providers::giveaways::gamerpower;
@@ -281,7 +282,8 @@ async fn refresh_wishlist_prices_background(
     }
 
     // C. Busca preços em lote da ITAD
-    let overviews = match itad::get_prices(itad_ids_to_fetch).await {
+    let region = database::configs::get_or_detect_region(&app)?;
+    let overviews = match itad::get_prices(itad_ids_to_fetch, &region).await {
         Ok(data) => data,
         Err(e) => {
             error!("Erro ao buscar preços da ITAD: {}", e);

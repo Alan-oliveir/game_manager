@@ -119,12 +119,16 @@ export type ImportConfidence = 'High' | 'Medium' | 'Low';
 
 export type PlaytimeSource = 'local' | { platform: Platform };
 
-export interface GameDescription {
+export interface GameDescriptionData {
   summary?: string;
   storyline?: string;
   shortDescription?: string;
   description?: string;
-  descriptionPtbr?: string;
+  summaryTranslated?: string;
+  storylineTranslated?: string;
+  shortDescriptionTranslated?: string;
+  descriptionTranslated?: string;
+  translatedLang?: string;
 }
 
 // === MODELOS DE DADOS (SCHEMA 4.0 - Game e GameDetails) ===
@@ -183,7 +187,7 @@ export interface GameDetails {
   steamAppId?: string;
 
   // Metadados
-  description?: GameDescription;
+  description?: GameDescriptionData;
   releaseDate?: string;
   developer?: string;
   publisher?: string;

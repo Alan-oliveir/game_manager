@@ -237,7 +237,11 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         storyline TEXT,
         short_description TEXT,
         description TEXT,
-        description_ptbr TEXT,
+        summary_translated TEXT,
+        storyline_translated TEXT,
+        short_description_translated TEXT,
+        description_translated TEXT,
+        translated_lang TEXT,
         FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
     )",
         [],

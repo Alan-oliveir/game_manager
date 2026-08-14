@@ -159,25 +159,69 @@ pub enum ToolSource {
     Managed,
 }
 
-// models.rs
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct GameDescription {
     pub summary: Option<String>,           // IGDB
     pub storyline: Option<String>,         // IGDB
     pub short_description: Option<String>, // Steam
-    pub description: Option<String>,       // RAWG / Indiegala / Itch / Legacy Games (fallback genérico)
-    pub description_ptbr: Option<String>,  // Tradução (Gemini)
+    pub description: Option<String>,       // Indiegala / Itch / Legacy Games (fallback genérico)
+    pub summary_translated: Option<String>,
+    pub storyline_translated: Option<String>,
+    pub short_description_translated: Option<String>,
+    pub description_translated: Option<String>,
+    pub translated_lang: Option<String>,
 }
 
 impl GameDescription {
-    /// Resolve qual texto exibir quando a UI só tem espaço pra um — usado
-    /// como fallback antes da tradução PT-BR estar disponível.
+    /// Usado em contextos de preview — texto único.
     pub fn primary(&self) -> Option<&str> {
         self.summary.as_deref()
             .or(self.description.as_deref())
             .or(self.short_description.as_deref())
             .or(self.storyline.as_deref())
+    }
+
+    /// Campos a exibir/traduzir na tela de detalhes, seguindo a prioridade:
+    /// summary + storyline juntos (se qualquer um existir) > short_description > description.
+    pub fn fields_to_display(&self) -> Vec<(&'static str, &str)> {
+        let mut fields = Vec::new();
+        if let Some(s) = &self.summary {
+            fields.push(("summary", s.as_str()));
+        }
+        if let Some(s) = &self.storyline {
+            fields.push(("storyline", s.as_str()));
+        }
+        if !fields.is_empty() {
+            return fields;
+        }
+        if let Some(s) = &self.short_description {
+            return vec![("short_description", s.as_str())];
+        }
+        if let Some(s) = &self.description {
+            return vec![("description", s.as_str())];
+        }
+        vec![]
+    }
+
+    pub fn translated_value(&self, field: &str) -> Option<&str> {
+        match field {
+            "summary" => self.summary_translated.as_deref(),
+            "storyline" => self.storyline_translated.as_deref(),
+            "short_description" => self.short_description_translated.as_deref(),
+            "description" => self.description_translated.as_deref(),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn set_translated_value(&mut self, field: &str, value: String) {
+        match field {
+            "summary" => self.summary_translated = Some(value),
+            "storyline" => self.storyline_translated = Some(value),
+            "short_description" => self.short_description_translated = Some(value),
+            "description" => self.description_translated = Some(value),
+            _ => {}
+        }
     }
 }
 

@@ -4,13 +4,15 @@
 
   "description_select_game": "Selecione um jogo para ver os detalhes.",
   "description_header_title": "Sobre o Jogo",
-  "description_lang_en": "EN",
-  "description_lang_pt": "PT-BR",
+  "description_lang_original": "Original",
+  "description_lang_translated": "Traduzido",
   "description_generating": "Gerando...",
   "description_no_description": "Sem descrição disponível.",
   "description_no_original_text": "Não há texto original para traduzir.",
   "description_translated_success": "Descrição traduzida com sucesso!",
   "description_translate_failed": "Falha ao traduzir descrição.",
+  "description_section_summary": "Resumo",
+  "description_section_storyline": "História",
 
   "edit_form_success": "Detalhes atualizados com sucesso!",
   "edit_form_save_error": "Não foi possível salvar as alterações.",

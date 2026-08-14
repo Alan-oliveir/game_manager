@@ -97,13 +97,16 @@ fn fetch_games(conn: &Connection) -> Result<Vec<Game>, AppError> {
 fn fetch_game_details(conn: &Connection) -> Result<Vec<GameDetails>, AppError> {
     let mut stmt = conn.prepare(
         "SELECT
-        game_id, steam_app_id, display_name, developer, publisher, release_date, genres, themes,
-        series, franchise, game_modes, player_perspectives, keywords, tags,
-        summary, storyline, short_description, description_raw, description_ptbr, background_image,
-        critic_score, steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
-        esrb_rating, age_ratings, is_adult, adult_tags, external_links, hltb_main_story,
-        hltb_main_extra, hltb_completionist, hltb_coop_time, updated_at
-     FROM game_details",
+            gd.game_id, gd.steam_app_id, gd.display_name, gd.developer, gd.publisher, gd.release_date, gd.genres, gd.themes,
+            gd.series, gd.franchise, gd.game_modes, gd.player_perspectives, gd.keywords, gd.tags,
+            gdesc.summary, gdesc.storyline, gdesc.short_description, gdesc.description,
+            gdesc.summary_translated, gdesc.storyline_translated, gdesc.short_description_translated, gdesc.description_translated,
+            gdesc.translated_lang, gd.background_image,
+            gd.critic_score, gd.steam_review_label, gd.steam_review_count, gd.steam_review_score, gd.steam_review_updated_at,
+            gd.esrb_rating, gd.age_ratings, gd.is_adult, gd.adult_tags, gd.external_links, gd.hltb_main_story,
+            gd.hltb_main_extra, gd.hltb_completionist, gd.hltb_coop_time, gd.updated_at
+         FROM game_details gd
+         LEFT JOIN game_descriptions gdesc ON gdesc.game_id = gd.game_id",
     )?;
 
     // Auxiliares para ler JSON do banco e converter para Vec ou HashMap
@@ -139,24 +142,28 @@ fn fetch_game_details(conn: &Connection) -> Result<Vec<GameDetails>, AppError> {
                 storyline: row.get(15)?,
                 short_description: row.get(16)?,
                 description: row.get(17)?,
-                description_ptbr: row.get(18)?,
+                summary_translated: row.get(18)?,
+                storyline_translated: row.get(19)?,
+                short_description_translated: row.get(20)?,
+                description_translated: row.get(21)?,
+                translated_lang: row.get(22)?,
             },
-            background_image: row.get(19)?,
-            critic_score: row.get(20)?,
-            steam_review_label: row.get(21)?,
-            steam_review_count: row.get(22)?,
-            steam_review_score: row.get(23)?,
-            steam_review_updated_at: row.get(24)?,
-            esrb_rating: row.get(25)?,
-            age_ratings: parse_json_map(row.get(26)?),
-            is_adult: row.get(27).unwrap_or(false),
-            adult_tags: row.get(28)?,
-            external_links: parse_json_map(row.get(29)?),
-            hltb_main_story: row.get(30)?,
-            hltb_main_extra: row.get(31)?,
-            hltb_completionist: row.get(32)?,
-            hltb_coop_time: row.get(33)?,
-            updated_at: row.get(34)?,
+            background_image: row.get(23)?,
+            critic_score: row.get(24)?,
+            steam_review_label: row.get(25)?,
+            steam_review_count: row.get(26)?,
+            steam_review_score: row.get(27)?,
+            steam_review_updated_at: row.get(28)?,
+            esrb_rating: row.get(29)?,
+            age_ratings: parse_json_map(row.get(30)?),
+            is_adult: row.get(31).unwrap_or(false),
+            adult_tags: row.get(32)?,
+            external_links: parse_json_map(row.get(33)?),
+            hltb_main_story: row.get(34)?,
+            hltb_main_extra: row.get(35)?,
+            hltb_completionist: row.get(36)?,
+            hltb_coop_time: row.get(37)?,
+            updated_at: row.get(38)?,
         })
     })?;
 

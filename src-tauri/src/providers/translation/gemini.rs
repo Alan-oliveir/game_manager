@@ -9,6 +9,7 @@ use crate::constants::GEMINI_API_URL;
 use crate::utils::http_client::HTTP_CLIENT;
 use serde::Deserialize;
 use serde_json::json;
+use std::time::Duration;
 use tracing::{error, info};
 
 #[derive(Deserialize, Debug)]
@@ -39,29 +40,56 @@ struct Part {
     text: String,
 }
 
-/// Traduz para português as descrições dos jogos
-///
-/// Mantém termos técnicos de jogos em inglês se forem comumente usados por gamers brasileiros.
-pub async fn translate_text(api_key: &str, text: &str) -> Result<String, String> {
-    info!("Iniciando tradução no Gemini (Modelo 2.5)...");
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SingleTranslationOutput {
+    detected_lang: String,
+    translated: String,
+}
+
+/// Converte o código de idioma (mesmo formato do frontend/i18n) pro nome
+/// por extenso, deixando o prompt sem ambiguidade pro modelo.
+fn language_display_name(code: &str) -> &str {
+    match code {
+        "pt-BR" => "Brazilian Portuguese",
+        "en" => "English",
+        other => other, // fallback: manda o próprio código, o modelo geralmente entende
+    }
+}
+
+/// Traduz um único texto pro idioma alvo, detectando a língua de origem.
+pub async fn translate_single(
+    api_key: &str,
+    target_lang: &str,
+    text: &str,
+) -> Result<String, String> {
+    info!("Traduzindo campo único no Gemini -> {}", target_lang);
 
     let url = format!("{}?key={}", GEMINI_API_URL, api_key);
+    let target_name = language_display_name(target_lang);
 
     let prompt = format!(
-        "Translate the following game description to Brazilian Portuguese (PT-BR). \
-        Maintain the tone (exciting, narrative). \
-        Keep technical gaming terms in English if they are commonly used by brazilian gamers (e.g., 'Roguelike', 'Metroidvania', 'Permadeath', 'Loot', 'Crafting'). \
-        Output ONLY the translated text, without preambles or markdown code blocks:\n\n{}",
-        text
+        "Detect the source language of the following game description text, then translate it to {target_name}. \
+        If it's already in {target_name}, return it unchanged. \
+        Keep technical gaming terms in their commonly-used form for {target_name} speakers when there's an established convention \
+        (e.g., 'Roguelike', 'Metroidvania', 'Permadeath', 'Loot', 'Crafting'). \
+        Preserve tone (exciting, narrative). Return ONLY valid JSON, no preambles, no markdown.\n\nText:\n{text}"
     );
 
-    // Adiciona Safety Settings para permitir descrições de jogos (Violência, etc)
     let body = json!({
-        "contents": [{
-            "parts": [{
-                "text": prompt
-            }]
-        }],
+        "contents": [{ "parts": [{ "text": prompt }] }],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "responseSchema": {
+                "type": "OBJECT",
+                "properties": {
+                    "detectedLang": { "type": "STRING" },
+                    "translated": { "type": "STRING" }
+                },
+                "required": ["detectedLang", "translated"]
+            },
+            "thinkingConfig": { "thinkingBudget": 0 }
+        },
         "safetySettings": [
             { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE" },
             { "category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE" },
@@ -73,57 +101,72 @@ pub async fn translate_text(api_key: &str, text: &str) -> Result<String, String>
     let res = HTTP_CLIENT
         .post(&url)
         .json(&body)
+        .timeout(Duration::from_secs(60))
         .send()
         .await
-        .map_err(|e| format!("Erro de rede Gemini: {}", e))?;
+        .map_err(|e| {
+            error!("Erro de rede Gemini: {}", e);
+            format!("Erro de rede Gemini: {}", e)
+        })?;
 
-    // Se o status não for 200, tentamos ler o corpo do erro para debug
-    if !res.status().is_success() {
-        let status = res.status();
-        let error_body = res.text().await.unwrap_or_default();
-        error!("Erro API Gemini ({}): {}", status, error_body);
-        return Err(format!(
-            "A API retornou erro {}: Verifique sua chave ou cota.",
-            status
-        ));
+    let status = res.status();
+
+    if status.as_u16() == 429 {
+        let body = res.text().await.unwrap_or_default();
+        error!("Rate limit do Gemini atingido: {}", body);
+        return Err("Limite de requisições da IA atingido por hoje. Tente novamente mais tarde.".to_string());
     }
 
-    let data: GeminiResponse = res
-        .json()
-        .await
-        .map_err(|e| format!("Erro ao ler JSON Gemini: {}", e))?;
+    if !status.is_success() {
+        let body = res.text().await.unwrap_or_default();
+        error!("Erro API Gemini ({}): {}", status, body);
+        return Err(format!("A API retornou erro {}: Verifique sua chave ou cota.", status));
+    }
 
-    // Verifica se a API retornou um erro estruturado
+    let data: GeminiResponse = res.json().await.map_err(|e| {
+        error!("Erro ao ler JSON Gemini: {}", e);
+        format!("Erro ao ler JSON Gemini: {}", e)
+    })?;
+
     if let Some(api_error) = data.error.as_ref() {
         error!("Gemini API Error: {:?}", api_error);
         return Err(format!("Gemini: {}", api_error.message));
     }
 
-    // Tenta extrair o texto
-    if let Some(candidates) = data.candidates.as_ref() {
-        if let Some(first_candidate) = candidates.first() {
-            // Verifica se foi bloqueado por segurança (caso o BLOCK_NONE falhe)
-            if let Some(reason) = &first_candidate.finish_reason {
+    let raw_text = data
+        .candidates
+        .as_ref()
+        .and_then(|c| c.first())
+        .and_then(|c| {
+            if let Some(reason) = &c.finish_reason {
                 if reason != "STOP" {
                     error!("Gemini bloqueou conteúdo. Motivo: {}", reason);
-                    return Err(format!(
-                        "Tradução bloqueada pelo filtro de segurança: {}",
-                        reason
-                    ));
+                    return None;
                 }
             }
+            c.content.as_ref()
+        })
+        .and_then(|c| c.parts.first())
+        .map(|p| p.text.clone())
+        .ok_or_else(|| {
+            error!("Resposta Gemini inesperada ou bloqueada: {:?}", data);
+            "A IA não retornou nenhuma tradução válida.".to_string()
+        })?;
 
-            if let Some(content) = &first_candidate.content {
-                if let Some(part) = content.parts.first() {
-                    info!("Tradução concluída com sucesso.");
-                    return Ok(part.text.trim().to_string());
-                }
-            }
-        }
-    }
+    let cleaned = raw_text
+        .trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
 
-    error!("Resposta Gemini inesperada: {:?}", data);
-    Err("A IA não retornou nenhuma tradução válida.".to_string())
+    let output: SingleTranslationOutput = serde_json::from_str(cleaned).map_err(|e| {
+        error!("JSON inválido do Gemini: {} | raw: {}", e, cleaned);
+        format!("JSON inválido do Gemini: {}", e)
+    })?;
+
+    info!("Tradução concluída (detectado: {})", output.detected_lang);
+    Ok(output.translated)
 }
 
 /// Traduz uma query de busca para inglês, se necessário.

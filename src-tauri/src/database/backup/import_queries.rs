@@ -31,13 +31,21 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
         "INSERT OR REPLACE INTO game_details (
             game_id, steam_app_id, display_name, developer, publisher, release_date, genres, themes,
             series, franchise, game_modes, player_perspectives, keywords, tags,
-            summary, storyline, short_description, description_raw, description_ptbr, background_image,
-            critic_score, steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
+            background_image, critic_score, steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
             esrb_rating, age_ratings, is_adult, adult_tags, external_links, hltb_main_story,
             hltb_main_extra, hltb_completionist, hltb_coop_time, updated_at
         ) VALUES (
             ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20,
-            ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35
+            ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30
+        )"
+    )?;
+
+    let mut descriptions_stmt = conn.prepare(
+        "INSERT OR REPLACE INTO game_descriptions (
+            game_id, summary, storyline, short_description, description,
+            summary_translated, storyline_translated, short_description_translated, description_translated, translated_lang
+        ) VALUES (
+            ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10
         )"
     )?;
 
@@ -95,11 +103,6 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             serialize_vec(&detail.player_perspectives),
             serialize_vec(&detail.keywords),
             tags_json,
-            detail.description.summary,
-            detail.description.storyline,
-            detail.description.short_description,
-            detail.description.description,
-            detail.description.description_ptbr,
             detail.background_image,
             detail.critic_score,
             detail.steam_review_label,
@@ -116,6 +119,19 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             detail.hltb_completionist,
             detail.hltb_coop_time,
             detail.updated_at
+        ])?;
+
+        descriptions_stmt.execute(params![
+            detail.game_id,
+            detail.description.summary,
+            detail.description.storyline,
+            detail.description.short_description,
+            detail.description.description,
+            detail.description.summary_translated,
+            detail.description.storyline_translated,
+            detail.description.short_description_translated,
+            detail.description.description_translated,
+            detail.description.translated_lang,
         ])?;
     }
 
