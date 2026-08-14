@@ -15,13 +15,13 @@ mod crypto;
 pub mod database;
 mod errors;
 pub mod initialization;
+pub mod integrations;
 pub mod models;
+pub mod providers;
 mod secrets;
 mod security;
 pub mod services;
 pub mod utils;
-pub mod providers;
-pub mod integrations;
 
 use crate::initialization::initialize_app;
 use crate::utils::logger;
@@ -84,6 +84,27 @@ pub fn run() {
                     "C pub(crate) pub(crate) pub(crate)F desativado (fallback CB ativo): {}",
                     e
                 );
+            }
+
+            // === ACHIEVEMENTS ===
+
+            {
+                let app_handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    // Espera para não competir com o resto do startup.
+                    tokio::time::sleep(std::time::Duration::from_secs(20)).await;
+
+                    loop {
+                        if let Err(e) =
+                            providers::achievements::core::sync_all_achievements(&app_handle).await
+                        {
+                            tracing::warn!("Sync de conquistas falhou: {e}");
+                        }
+
+                        tokio::time::sleep(std::time::Duration::from_secs(60 * 60)).await;
+                        // a cada 1h
+                    }
+                });
             }
 
             // Log de inicialização completa
@@ -170,6 +191,10 @@ pub fn run() {
             commands::settings::list_secrets,
             commands::settings::get_secrets,
             commands::settings::set_secrets,
+            commands::settings::get_app_region,
+            commands::settings::set_app_region,
+            commands::settings::get_app_language,
+            commands::settings::set_app_language,
             // Comandos de Recomendação
             commands::recommendation::core::get_user_profile,
             commands::recommendation::core::recommend_hybrid_library,
@@ -177,9 +202,10 @@ pub fn run() {
             commands::recommendation::core::recommend_from_library,
             commands::recommendation::analysis::generate_recommendation_analysis,
             // Comandos de Tradução de Descrição
-            commands::ai_translation::translate_description,
+            commands::translation::translate_description,
             // Comandos de Conquistas de Jogos
             commands::achievements::get_recent_achievements,
+            commands::achievements::sync_achievements_now,
             // Comandos de Cache de Metadados
             commands::caches::cleanup_cache,
             commands::caches::clear_all_cache,
@@ -187,10 +213,6 @@ pub fn run() {
             // Comandos de Sistema
             commands::system::open_folder,
             commands::system::open_file,
-            commands::system::get_app_region,
-            commands::system::set_app_region,
-            commands::system::get_app_language,
-            commands::system::set_app_language,
             // Comandos de Versão e SO
             commands::version::get_app_version,
             commands::version::get_app_version_info,

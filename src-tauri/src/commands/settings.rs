@@ -7,6 +7,7 @@
 
 use crate::database;
 use crate::errors::AppError;
+use crate::services::locale::{get_or_detect_language, get_or_detect_region, set_language, set_region};
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
@@ -134,4 +135,24 @@ pub fn list_secrets() -> Vec<String> {
         .into_iter()
         .map(|s| s.to_string())
         .collect()
+}
+
+#[tauri::command]
+pub fn get_app_region(app: AppHandle) -> Result<String, AppError> {
+    get_or_detect_region(&app)
+}
+
+#[tauri::command]
+pub fn set_app_region(app: AppHandle, region: String) -> Result<(), AppError> {
+    set_region(&app, &region)
+}
+
+#[tauri::command]
+pub fn get_app_language(app: AppHandle) -> Result<String, AppError> {
+    get_or_detect_language(&app)
+}
+
+#[tauri::command]
+pub fn set_app_language(app: AppHandle, language: String) -> Result<(), AppError> {
+    set_language(&app, &language)
 }

@@ -1,8 +1,6 @@
 //! Comandos para abrir pastas e arquivos
 
-use crate::database::configs::{get_or_detect_language, get_or_detect_region, set_language, set_region};
 use crate::errors::AppError;
-use tauri::AppHandle;
 use tauri_plugin_opener::OpenerExt;
 
 /// Abre uma pasta no explorador de arquivos do sistema
@@ -58,24 +56,4 @@ pub async fn open_file(app: tauri::AppHandle, path: String) -> Result<(), AppErr
         .map_err(|e| AppError::IoError(format!("Erro ao abrir arquivo: {}", e)))?;
 
     Ok(())
-}
-
-#[tauri::command]
-pub fn get_app_region(app: AppHandle) -> Result<String, AppError> {
-    get_or_detect_region(&app)
-}
-
-#[tauri::command]
-pub fn set_app_region(app: AppHandle, region: String) -> Result<(), AppError> {
-    set_region(&app, &region)
-}
-
-#[tauri::command]
-pub fn get_app_language(app: AppHandle) -> Result<String, AppError> {
-    get_or_detect_language(&app)
-}
-
-#[tauri::command]
-pub fn set_app_language(app: AppHandle, language: String) -> Result<(), AppError> {
-    set_language(&app, &language)
 }

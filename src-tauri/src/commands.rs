@@ -19,7 +19,7 @@
 //! - `wishlist`: Comandos para gerenciar a lista de desejos com 'tracking' de preços.
 
 pub mod achievements;
-pub mod ai_translation;
+pub mod translation;
 pub mod caches;
 pub mod games;
 pub mod launcher;

@@ -1,0 +1,229 @@
+//! Persistência de conquistas (Steam/Xbox/Epic/GOG) no games.db.
+//!
+//! Duas tabelas:
+//! - `achievements`: conquistas desbloqueadas, já resolvidas (nome, ícone etc).
+//! - `achievement_sync_state`: controla, por (plataforma, jogo), quando foi a última sincronização
+//! e se o jogo não tem conquistas públicas (has_achievements = 0) e assim busca mais na API
+//! conquistas para esse jogo, já que isso não muda (é o schema do jogo na Steam/Xbox).
+
+use crate::database::AppState;
+use crate::errors::AppError;
+use crate::providers::achievements::core::{DashboardAchievement, Platform};
+use rusqlite::params;
+use tauri::{AppHandle, Manager};
+
+pub struct AchievementRecord {
+    pub platform: Platform,
+    pub game_id: String,
+    pub game_name: String,
+    pub achievement_key: String,
+    pub achievement_name: String,
+    pub achievement_description: Option<String>,
+    pub unlocked_at: i64,
+    pub icon_url: Option<String>,
+}
+
+fn platform_str(p: Platform) -> &'static str {
+    match p {
+        Platform::Steam => "steam",
+        Platform::Epic => "epic",
+        Platform::Gog => "gog",
+        Platform::Xbox => "xbox",
+    }
+}
+
+fn parse_platform(raw: &str) -> Platform {
+    match raw {
+        "epic" => Platform::Epic,
+        "gog" => Platform::Gog,
+        "xbox" => Platform::Xbox,
+        _ => Platform::Steam,
+    }
+}
+
+// === CONQUISTAS ===
+
+/// Insere/atualiza um lote de conquistas. Idempotente — chave é (platform, game_id, achievement_key),
+/// então rodar o sync de novo não duplica nada, só atualiza se algo mudou.
+pub fn upsert_achievements(
+    app: &AppHandle,
+    records: &[AchievementRecord],
+) -> Result<usize, AppError> {
+    if records.is_empty() {
+        return Ok(0);
+    }
+
+    let state: tauri::State<AppState> = app.state();
+    let mut conn = state
+        .games_db
+        .lock()
+        .map_err(|_| AppError::DatabaseError("Falha ao bloquear mutex do games_db".into()))?;
+
+    let tx = conn
+        .transaction()
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    let mut affected = 0;
+
+    {
+        let mut stmt = tx
+            .prepare(
+                "INSERT INTO achievements
+                    (platform, game_id, game_name, achievement_key, achievement_name, achievement_description, unlocked_at, icon_url)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                 ON CONFLICT(platform, game_id, achievement_key) DO UPDATE SET
+                    unlocked_at = excluded.unlocked_at,
+                    achievement_name = excluded.achievement_name,
+                    achievement_description = excluded.achievement_description,
+                    icon_url = excluded.icon_url",
+            )
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        for r in records {
+            affected += stmt
+                .execute(params![
+                    platform_str(r.platform),
+                    r.game_id,
+                    r.game_name,
+                    r.achievement_key,
+                    r.achievement_name,
+                    r.achievement_description,
+                    r.unlocked_at,
+                    r.icon_url,
+                ])
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        }
+    }
+
+    tx.commit()
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+    Ok(affected)
+}
+
+/// Lê as `limit` conquistas mais recentes entre todas as plataformas.
+/// É só um SELECT local — o dashboard nunca espera rede pra isso.
+pub fn get_dashboard_achievements(
+    app: &AppHandle,
+    limit: usize,
+) -> Result<Vec<DashboardAchievement>, AppError> {
+    let state: tauri::State<AppState> = app.state();
+    let conn = state
+        .games_db
+        .lock()
+        .map_err(|_| AppError::DatabaseError("Falha ao bloquear mutex do games_db".into()))?;
+
+    let mut stmt = conn
+        .prepare(
+            "SELECT platform, game_name, achievement_name, unlocked_at, game_id
+             FROM achievements
+             ORDER BY unlocked_at DESC
+             LIMIT ?1",
+        )
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+    let rows = stmt
+        .query_map(params![limit as i64], |row| {
+            let platform_raw: String = row.get(0)?;
+            Ok(DashboardAchievement {
+                platform: parse_platform(&platform_raw),
+                game_name: row.get(1)?,
+                achievement_name: row.get(2)?,
+                unlock_time: row.get(3)?,
+                game_id: row.get(4)?,
+            })
+        })
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+    let mut out = Vec::new();
+    for row in rows {
+        out.push(row.map_err(|e| AppError::DatabaseError(e.to_string()))?);
+    }
+    Ok(out)
+}
+
+// === CONTROLE DE SYNC POR JOGO ===
+
+struct SyncState {
+    last_synced_at: i64,
+    has_achievements: bool,
+}
+
+fn get_sync_state(
+    app: &AppHandle,
+    platform: Platform,
+    game_id: &str,
+) -> Result<Option<SyncState>, AppError> {
+    let state: tauri::State<AppState> = app.state();
+    let conn = state
+        .games_db
+        .lock()
+        .map_err(|_| AppError::DatabaseError("Falha ao bloquear mutex do games_db".into()))?;
+
+    let result = conn.query_row(
+        "SELECT last_synced_at, has_achievements FROM achievement_sync_state WHERE platform = ?1 AND game_id = ?2",
+        params![platform_str(platform), game_id],
+        |row| {
+            Ok(SyncState {
+                last_synced_at: row.get(0)?,
+                has_achievements: row.get::<_, i64>(1)? != 0,
+            })
+        },
+    );
+
+    match result {
+        Ok(s) => Ok(Some(s)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(e) => Err(AppError::DatabaseError(e.to_string())),
+    }
+}
+
+/// Marca (platform, game_id) como sincronizado agora. `has_achievements = false` é permanente:
+/// significa "confirmamos, via 400 da API, que esse jogo não tem stats de conquista" — não muda.
+pub fn mark_synced(
+    app: &AppHandle,
+    platform: Platform,
+    game_id: &str,
+    has_achievements: bool,
+) -> Result<(), AppError> {
+    let state: tauri::State<AppState> = app.state();
+    let conn = state
+        .games_db
+        .lock()
+        .map_err(|_| AppError::DatabaseError("Falha ao bloquear mutex do games_db".into()))?;
+
+    let now = chrono::Utc::now().timestamp();
+
+    conn.execute(
+        "INSERT INTO achievement_sync_state (platform, game_id, last_synced_at, has_achievements)
+         VALUES (?1, ?2, ?3, ?4)
+         ON CONFLICT(platform, game_id) DO UPDATE SET
+            last_synced_at = excluded.last_synced_at,
+            has_achievements = excluded.has_achievements",
+        params![
+            platform_str(platform),
+            game_id,
+            now,
+            has_achievements as i64
+        ],
+    )
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+    Ok(())
+}
+
+/// `true` se este jogo pode ser pulado nesta rodada de sync:
+/// - já confirmou antes que ele não tem conquistas (permanente), OU
+/// - já foi sincronizado há menos de `ttl_secs`.
+///
+/// Em caso de erro de leitura no banco, NÃO pula (mais seguro tentar de novo do que perder uma conquista).
+pub fn should_skip(app: &AppHandle, platform: Platform, game_id: &str, ttl_secs: i64) -> bool {
+    match get_sync_state(app, platform, game_id) {
+        Ok(Some(s)) => {
+            if !s.has_achievements {
+                return true;
+            }
+            let now = chrono::Utc::now().timestamp();
+            (now - s.last_synced_at) < ttl_secs
+        }
+        _ => false,
+    }
+}

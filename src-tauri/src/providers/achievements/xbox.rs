@@ -22,8 +22,9 @@ use crate::constants::{
     XBOX_MSA_SCOPES, XBOX_MSA_TOKEN_ENDPOINT, XBOX_USER_AUTH_ENDPOINT, XBOX_XSTS_AUTH_ENDPOINT,
 };
 use crate::database;
+use crate::database::achievements::AchievementRecord;
 use crate::errors::AppError;
-use crate::providers::achievements::core::{AchievementProvider, DashboardAchievement, Platform};
+use crate::providers::achievements::core::{AchievementProvider, Platform};
 use crate::utils::http_client::HTTP_CLIENT;
 use crate::utils::oauth::config::{now_unix, OAuthToken};
 use crate::utils::oauth::core::wait_for_auth_code;
@@ -312,20 +313,14 @@ impl AchievementProvider for XboxProvider {
         source.is_authenticated().unwrap_or(false)
     }
 
-    async fn fetch_recent_achievements(
-        &self,
-        app: &AppHandle,
-        limit: usize,
-    ) -> Result<Vec<DashboardAchievement>, AppError> {
+    async fn sync_achievements(&self, app: &AppHandle) -> Result<usize, AppError> {
         let Some(source) = build_source(app) else {
-            return Ok(vec![]);
+            return Ok(0);
         };
 
-        // Token se estiver expirado, renova sozinho (inclui novo login MSA via refresh).
         let (user_hash, xsts_token, xuid) = source.ensure_valid_xsts().await?;
         let auth_header = format!("XBL3.0 x={user_hash};{xsts_token}");
 
-        // Faz a requisição para buscar as conquistas recentes.
         let url = format!("{XBOX_ACHIEVEMENTS_BASE_URL}/users/xuid({xuid})/achievements");
 
         let response = HTTP_CLIENT
@@ -333,15 +328,15 @@ impl AchievementProvider for XboxProvider {
             .header("Authorization", &auth_header)
             .header("x-xbl-contract-version", "2")
             .query(&[
-                ("maxItems", limit.to_string()),
+                ("maxItems", "200".to_string()),
                 ("orderBy", "UnlockTime".to_string()),
             ])
             .send()
             .await?;
 
         if !response.status().is_success() {
-            // Não derruba o dashboard — só não mostra Xbox dessa vez.
-            return Ok(vec![]);
+            // Mantém o comportamento atual (conhecidamente com bug) — não derruba o sync das outras plataformas.
+            return Ok(0);
         }
 
         let body: XboxAchievementsResponse = response
@@ -349,7 +344,7 @@ impl AchievementProvider for XboxProvider {
             .await
             .map_err(|e| AppError::ParseError(format!("Xbox achievements: {e}")))?;
 
-        let achievements = body
+        let records: Vec<AchievementRecord> = body
             .achievements
             .into_iter()
             .filter(|a| a.progress_state == "Achieved")
@@ -357,20 +352,23 @@ impl AchievementProvider for XboxProvider {
                 let title = a.title_associations.first()?;
                 let unlock_time = parse_unlock_time(a.progression.time_unlocked.as_deref()?)?;
 
-                Some(DashboardAchievement {
+                Some(AchievementRecord {
                     platform: Platform::Xbox,
-                    game_name: title.name.clone(),
-                    achievement_name: a.name,
-                    unlock_time,
                     game_id: title.id.to_string(),
+                    game_name: title.name.clone(),
+                    // Xbox não expõe aqui um id estável separado do nome da conquista.
+                    achievement_key: a.name.clone(),
+                    achievement_name: a.name,
+                    achievement_description: None,
+                    unlocked_at: unlock_time,
+                    icon_url: None,
                 })
             })
             .collect();
 
-        Ok(achievements)
+        crate::database::achievements::upsert_achievements(app, &records)
     }
 }
-
 // === HELPERS LOCAIS ===
 
 fn build_source(app: &AppHandle) -> Option<XboxLiveSource> {

@@ -10,6 +10,7 @@ pub mod backup;
 pub mod configs;
 pub mod core;
 pub(crate) mod migrations;
+pub mod achievements;
 
 // Reexporta o módulo core para fácil acesso
 pub use core::*;

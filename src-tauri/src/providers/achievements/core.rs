@@ -1,8 +1,9 @@
 //! Abstração para provedores de conquistas de diferentes lojas/launchers.
 //!
-//! Cada loja implementa `AchievementProvider`. `get_recent_achievements`
-//! (chamado por `commands::achievements::get_recent_achievements`) instancia todos os providers,
-//! pula os que não estão configurados, e agrega o resultado dos demais.
+//! Cada loja implementa `AchievementProvider`. `sync_achievements` bate nas
+//! APIs externas e persiste no SQLite (chamado só pelo job em background).
+//! `get_recent_achievements` (chamado pelo command Tauri do dashboard) só lê
+//! do banco — nunca faz chamada de rede, então é instantâneo.
 
 use crate::errors::AppError;
 use crate::providers::achievements::epic::EpicProvider;
@@ -10,6 +11,7 @@ use crate::providers::achievements::steam::SteamProvider;
 use crate::providers::achievements::xbox::XboxProvider;
 use async_trait::async_trait;
 use serde::Serialize;
+use tauri::{AppHandle, Emitter};
 
 const DASHBOARD_LIMIT: usize = 5;
 
@@ -35,55 +37,50 @@ pub struct DashboardAchievement {
 pub(crate) trait AchievementProvider: Send + Sync {
     fn platform(&self) -> Platform;
 
-    /// Deve responder rápido (sem chamada de rede) se há credenciais
-    /// suficientes para consultar essa plataforma.
-    async fn is_configured(&self, app: &tauri::AppHandle) -> bool;
+    /// Deve responder rápido (sem chamada de rede) se há credenciais suficientes para consultar essa plataforma.
+    async fn is_configured(&self, app: &AppHandle) -> bool;
 
-    /// Busca até `limit` conquistas, priorizando as mais recentes e
-    /// completando com conquistas mais antigas se necessário.
-    async fn fetch_recent_achievements(
-        &self,
-        app: &tauri::AppHandle,
-        limit: usize,
-    ) -> Result<Vec<DashboardAchievement>, AppError>;
+    /// Busca conquistas na API externa e persiste no SQLite via `database::achievements`. Retorna
+    /// quantas linhas foram inseridas/atualizadas (só para log — não precisa ser exato).
+    async fn sync_achievements(&self, app: &AppHandle) -> Result<usize, AppError>;
 }
 
-/// Chamado pelo command Tauri. Agrega conquistas de todas as
-/// plataformas configuradas, ordena por `unlock_time` e retorna só as
-/// `DASHBOARD_LIMIT` mais recentes.
-pub async fn get_recent_achievements(
-    app: &tauri::AppHandle,
-) -> Result<Vec<DashboardAchievement>, AppError> {
+/// Chamado pelo job em background (nunca diretamente pela UI). Roda o sync de todas as plataformas
+/// configuradas, uma de cada vez, e emite `achievements-updated` se algo novo foi salvo.
+pub async fn sync_all_achievements(app: &AppHandle) -> Result<(), AppError> {
     let providers: Vec<Box<dyn AchievementProvider>> = vec![
         Box::new(SteamProvider),
         Box::new(EpicProvider),
         Box::new(XboxProvider),
     ];
 
-    let mut all_achievements = Vec::new();
+    let mut total = 0;
 
     for provider in providers {
         if !provider.is_configured(app).await {
             continue;
         }
 
-        match provider
-            .fetch_recent_achievements(app, DASHBOARD_LIMIT)
-            .await
-        {
-            Ok(achievements) => all_achievements.extend(achievements),
+        match provider.sync_achievements(app).await {
+            Ok(count) => total += count,
             Err(err) => {
                 // Erro em uma plataforma não derruba as demais.
                 log::warn!(
-                    "Falha ao buscar conquistas de {:?}: {err}",
+                    "Falha ao sincronizar conquistas de {:?}: {err}",
                     provider.platform()
                 );
             }
         }
     }
 
-    all_achievements.sort_by(|a, b| b.unlock_time.cmp(&a.unlock_time));
-    all_achievements.truncate(DASHBOARD_LIMIT);
+    if total > 0 {
+        let _ = app.emit("achievements-updated", ());
+    }
 
-    Ok(all_achievements)
+    Ok(())
+}
+
+/// Chamado pelo command Tauri do dashboard. Só lê do cache local — rápido, nunca bloqueia esperando API externa.
+pub fn get_recent_achievements(app: &AppHandle) -> Result<Vec<DashboardAchievement>, AppError> {
+    crate::database::achievements::get_dashboard_achievements(app, DASHBOARD_LIMIT)
 }

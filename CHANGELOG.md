@@ -6,6 +6,21 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Region-aware pricing: the OS system locale (via `sys-locale`) is now used to detect the user's region independently of
+  the frontend's UI language, and passed as the `country` parameter to IsThereAnyDeal price requests. Falls back to
+  "US" when no region can be detected, and can be manually overridden and persisted in `app_config`.
+- Backend/frontend language sync: the frontend now notifies the backend whenever the UI language changes, persisting it
+  in `app_config` so background tasks (e.g. AI translation) know the target language without depending on a same-request
+  parameter. Falls back to system locale detection if the frontend hasn't set a language yet.
+- Structured, per-field AI description translation: `game_descriptions` now stores `summary`, `storyline`,
+  `short_description`, and `description` translations independently (replacing the previous single `description_ptbr`
+  column), each with a `translated_lang` marker used to invalidate stale translations when the UI language changes.
+- Game description screen now displays Summary and Storyline as separate labeled sections when both are available
+  (falling back to Steam's short description or the platform's generic description for games without IGDB data),
+  translating each section independently and sequentially to respect the Gemini free-tier rate limit.
+- AI translation now detects the source language automatically (via structured JSON output from Gemini) instead of
+  assuming English input, correctly handling non-English source descriptions (e.g. Japanese or Chinese indie game
+  listings) that previously failed silently.
 - IGDB integration as the primary metadata source (genres, description, developer/publisher, critic score, cover art,
   alternative names, franchise, game modes, player perspectives, themes, keywords, age ratings, and expansion/DLC
   listings), replacing RAWG after the RAWG API became unreachable.
@@ -47,6 +62,15 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 
+- `configs.rs`/`system.rs` responsibilities reorganized into a `commands` → `services` → `providers` → `database`
+  layering: wishlist price refresh, missing-cover backfill, AI translation orchestration, and region/language detection
+  logic were extracted out of Tauri commands into dedicated service modules (`services/wishlist.rs`,
+  `services/translation.rs`, `services/locale.rs`), leaving commands as thin wrappers and `database/configs.rs` as a
+  generic key-value store.
+- Gemini translation requests now disable "thinking" (`thinkingBudget: 0`) and use an explicit 60s timeout, fixing
+  request timeouts that occurred when combining structured JSON output with the default reasoning behavior.
+- Network error messages from the Gemini and ITAD providers no longer leak the API key embedded in the request URL
+  (previously exposed via `reqwest::Error`'s default error formatting).
 - Steam library import: name resolution for non-installed games (read from the Steam library cache) now runs
   concurrently instead of one request at a time, reducing import time for libraries with many non-installed titles.
 - `steam_app_id` resolution for non-Steam platforms: games imported from other stores are now correlated to their Steam

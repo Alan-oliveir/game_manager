@@ -291,6 +291,41 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
     )
         .map_err(|e| e.to_string())?;
 
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS achievements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            platform TEXT NOT NULL,
+            game_id TEXT NOT NULL,
+            game_name TEXT NOT NULL,
+            achievement_key TEXT NOT NULL,
+            achievement_name TEXT NOT NULL,
+            achievement_description TEXT,
+            unlocked_at INTEGER NOT NULL,
+            icon_url TEXT,
+            UNIQUE(platform, game_id, achievement_key)
+        )",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_achievements_unlocked_at ON achievements(unlocked_at DESC)",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS achievement_sync_state (
+            platform TEXT NOT NULL,
+            game_id TEXT NOT NULL,
+            last_synced_at INTEGER NOT NULL,
+            has_achievements INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (platform, game_id)
+        )",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
     // Índices
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_name ON games(name COLLATE NOCASE)",

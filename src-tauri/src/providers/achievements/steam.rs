@@ -1,23 +1,35 @@
 //! Provider de conquistas da Steam.
 //!
-//! Estratégia: primeiro olha os jogos jogados nas últimas 2 semanas via
-//! `get_recently_played_games` (mais provável de ter conquistas
-//! novas). Se isso não preencher o `limit`, cai para `list_steam_games`
-//! (biblioteca inteira), pra pegar conquistas mais antigas de jogos que
-//! não foram jogados recentemente.
+//! `sync_achievements` roda em background (não é chamado pela UI diretamente):
+//! 1. Jogos jogados nas últimas 2 semanas (via `get_recently_played_games`) —
+//!    TTL curto (`STEAM_RECHECK_TTL_SECS`), porque é onde mais aparece
+//!    conquista nova.
+//! 2. Resto da biblioteca — TTL bem mais longo (`STEAM_LIBRARY_RECHECK_TTL_SECS`),
+//!    só pra não deixar defasar de vez jogos parados.
+//!
+//! Cada jogo, antes de bater na API, passa por `achievements::should_skip`:
+//! se já confirmamos (400 da Steam) que ele não tem stats de conquista, ou se
+//! já foi sincronizado recentemente, pula sem gastar rate limit.
 
 use crate::database;
+use crate::database::achievements::{self, AchievementRecord};
 use crate::errors::AppError;
-use crate::providers::achievements::core::{AchievementProvider, DashboardAchievement, Platform};
+use crate::providers::achievements::core::{AchievementProvider, Platform};
 use crate::providers::libraries::steam::{list_steam_games, SteamGame};
+use crate::services::rate_limiter::STEAM_LIMITER;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use tauri::AppHandle;
+use tracing::warn;
+
+const STEAM_RECHECK_TTL_SECS: i64 = 6 * 60 * 60; // 6h — jogos jogados recentemente
+const STEAM_LIBRARY_RECHECK_TTL_SECS: i64 = 7 * 24 * 60 * 60; // 7 dias — resto da biblioteca
+const STEAM_REQUEST_PACING_MS: u64 = 400; // pausa entre chamadas bem-sucedidas, evita rajada
+const STEAM_CIRCUIT_BREAKER_THRESHOLD: u32 = 3; // falhas consecutivas (retries esgotados) até abortar a rodada
 
 // === STRUCTS ===
 
-/// Estrutura auxiliar para obter conquistas de um jogo.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SteamAchievement {
     pub apiname: String,
@@ -63,76 +75,142 @@ impl AchievementProvider for SteamProvider {
         !api_key.is_empty() && !steam_id.is_empty()
     }
 
-    async fn fetch_recent_achievements(
-        &self,
-        app: &AppHandle,
-        limit: usize,
-    ) -> Result<Vec<DashboardAchievement>, AppError> {
+    async fn sync_achievements(&self, app: &AppHandle) -> Result<usize, AppError> {
         let api_key = database::get_secret(app, "steam_api_key")?;
         let steam_id = database::get_secret(app, "steam_id")?;
 
         if api_key.is_empty() || steam_id.is_empty() {
-            return Ok(vec![]);
+            return Ok(0);
         }
 
-        let mut all_achievements = Vec::new();
+        let mut total = 0;
 
         // 1. Jogos jogados nas últimas 2 semanas.
-        let recent_games = get_recently_played_games(&api_key, &steam_id)
+        let recent_games = STEAM_LIMITER
+            .run(|| get_recently_played_games(&api_key, &steam_id))
+            .await
+            .unwrap_or_else(|err| {
+                warn!("Steam get_recently_played_games falhou, seguindo com fallback: {err}");
+                Vec::new()
+            });
+
+        total += sync_games(
+            app,
+            &api_key,
+            &steam_id,
+            &recent_games,
+            STEAM_RECHECK_TTL_SECS,
+        )
+            .await;
+
+        // 2. Resto da biblioteca.
+        let owned_games = list_steam_games(&api_key, &steam_id)
             .await
             .map_err(AppError::ExternalApiError)?;
-        collect_unlocked(&api_key, &steam_id, &recent_games, &mut all_achievements).await;
 
-        // 2. Se não juntamos o suficiente, busca no restante da
-        //    biblioteca (conquistas mais antigas de jogos parados).
-        if all_achievements.len() < limit {
-            let owned_games = list_steam_games(&api_key, &steam_id)
-                .await
-                .map_err(AppError::ExternalApiError)?;
+        let already_checked: HashSet<_> = recent_games.iter().map(|g| g.appid).collect();
+        let remaining: Vec<SteamGame> = owned_games
+            .into_iter()
+            .filter(|g| !already_checked.contains(&g.appid))
+            .collect();
 
-            let already_checked: HashSet<_> = recent_games.iter().map(|g| g.appid).collect();
-            let remaining: Vec<SteamGame> = owned_games
-                .into_iter()
-                .filter(|g| !already_checked.contains(&g.appid))
-                .collect();
+        total += sync_games(
+            app,
+            &api_key,
+            &steam_id,
+            &remaining,
+            STEAM_LIBRARY_RECHECK_TTL_SECS,
+        )
+            .await;
 
-            collect_unlocked(&api_key, &steam_id, &remaining, &mut all_achievements).await;
-        }
-
-        all_achievements.sort_by(|a, b| b.unlock_time.cmp(&a.unlock_time));
-        all_achievements.truncate(limit);
-
-        Ok(all_achievements)
+        Ok(total)
     }
 }
 
-async fn collect_unlocked(
+/// Sincroniza uma lista de jogos, pulando os que já foram checados dentro
+/// do `ttl_secs` ou que já sabemos não terem conquistas públicas.
+async fn sync_games(
+    app: &AppHandle,
     api_key: &str,
     steam_id: &str,
     games: &[SteamGame],
-    out: &mut Vec<DashboardAchievement>,
-) {
+    ttl_secs: i64,
+) -> usize {
+    let mut total = 0;
+    let mut consecutive_failures = 0u32;
+
     for game in games {
-        if let Ok(achievements) = get_player_achievements(api_key, steam_id, game.appid).await
-        {
-            for ach in achievements {
-                if ach.achieved == 1 {
-                    out.push(DashboardAchievement {
+        let game_id = game.appid.to_string();
+
+        if achievements::should_skip(app, Platform::Steam, &game_id, ttl_secs) {
+            continue;
+        }
+
+        let result = STEAM_LIMITER
+            .run(|| get_player_achievements(api_key, steam_id, game.appid))
+            .await;
+
+        match result {
+            Ok(steam_achievements) => {
+                consecutive_failures = 0; // sucesso reseta o contador
+
+                let unlocked: Vec<AchievementRecord> = steam_achievements
+                    .into_iter()
+                    .filter(|a| a.achieved == 1)
+                    .map(|a| AchievementRecord {
                         platform: Platform::Steam,
+                        game_id: game_id.clone(),
                         game_name: game.name.clone(),
-                        achievement_name: ach.name.unwrap_or(ach.apiname),
-                        unlock_time: ach.unlocktime,
-                        game_id: game.appid.to_string(),
-                    });
+                        achievement_key: a.apiname.clone(),
+                        achievement_name: a.name.unwrap_or(a.apiname),
+                        achievement_description: a.description,
+                        unlocked_at: a.unlocktime,
+                        icon_url: None,
+                    })
+                    .collect();
+
+                total += unlocked.len();
+
+                if let Err(e) = achievements::upsert_achievements(app, &unlocked) {
+                    warn!("Steam: falha ao salvar conquistas de {} ({}) no banco: {}", game.name, game.appid, e);
+                }
+
+                if let Err(e) = achievements::mark_synced(app, Platform::Steam, &game_id, true) {
+                    warn!("Steam: falha ao marcar sync de {} ({}): {}", game.name, game.appid, e);
+                }
+
+                // Pacing: só pausa após sucesso, pra não acelerar quando já está tudo dando 400/403.
+                tokio::time::sleep(std::time::Duration::from_millis(STEAM_REQUEST_PACING_MS)).await;
+            }
+            Err(e) => {
+                if e.contains("400") {
+                    // Permanente — jogo sem stats de conquista. Não conta como falha de throttling.
+                    if let Err(db_err) = achievements::mark_synced(app, Platform::Steam, &game_id, false) {
+                        warn!("Steam: falha ao marcar {} ({}) como sem conquistas: {}", game.name, game.appid, db_err);
+                    }
+                } else {
+                    // Retries já foram esgotados dentro do STEAM_LIMITER.run() antes de chegar aqui.
+                    consecutive_failures += 1;
+                }
+
+                warn!("Steam: falha ao buscar conquistas de {} ({}): {}", game.name, game.appid, e);
+
+                if consecutive_failures >= STEAM_CIRCUIT_BREAKER_THRESHOLD {
+                    warn!(
+                        "Steam: {} falhas consecutivas após retries esgotados — abortando o resto desta rodada de sync, tentando de novo na próxima",
+                        consecutive_failures
+                    );
+                    break;
                 }
             }
         }
     }
+
+    total
 }
 
 // === HELPERS LOCAIS ===
 
-/// Busca jogos jogados nas últimas 2 semanas
 async fn get_recently_played_games(
     api_key: &str,
     steam_id: &str,
@@ -156,13 +234,11 @@ async fn get_recently_played_games(
     Ok(data.response.games.unwrap_or_default())
 }
 
-/// Busca conquistas do jogador num jogo específico
 async fn get_player_achievements(
     api_key: &str,
     steam_id: &str,
     app_id: u32,
 ) -> Result<Vec<SteamAchievement>, String> {
-    // Usa l=brazilian para tentar obter os nomes traduzidos se disponíveis
     let url = format!(
         "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid={}&key={}&steamid={}&l=brazilian",
         app_id, api_key, steam_id
@@ -174,14 +250,10 @@ async fn get_player_achievements(
         .await
         .map_err(|e| e.to_string())?;
 
-    // Jogos sem conquistas retornam 400 ou erro, e são tratados como lista vazia
     if !res.status().is_success() {
-        return Ok(vec![]);
+        return Err(format!("Steam Achievements Error: {}", res.status()));
     }
 
-    let data: Result<PlayerStatsResponse, _> = res.json().await;
-    match data {
-        Ok(d) => Ok(d.playerstats.achievements.unwrap_or_default()),
-        Err(_) => Ok(vec![]), // Falha no parse (jogo sem conquistas públicas)
-    }
+    let data: PlayerStatsResponse = res.json().await.map_err(|e| e.to_string())?;
+    Ok(data.playerstats.achievements.unwrap_or_default())
 }

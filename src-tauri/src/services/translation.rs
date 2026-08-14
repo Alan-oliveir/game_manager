@@ -1,16 +1,15 @@
-//! Comando Tauri para traduzir descrições de jogos usando o serviço Gemini AI.
+//! Serviço de tradução de descrições de jogos.
 //!
-//! **Fluxo:**
-//! 1. Recupera a chave API do banco de dados seguro.
-//! 2. Chama o serviço Gemini para traduzir o texto.
-//! 3. Salva a tradução no banco de dados local para evitar custos futuros.
+//! Orquestra: resolve quais campos precisam de tradução (via GameDescription::fields_to_display),
+//! chama o provider Gemini sequencialmente por campo, e persiste cada resultado imediatamente
+//! (cache por campo, resiliente a falha parcial).
 
 use crate::database;
-use crate::database::configs::get_or_detect_language;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::models::GameDescription;
 use crate::providers::translation::gemini;
+use crate::services::locale::get_or_detect_language;
 use rusqlite::params;
 use tauri::{AppHandle, Manager, State};
 use tracing::{error, info};
@@ -44,44 +43,58 @@ fn persist_translated_field(
     Ok(())
 }
 
-#[tauri::command]
+fn fetch_description(
+    conn: &rusqlite::Connection,
+    game_id: &str,
+) -> Result<GameDescription, AppError> {
+    Ok(conn.query_row(
+        "SELECT summary, storyline, short_description, description,
+                summary_translated, storyline_translated,
+                short_description_translated, description_translated,
+                translated_lang
+         FROM game_descriptions WHERE game_id = ?1",
+        params![game_id],
+        |row| {
+            Ok(GameDescription {
+                summary: row.get(0)?,
+                storyline: row.get(1)?,
+                short_description: row.get(2)?,
+                description: row.get(3)?,
+                summary_translated: row.get(4)?,
+                storyline_translated: row.get(5)?,
+                short_description_translated: row.get(6)?,
+                description_translated: row.get(7)?,
+                translated_lang: row.get(8)?,
+            })
+        },
+    )?)
+}
+
+/// Traduz os campos de exibição da descrição de um jogo (summary + storyline,
+/// ou short_description/description como fallback), pro idioma alvo.
+///
+/// Traduz sequencialmente e persiste cada campo assim que concluído, evitando
+/// retrabalho em caso de falha parcial (ex: rate limit no segundo campo).
 pub async fn translate_description(
-    app: AppHandle,
+    app: &AppHandle,
     game_id: String,
     target_lang: Option<String>,
 ) -> Result<GameDescription, AppError> {
     let target_lang = match target_lang {
         Some(lang) => lang,
-        None => get_or_detect_language(&app)?,
+        None => get_or_detect_language(app)?,
     };
 
-    info!("Tradução solicitada para jogo {} -> idioma {}", game_id, target_lang);
+    info!(
+        "Tradução solicitada para jogo {} -> idioma {}",
+        game_id, target_lang
+    );
 
     let state: State<AppState> = app.state();
 
     let current: GameDescription = {
         let conn = state.games_db.lock()?;
-        conn.query_row(
-            "SELECT summary, storyline, short_description, description,
-                    summary_translated, storyline_translated,
-                    short_description_translated, description_translated,
-                    translated_lang
-             FROM game_descriptions WHERE game_id = ?1",
-            params![game_id],
-            |row| {
-                Ok(GameDescription {
-                    summary: row.get(0)?,
-                    storyline: row.get(1)?,
-                    short_description: row.get(2)?,
-                    description: row.get(3)?,
-                    summary_translated: row.get(4)?,
-                    storyline_translated: row.get(5)?,
-                    short_description_translated: row.get(6)?,
-                    description_translated: row.get(7)?,
-                    translated_lang: row.get(8)?,
-                })
-            },
-        )?
+        fetch_description(&conn, &game_id)?
     };
 
     let fields = current
@@ -89,11 +102,12 @@ pub async fn translate_description(
         .into_iter()
         .map(|(field, text)| (field, text.to_owned()))
         .collect::<Vec<_>>();
+
     if fields.is_empty() {
         return Ok(current);
     }
 
-    let api_key = database::get_secret(&app, "gemini_api_key").map_err(|e| {
+    let api_key = database::get_secret(app, "gemini_api_key").map_err(|e| {
         error!("Falha ao ler banco de secrets: {}", e);
         AppError::DatabaseError("Erro interno de banco de dados".to_string())
     })?;
@@ -104,9 +118,8 @@ pub async fn translate_description(
         ));
     }
 
-    // Traduz sequencialmente (não em paralelo) — cada campo é uma
-    // requisição própria ao Gemini, uma de cada vez, respeitando o RPM.
     let mut updated = current.clone();
+
     for (field, text) in fields {
         let already_done = current.translated_lang.as_deref() == Some(target_lang.as_str())
             && current.translated_value(field).is_some();
@@ -128,9 +141,6 @@ pub async fn translate_description(
         updated.set_translated_value(field, translated.clone());
         updated.translated_lang = Some(target_lang.clone());
 
-        // Persiste imediatamente após cada campo: se o segundo falhar
-        // (rate limit, timeout), o primeiro já fica salvo e não é
-        // retraduzido numa nova tentativa.
         let conn = state.games_db.lock()?;
         persist_translated_field(&conn, &game_id, field, &translated, &target_lang)?;
     }

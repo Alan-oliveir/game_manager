@@ -16,7 +16,7 @@
 //! por esse caminho.
 
 use crate::errors::AppError;
-use crate::providers::achievements::core::{AchievementProvider, DashboardAchievement, Platform};
+use crate::providers::achievements::core::{AchievementProvider, Platform};
 use async_trait::async_trait;
 use tauri::AppHandle;
 
@@ -32,11 +32,7 @@ impl AchievementProvider for EpicProvider {
         false
     }
 
-    async fn fetch_recent_achievements(
-        &self,
-        _app: &AppHandle,
-        _limit: usize,
-    ) -> Result<Vec<DashboardAchievement>, AppError> {
-        Ok(vec![])
+    async fn sync_achievements(&self, _app: &AppHandle) -> Result<usize, AppError> {
+        Ok(0)
     }
 }

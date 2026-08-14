@@ -13,6 +13,7 @@ use crate::providers::giveaways::gamerpower;
 use crate::providers::metadata::steam::get_app_reviews;
 use crate::providers::pricing::itad;
 use crate::services::cache;
+use crate::services::locale::get_or_detect_region;
 use lazy_static::lazy_static;
 use rusqlite::params;
 use std::sync::Arc;
@@ -282,7 +283,7 @@ async fn refresh_wishlist_prices_background(
     }
 
     // C. Busca preços em lote da ITAD
-    let region = database::configs::get_or_detect_region(&app)?;
+    let region = get_or_detect_region(&app)?;
     let overviews = match itad::get_prices(itad_ids_to_fetch, &region).await {
         Ok(data) => data,
         Err(e) => {
