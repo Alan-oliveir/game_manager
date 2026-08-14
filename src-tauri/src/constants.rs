@@ -13,6 +13,8 @@ pub(crate) const GEMINI_API_URL: &str =
 pub const PCGW_API_BASE: &str = "https://www.pcgamingwiki.com/w/api.php"; // Base da MediaWiki Action API do PCGamingWiki.
 pub const IGDB_TOKEN_ENDPOINT: &str = "https://id.twitch.tv/oauth2/token";
 pub const IGDB_API_BASE: &str = "https://api.igdb.com/v4";
+pub const AWACY_URL: &str =
+    "https://raw.githubusercontent.com/AreWeAntiCheatYet/AreWeAntiCheatYet/master/games.json";
 
 // === METADATA ===
 pub const NOT_FOUND_MARKER: &str = "__NOT_FOUND__";
@@ -122,6 +124,7 @@ pub const CACHE_DEFAULT_TTL_DAYS: i64 = 7;
 pub const CACHE_NEXUS_TRENDING_MODS_TTL_DAYS: i64 = 28;
 pub const CACHE_STEAM_TRENDING_TTL_DAYS: i64 = 7;
 pub const CACHE_IGDB_UPCOMING_TTL_DAYS: i64 = 14;
+pub const CACHE_AWACY_TTL_DAYS: i64 = 90;
 
 // === CHAVES DE CACHE DE ASSINATURAS ===
 pub const AMAZON_LUNA_CACHE_SOURCE: &str = "amazon_luna";

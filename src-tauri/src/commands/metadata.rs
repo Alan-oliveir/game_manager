@@ -20,3 +20,4 @@ pub mod protondb;
 pub mod refresh;
 pub mod search;
 pub mod shared;
+pub mod anticheat;

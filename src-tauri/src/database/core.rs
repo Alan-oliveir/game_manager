@@ -260,6 +260,37 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
     )
         .map_err(|e| e.to_string())?;
 
+    // Metadados do dataset inteiro (controla o TTL global, não por jogo). Ex: etag, última atualização, contagem de jogos
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS anticheat_meta (
+        id INTEGER PRIMARY KEY CHECK (id = 1), -- singleton row
+        etag TEXT,
+        last_fetched TEXT NOT NULL,
+        game_count INTEGER NOT NULL DEFAULT 0
+    )",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
+    // Snapshot local do games.json do AWACY
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS anticheat_games (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT NOT NULL,
+        name TEXT NOT NULL,
+        status TEXT NOT NULL,
+        anticheats TEXT NOT NULL,
+        steam_id TEXT,
+        epic_namespace TEXT,
+        epic_slug TEXT,
+        native INTEGER NOT NULL DEFAULT 0,
+        reference TEXT,
+        date_changed TEXT
+    )",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
     // Índices
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_name ON games(name COLLATE NOCASE)",
@@ -283,6 +314,18 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     conn.execute("CREATE INDEX IF NOT EXISTS idx_slug ON games(slug)", [])
+        .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_anticheat_slug ON anticheat_games(slug)",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_anticheat_steam ON anticheat_games(steam_id)",
+        [],
+    )
         .map_err(|e| e.to_string())?;
 
     // Tabelas extras - PCGamingWiki e subscriptions relacionados
