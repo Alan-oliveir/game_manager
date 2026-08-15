@@ -5,7 +5,7 @@
 //! serializado em JSON sob a chave `oauth_<provider_id>` na tabela
 //! `encrypted_keys`. Nenhuma tabela ou schema novo é necessário.
 
-use crate::database::core::{delete_secret, get_secret, set_secret};
+use crate::database::{delete_secret, get_secret, set_secret};
 use crate::errors::AppError;
 use crate::utils::oauth::config::{
     fetch_app_access_token, refresh_access_token, OAuthProviderConfig, OAuthToken,

@@ -9,8 +9,10 @@
 pub mod backup;
 pub mod configs;
 pub mod core;
-pub(crate) mod migrations;
+pub mod migrations;
 pub mod achievements;
+pub mod secrets;
 
 // Reexporta o módulo core para fácil acesso
 pub use core::*;
+pub use secrets::{delete_secret, get_secret, list_supported_keys, set_secret};

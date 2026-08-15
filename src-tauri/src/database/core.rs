@@ -7,16 +7,16 @@
 //! - games.db: armazena jogos, wishlist, dados técnicos (pcgw_data) e subscriptions.
 //! - secrets.db: armazena secrets encriptados com AES-256-GCM.
 //! - cache.db: cache para respostas de APIs externas (RAWG, Steam).
+//! - config.db: configurações da aplicação.
 
 use crate::constants::{
-    DB_FILENAME_CACHE, DB_FILENAME_GAMES, DB_FILENAME_SECRETS, DB_JOURNAL_MODE,
+    DB_FILENAME_CACHE, DB_FILENAME_CONFIG, DB_FILENAME_GAMES, DB_FILENAME_SECRETS, DB_JOURNAL_MODE,
 };
 use crate::errors::AppError;
 use crate::providers::mods::nexus::initialize_nexus_tables;
 use crate::providers::technical::pcgamingwiki::db::initialize_pcgamingwiki_tables;
-use crate::security;
 use crate::services::playtime::PlaytimeRegistry;
-use rusqlite::{params, Connection};
+use rusqlite::Connection;
 use std::sync::Mutex;
 use tauri::State;
 use tauri::{AppHandle, Manager};
@@ -26,6 +26,7 @@ pub struct AppState {
     pub games_db: Mutex<Connection>,
     pub secrets_db: Mutex<Connection>,
     pub cache_db: Mutex<Connection>,
+    pub config_db: Mutex<Connection>,
     pub playtime_registry: PlaytimeRegistry,
 }
 
@@ -94,6 +95,19 @@ pub fn initialize_databases(app: &AppHandle) -> Result<AppState, String> {
         .pragma_update(None, "journal_mode", DB_JOURNAL_MODE)
         .map_err(|e| format!("Erro ao configurar WAL no secrets.db: {}", e))?;
 
+    // Conexão para config.db
+    let config_path = app_data_dir.join(DB_FILENAME_CONFIG);
+    let config_conn = Connection::open(&config_path)
+        .map_err(|e| format!("Erro ao abrir {}: {}", DB_FILENAME_CONFIG, e))?;
+
+    config_conn
+        .pragma_update(None, "journal_mode", DB_JOURNAL_MODE)
+        .map_err(|e| {
+            AppError::DatabaseWalConfigError("config.db".to_string(), e.to_string()).to_string()
+        })?;
+
+    crate::database::configs::ensure_config_table(&config_conn)?;
+
     // Executa migrations
     crate::database::migrations::run_migrations(app, &games_conn)?;
 
@@ -105,6 +119,7 @@ pub fn initialize_databases(app: &AppHandle) -> Result<AppState, String> {
         games_db: Mutex::new(games_conn),
         secrets_db: Mutex::new(secrets_conn),
         cache_db: Mutex::new(cache_conn),
+        config_db: Mutex::new(config_conn),
         playtime_registry: PlaytimeRegistry::default(),
     })
 }
@@ -437,95 +452,4 @@ pub fn deserialize_tags(tags_json: &str) -> Vec<crate::models::GameTag> {
             relevance: 5.0,
         })
         .collect()
-}
-
-// === BANCO DE DADOS PARA GERENCIAMENTO DE API KEYS (secrets.db) ===
-
-/// Obtém conexão com o banco de secrets a partir do AppState.
-/// Cria automaticamente a tabela `encrypted_keys` se não existir.
-fn get_secrets_connection<'a>(
-    state: &'a State<AppState>,
-) -> Result<std::sync::MutexGuard<'a, Connection>, String> {
-    let conn = state
-        .secrets_db
-        .lock()
-        .map_err(|_| "Falha ao bloquear mutex do secrets_db".to_string())?;
-
-    conn.execute(
-        r#"
-        CREATE TABLE IF NOT EXISTS encrypted_keys (
-            key TEXT PRIMARY KEY,
-            value TEXT NOT NULL
-        )
-        "#,
-        [],
-    )
-        .map_err(|e: rusqlite::Error| e.to_string())?;
-
-    Ok(conn)
-}
-
-/// Salva um secret encriptado no banco. Se a chave já existir, o valor é substituído (upsert).
-pub fn set_secret(app: &AppHandle, key_name: &str, value: &str) -> Result<(), AppError> {
-    let state: tauri::State<AppState> = app.state();
-    let conn = get_secrets_connection(&state)?;
-
-    let encrypted = security::encrypt(app, value)?;
-
-    conn.execute(
-        "INSERT OR REPLACE INTO encrypted_keys (key, value) VALUES (?1, ?2)",
-        params![key_name, encrypted],
-    )?;
-
-    Ok(())
-}
-
-/// Recupera e decripta um secret do banco. Se a chave não existir, retorna string vazia ao invés de erro.
-pub fn get_secret(app: &AppHandle, key_name: &str) -> Result<String, AppError> {
-    let state: tauri::State<AppState> = app.state();
-    let conn = get_secrets_connection(&state)?;
-
-    let result: Result<String, rusqlite::Error> = conn.query_row(
-        "SELECT value FROM encrypted_keys WHERE key = ?1",
-        params![key_name],
-        |row| row.get::<_, String>(0),
-    );
-
-    match result {
-        Ok(encrypted) => {
-            let decrypted = security::decrypt(app, &encrypted)?;
-            Ok(decrypted)
-        }
-        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(String::new()),
-        Err(e) => Err(AppError::DatabaseError(e.to_string())),
-    }
-}
-
-/// Remove um secret do banco permanentemente.
-pub fn delete_secret(app: &AppHandle, key_name: &str) -> Result<(), AppError> {
-    let state: tauri::State<AppState> = app.state();
-    let conn = get_secrets_connection(&state)?;
-
-    conn.execute(
-        "DELETE FROM encrypted_keys WHERE key = ?1",
-        params![key_name],
-    )?;
-
-    Ok(())
-}
-
-/// Retorna lista de chaves de secrets suportadas pela aplicação.
-pub fn list_supported_keys() -> Vec<&'static str> {
-    vec![
-        "steam_id",
-        "steam_api_key",
-        "rawg_api_key",
-        "gemini_api_key",
-        "gamebrain_api_key",
-        "nexus_api_key",
-        "igdb_client_id",
-        "igdb_client_secret",
-        "xbox_live_client_id",
-        "xbox_live_client_secret",
-    ]
 }

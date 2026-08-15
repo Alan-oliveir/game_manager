@@ -20,7 +20,7 @@
 
 pub mod achievements;
 pub mod translation;
-pub mod caches;
+pub mod cache;
 pub mod games;
 pub mod launcher;
 pub mod metadata;

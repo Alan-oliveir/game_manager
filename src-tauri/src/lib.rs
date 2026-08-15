@@ -201,9 +201,9 @@ pub fn run() {
             commands::achievements::get_recent_achievements,
             commands::achievements::sync_achievements_now,
             // Comandos de Cache de Metadados
-            commands::caches::cleanup_cache,
-            commands::caches::clear_all_cache,
-            commands::caches::get_detailed_cache_stats,
+            commands::cache::cleanup_cache,
+            commands::cache::clear_all_cache,
+            commands::cache::get_detailed_cache_stats,
             // Comandos de Sistema
             commands::system::open_folder,
             commands::system::open_file,

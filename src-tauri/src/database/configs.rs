@@ -12,7 +12,7 @@ use tauri::{AppHandle, Manager, State};
 // === GERENCIAMENTO GENÉRICO DE CONFIGURAÇÃO (app_config) ===
 
 /// Cria a tabela app_config se não existir (Idempotente)
-fn ensure_config_table(conn: &Connection) -> Result<(), AppError> {
+pub fn ensure_config_table(conn: &Connection) -> Result<(), AppError> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS app_config (
             key TEXT PRIMARY KEY,
@@ -56,7 +56,7 @@ pub fn get_config(conn: &Connection, key: &str) -> Result<Option<String>, AppErr
 /// Armazena a versão atual da aplicação na tabela app_config em cache.db
 pub fn store_app_version(app: &AppHandle, version: &str) -> Result<(), AppError> {
     let state: State<AppState> = app.state();
-    let conn = state.cache_db.lock().map_err(|_| AppError::MutexError)?;
+    let conn = state.config_db.lock().map_err(|_| AppError::MutexError)?;
 
     ensure_config_table(&conn)?;
 
@@ -72,7 +72,7 @@ pub fn store_app_version(app: &AppHandle, version: &str) -> Result<(), AppError>
 /// Obtém a versão armazenada da aplicação
 pub fn get_stored_app_version(app: &AppHandle) -> Result<String, AppError> {
     let state: State<AppState> = app.state();
-    let conn = state.cache_db.lock().map_err(|_| AppError::MutexError)?;
+    let conn = state.config_db.lock().map_err(|_| AppError::MutexError)?;
 
     ensure_config_table(&conn)?;
 
@@ -89,10 +89,10 @@ pub fn get_stored_app_version(app: &AppHandle) -> Result<String, AppError> {
 
 // === STORAGE DE VERSÃO DO SCHEMA ===
 
-/// Armazena a versão do schema na tabela app_config em cache.db
+/// Armazena a versão do schema na tabela app_config em config.db
 pub fn store_schema_version(app: &AppHandle, schema_version: u32) -> Result<(), AppError> {
     let state: State<AppState> = app.state();
-    let conn = state.cache_db.lock().map_err(|_| AppError::MutexError)?;
+    let conn = state.config_db.lock().map_err(|_| AppError::MutexError)?;
 
     ensure_config_table(&conn)?;
 
@@ -108,7 +108,7 @@ pub fn store_schema_version(app: &AppHandle, schema_version: u32) -> Result<(), 
 /// Obtém a versão do schema armazenada
 pub fn get_stored_schema_version(app: &AppHandle) -> Result<u32, AppError> {
     let state: State<AppState> = app.state();
-    let conn = state.cache_db.lock().map_err(|_| AppError::MutexError)?;
+    let conn = state.config_db.lock().map_err(|_| AppError::MutexError)?;
 
     ensure_config_table(&conn)?;
 

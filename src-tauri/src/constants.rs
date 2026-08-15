@@ -143,6 +143,7 @@ pub const UBISOFT_PLUS_CACHE_KEY: &str = "catalog_ubisoft_plus";
 pub const DB_FILENAME_GAMES: &str = "games.db";
 pub const DB_FILENAME_CACHE: &str = "cache.db";
 pub const DB_FILENAME_SECRETS: &str = "secrets.db";
+pub const DB_FILENAME_CONFIG: &str = "config.db";
 pub const DB_JOURNAL_MODE: &str = "WAL";
 
 // === OAuth GOG ===

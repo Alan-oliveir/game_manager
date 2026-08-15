@@ -1,6 +1,6 @@
 //! Módulo de cache para metadados de APIs externas
 //!
-//! Gerencia cache persistente em SQLite para respostas de RAWG e Steam,
+//! Gerencia cache persistente em SQLite para respostas de IGDB e Steam,
 //! reduzindo chamadas desnecessárias e melhorando performance.
 
 use crate::constants::{
@@ -9,24 +9,26 @@ use crate::constants::{
     CACHE_GAMERPOWER_TTL_DAYS, CACHE_GAME_PASS_FULL_TTL_DAYS, CACHE_HLTB_TTL_DAYS,
     CACHE_IGDB_UPCOMING_TTL_DAYS, CACHE_NEXUS_TRENDING_MODS_TTL_DAYS, CACHE_PROTON_DB_TTL_DAYS,
     CACHE_RAWG_GAME_TTL_DAYS, CACHE_RAWG_LIST_TTL_DAYS,
-    CACHE_STEAM_ACHIEVEMENTS_CIRCUIT_BREAKER_TTL_DAYS, CACHE_STEAM_PLAYTIME_TTL_DAYS, CACHE_STEAM_RESOLVE_TTL_DAYS,
-    CACHE_STEAM_REVIEWS_TTL_DAYS, CACHE_STEAM_STORE_TTL_DAYS, CACHE_STEAM_TRENDING_TTL_DAYS,
-    CACHE_UBISOFT_PLUS_TTL_DAYS,
+    CACHE_STEAM_ACHIEVEMENTS_CIRCUIT_BREAKER_TTL_DAYS, CACHE_STEAM_PLAYTIME_TTL_DAYS,
+    CACHE_STEAM_RESOLVE_TTL_DAYS, CACHE_STEAM_REVIEWS_TTL_DAYS, CACHE_STEAM_STORE_TTL_DAYS,
+    CACHE_STEAM_TRENDING_TTL_DAYS, CACHE_UBISOFT_PLUS_TTL_DAYS,
 };
 use crate::errors::AppError;
 use rusqlite::{params, Connection};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
-/// Estrutura de estatísticas do cache
-#[derive(Debug, serde::Serialize)]
-pub struct CacheStats {
-    pub total_entries: i32,
-    pub rawg_entries: i32,
+/// Estatísticas detalhadas por tipo de cache — usado pela tela de configurações.
+#[derive(serde::Serialize)]
+pub struct DetailedCacheStats {
+    pub total: i32,
+    pub rawg_searches: i32,
     pub gamebrain_entries: i32,
-    pub steam_entries: i32,
-    pub hltb_entries: i32,
-    pub expired_entries: i32,
+    pub steam_store: i32,
+    pub steam_reviews: i32,
+    pub steam_playtime: i32,
+    pub hltb_searches: i32,
+    pub expired: i32,
 }
 
 /// Obtém timestamp atual em segundos
@@ -53,7 +55,6 @@ pub fn initialize_cache_db(conn: &Connection) -> Result<(), String> {
     )
         .map_err(|e| format!("Erro ao criar tabela api_cache: {}", e))?;
 
-    // Índice para facilitar queries de limpeza por data
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_cache_updated
          ON api_cache(source, updated_at)",
@@ -67,8 +68,12 @@ pub fn initialize_cache_db(conn: &Connection) -> Result<(), String> {
 // === FUNÇÕES DE GERENCIAMENTO DE CACHE ===
 
 /// Determina o TTL baseado no tipo de dado armazenado em cache.
+///
+/// Ponto único de verdade sobre TTL por tipo — usado tanto para decidir se
+/// uma entrada ainda é válida (`is_cache_expired`) quanto para a limpeza
+/// física (`cleanup_expired_cache`). Adicionar um novo tipo de cache aqui
+/// já o cobre automaticamente nos dois fluxos.
 fn get_ttl_for_cache_type(cache_key: &str) -> i64 {
-    // TTL de 1 dia para listas (Jogos gratuitos)
     if cache_key.contains("_list_") {
         CACHE_RAWG_LIST_TTL_DAYS * 24 * 60 * 60
     } else if cache_key.starts_with("steam_trending") {
@@ -118,7 +123,6 @@ fn get_ttl_for_cache_type(cache_key: &str) -> i64 {
 fn is_cache_expired(cache_key: &str, updated_at: i64) -> bool {
     let now = current_timestamp();
     let ttl_seconds = get_ttl_for_cache_type(cache_key);
-
     (now - updated_at) > ttl_seconds
 }
 
@@ -137,9 +141,7 @@ pub fn get_cached_api_data(conn: &Connection, source: &str, external_id: &str) -
 
     match result {
         Ok((payload, updated_at)) => {
-            // Usa a chave completa (external_id) para determinar TTL
-            let full_key = external_id;
-            if is_cache_expired(full_key, updated_at) {
+            if is_cache_expired(external_id, updated_at) {
                 None
             } else {
                 Some(payload)
@@ -172,70 +174,47 @@ pub fn save_cached_api_data(
     Ok(())
 }
 
-/// Remove entradas expiradas do cache (limpeza granular)
+/// Retorna as chaves (source, external_id) de todas as entradas atualmente
+/// expiradas, segundo o TTL de cada tipo (`get_ttl_for_cache_type`).
+fn list_expired_keys(conn: &Connection) -> Result<Vec<(String, String)>, String> {
+    let mut stmt = conn
+        .prepare("SELECT source, external_id, updated_at FROM api_cache")
+        .map_err(|e| e.to_string())?;
+
+    let keys = stmt
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, i64>(2)?,
+            ))
+        })
+        .map_err(|e| e.to_string())?
+        .flatten()
+        .filter(|(_, external_id, updated_at)| is_cache_expired(external_id, *updated_at))
+        .map(|(source, external_id, _)| (source, external_id))
+        .collect();
+
+    Ok(keys)
+}
+
+/// Remove entradas expiradas do cache (limpeza granular).
+///
+/// Genérico sobre `get_ttl_for_cache_type` — não há lista de cutoffs
+/// duplicada aqui, então um novo tipo de cache é automaticamente coberto
+/// assim que ganha uma regra de TTL.
 pub fn cleanup_expired_cache(conn: &Connection) -> Result<usize, String> {
-    let now = current_timestamp();
+    let stale_keys = list_expired_keys(conn)?;
 
-    // Diferentes cutoffs para diferentes tipos
-    let rawg_cutoff = now - (CACHE_RAWG_GAME_TTL_DAYS * 24 * 60 * 60);
-    let gamebrain_id_cutoff = now - (CACHE_GAMEBRAIN_ID_TTL_DAYS * 24 * 60 * 60);
-    let gamebrain_similar_cutoff = now - (CACHE_GAMEBRAIN_SIMILAR_TTL_DAYS * 24 * 60 * 60);
-    let gamebrain_media_cutoff = now - (CACHE_GAMEBRAIN_MEDIA_TTL_DAYS * 24 * 60 * 60);
-    let amazon_luna_cutoff = now - (CACHE_AMAZON_LUNA_TTL_DAYS * 24 * 60 * 60);
-    let gamerpower_cutoff = now - (CACHE_GAMERPOWER_TTL_DAYS * 24 * 60 * 60);
-    let game_pass_full_cutoff = now - (CACHE_GAME_PASS_FULL_TTL_DAYS * 24 * 60 * 60);
-    let ubisoft_plus_cutoff = now - (CACHE_UBISOFT_PLUS_TTL_DAYS * 24 * 60 * 60);
-    let ea_play_cutoff = now - (CACHE_EA_PLAY_TTL_DAYS * 24 * 60 * 60);
-    let store_cutoff = now - (CACHE_STEAM_STORE_TTL_DAYS * 24 * 60 * 60);
-    let reviews_cutoff = now - (CACHE_STEAM_REVIEWS_TTL_DAYS * 24 * 60 * 60);
-    let playtime_cutoff = now - (CACHE_STEAM_PLAYTIME_TTL_DAYS * 24 * 60 * 60);
-    let steam_resolve_cutoff = now - (CACHE_STEAM_RESOLVE_TTL_DAYS * 24 * 60 * 60);
-    let protondb_cutoff = now - (CACHE_PROTON_DB_TTL_DAYS * 24 * 60 * 60);
-    let hltb_cutoff = now - (CACHE_HLTB_TTL_DAYS * 24 * 60 * 60);
-    let steam_trending_cutoff = now - (CACHE_STEAM_TRENDING_TTL_DAYS * 24 * 60 * 60);
-    let igdb_upcoming_cutoff = now - (CACHE_IGDB_UPCOMING_TTL_DAYS * 24 * 60 * 60);
-
-    let deleted = conn
-        .execute(
-            "DELETE FROM api_cache
-             WHERE (source = 'rawg' AND external_id LIKE 'search_%' AND updated_at < ?1)
-                OR (source = 'gamebrain' AND external_id LIKE 'gamebrain_id:%' AND updated_at < ?2)
-                OR (source = 'gamebrain' AND external_id LIKE 'gamebrain_similar:%' AND updated_at < ?3)
-                OR (source = 'gamebrain' AND external_id LIKE 'gamebrain_media:%' AND updated_at < ?4)
-                OR (source = 'amazon_luna' AND external_id LIKE 'catalog_amazon_luna%' AND updated_at < ?5)
-                OR (source = 'gamerpower' AND external_id LIKE 'gamerpower_list_active%' AND updated_at < ?6)
-                OR (source = 'game_pass_pc' AND external_id LIKE 'catalog_game_pass_full%' AND updated_at < ?7)
-                OR (source = 'ubisoft_plus' AND external_id LIKE 'catalog_ubisoft_plus%' AND updated_at < ?8)
-                OR (source = 'ea_play' AND external_id LIKE 'catalog_ea_play%' AND updated_at < ?9)
-                OR (source = 'steam' AND external_id LIKE 'store_%' AND updated_at < ?10)
-                OR (source = 'steam' AND external_id LIKE 'reviews_%' AND updated_at < ?11)
-                OR (source = 'steam' AND external_id LIKE 'playtime_%' AND updated_at < ?12)
-                OR (source = 'steam_resolve' AND updated_at < ?13)
-                OR (source = 'protondb' AND updated_at < ?14)
-                OR (source = 'hltb' AND external_id LIKE 'search_hltb_%' AND updated_at < ?15)
-                OR (source = 'steam_trending' AND updated_at < ?16)
-                OR (source = 'igdb_upcoming' AND updated_at < ?17)",
-            params![
-                rawg_cutoff,
-                gamebrain_id_cutoff,
-                gamebrain_similar_cutoff,
-                gamebrain_media_cutoff,
-                amazon_luna_cutoff,
-                gamerpower_cutoff,
-                game_pass_full_cutoff,
-                ubisoft_plus_cutoff,
-                ea_play_cutoff,
-                store_cutoff,
-                reviews_cutoff,
-                playtime_cutoff,
-                steam_resolve_cutoff,
-                protondb_cutoff,
-                hltb_cutoff,
-                steam_trending_cutoff,
-                igdb_upcoming_cutoff
-            ],
-        )
-        .map_err(|e| AppError::CacheCleanupError(e.to_string()).to_string())?;
+    let mut deleted = 0;
+    for (source, external_id) in stale_keys {
+        deleted += conn
+            .execute(
+                "DELETE FROM api_cache WHERE source = ?1 AND external_id = ?2",
+                params![source, external_id],
+            )
+            .map_err(|e| AppError::CacheCleanupError(e.to_string()).to_string())?;
+    }
 
     if deleted > 0 {
         info!("Cache cleanup: {} entradas removidas", deleted);
@@ -255,108 +234,49 @@ pub fn get_stale_api_data(conn: &Connection, source: &str, external_id: &str) ->
         |row| row.get(0),
     );
 
-    result.ok() // Retorna o dado se existir, ou None se nunca foi salvo
+    result.ok()
 }
 
-/// Retorna estatísticas do cache
-pub fn get_cache_stats(conn: &Connection) -> Result<CacheStats, String> {
-    let total: i32 = conn
-        .query_row("SELECT COUNT(*) FROM api_cache", [], |row| row.get(0))
-        .unwrap_or(0);
+/// Remove TODAS as entradas do cache de API, indiscriminadamente.
+pub fn clear_all_cache(conn: &Connection) -> Result<usize, String> {
+    conn.execute("DELETE FROM api_cache", [])
+        .map_err(|e| format!("Erro ao limpar cache: {}", e))
+}
 
-    let rawg: i32 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM api_cache WHERE source = 'rawg'",
-            [],
-            |row| row.get(0),
-        )
-        .unwrap_or(0);
+/// Retorna estatísticas detalhadas, quebradas por tipo de dado em cache.
+pub fn get_detailed_cache_stats(conn: &Connection) -> Result<DetailedCacheStats, String> {
+    let count = |sql: &str| -> i32 { conn.query_row(sql, [], |row| row.get(0)).unwrap_or(0) };
 
-    let gamebrain: i32 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM api_cache WHERE source = 'gamebrain'",
-            [],
-            |row| row.get(0),
-        )
-        .unwrap_or(0);
+    let total = count("SELECT COUNT(*) FROM api_cache");
+    let rawg = count(
+        "SELECT COUNT(*) FROM api_cache WHERE source = 'rawg' AND external_id LIKE 'search_%'",
+    );
+    let gamebrain = count("SELECT COUNT(*) FROM api_cache WHERE source = 'gamebrain'");
+    let store = count(
+        "SELECT COUNT(*) FROM api_cache WHERE source = 'steam' AND external_id LIKE 'store_%'",
+    );
+    let reviews = count(
+        "SELECT COUNT(*) FROM api_cache WHERE source = 'steam' AND external_id LIKE 'reviews_%'",
+    );
+    let playtime = count(
+        "SELECT COUNT(*) FROM api_cache WHERE source = 'steam' AND external_id LIKE 'playtime_%'",
+    );
+    let hltb = count(
+        "SELECT COUNT(*) FROM api_cache WHERE source = 'hltb' AND external_id LIKE 'search_hltb_%'",
+    );
 
-    let steam: i32 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM api_cache WHERE source = 'steam'",
-            [],
-            |row| row.get(0),
-        )
-        .unwrap_or(0);
+    // Reaproveita a mesma lógica de expiração usada na limpeza real,
+    // então este número sempre bate com o que `cleanup_cache` vai remover.
+    let expired = list_expired_keys(conn)?.len() as i32;
 
-    let hltb: i32 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM api_cache WHERE source = 'hltb'",
-            [],
-            |row| row.get(0),
-        )
-        .unwrap_or(0);
-
-    let now = current_timestamp();
-    let rawg_cutoff = now - (CACHE_RAWG_GAME_TTL_DAYS * 24 * 60 * 60);
-    let gamebrain_id_cutoff = now - (CACHE_GAMEBRAIN_ID_TTL_DAYS * 24 * 60 * 60);
-    let gamebrain_similar_cutoff = now - (CACHE_GAMEBRAIN_SIMILAR_TTL_DAYS * 24 * 60 * 60);
-    let gamebrain_media_cutoff = now - (CACHE_GAMEBRAIN_MEDIA_TTL_DAYS * 24 * 60 * 60);
-    let amazon_luna_cutoff = now - (CACHE_AMAZON_LUNA_TTL_DAYS * 24 * 60 * 60);
-    let gamerpower_cutoff = now - (CACHE_GAMERPOWER_TTL_DAYS * 24 * 60 * 60);
-    let game_pass_full_cutoff = now - (CACHE_GAME_PASS_FULL_TTL_DAYS * 24 * 60 * 60);
-    let ubisoft_plus_cutoff = now - (CACHE_UBISOFT_PLUS_TTL_DAYS * 24 * 60 * 60);
-    let ea_play_cutoff = now - (CACHE_EA_PLAY_TTL_DAYS * 24 * 60 * 60);
-    let store_cutoff = now - (CACHE_STEAM_STORE_TTL_DAYS * 24 * 60 * 60);
-    let reviews_cutoff = now - (CACHE_STEAM_REVIEWS_TTL_DAYS * 24 * 60 * 60);
-    let playtime_cutoff = now - (CACHE_STEAM_PLAYTIME_TTL_DAYS * 24 * 60 * 60);
-    let steam_resolve_cutoff = now - (CACHE_STEAM_RESOLVE_TTL_DAYS * 24 * 60 * 60);
-    let protondb_cutoff = now - (CACHE_PROTON_DB_TTL_DAYS * 24 * 60 * 60);
-    let hltb_cutoff = now - (CACHE_HLTB_TTL_DAYS * 24 * 60 * 60);
-    let expired: i32 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM api_cache
-             WHERE (source = 'rawg' AND external_id LIKE 'search_%' AND updated_at < ?1)
-                OR (source = 'gamebrain' AND external_id LIKE 'gamebrain_id:%' AND updated_at < ?2)
-                OR (source = 'gamebrain' AND external_id LIKE 'gamebrain_similar:%' AND updated_at < ?3)
-                OR (source = 'gamebrain' AND external_id LIKE 'gamebrain_media:%' AND updated_at < ?4)
-                OR (source = 'amazon_luna' AND external_id LIKE 'catalog_amazon_luna%' AND updated_at < ?5)
-                OR (source = 'gamerpower' AND external_id LIKE 'gamerpower_list_active%' AND updated_at < ?6)
-                OR (source = 'game_pass_pc' AND external_id LIKE 'catalog_game_pass_full%' AND updated_at < ?7)
-                OR (source = 'ubisoft_plus' AND external_id LIKE 'catalog_ubisoft_plus%' AND updated_at < ?8)
-                OR (source = 'ea_play' AND external_id LIKE 'catalog_ea_play%' AND updated_at < ?9)
-                OR (source = 'steam' AND external_id LIKE 'store_%' AND updated_at < ?10)
-                OR (source = 'steam' AND external_id LIKE 'reviews_%' AND updated_at < ?11)
-                OR (source = 'steam' AND external_id LIKE 'playtime_%' AND updated_at < ?12)
-                OR (source = 'steam_resolve' AND updated_at < ?13)
-                OR (source = 'protondb' AND updated_at < ?14)
-                OR (source = 'hltb' AND external_id LIKE 'search_hltb_%' AND updated_at < ?15)",
-            params![
-                rawg_cutoff,
-                gamebrain_id_cutoff,
-                gamebrain_similar_cutoff,
-                gamebrain_media_cutoff,
-                amazon_luna_cutoff,
-                gamerpower_cutoff,
-                game_pass_full_cutoff,
-                ubisoft_plus_cutoff,
-                ea_play_cutoff,
-                store_cutoff,
-                reviews_cutoff,
-                playtime_cutoff,
-                steam_resolve_cutoff,
-                protondb_cutoff,
-                hltb_cutoff,
-            ],
-            |row| row.get(0),
-        )
-        .unwrap_or(0);
-
-    Ok(CacheStats {
-        total_entries: total,
-        rawg_entries: rawg,
+    Ok(DetailedCacheStats {
+        total,
+        rawg_searches: rawg,
         gamebrain_entries: gamebrain,
-        steam_entries: steam,
-        hltb_entries: hltb,
-        expired_entries: expired,
+        steam_store: store,
+        steam_reviews: reviews,
+        steam_playtime: playtime,
+        hltb_searches: hltb,
+        expired,
     })
 }

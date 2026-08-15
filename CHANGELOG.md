@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **`config.db`**: New dedicated SQLite database for application configuration (`app_config`), separated from the API
+  response cache.
 - Region-aware pricing: the OS system locale (via `sys-locale`) is now used to detect the user's region independently of
   the frontend's UI language, and passed as the `country` parameter to IsThereAnyDeal price requests. Falls back to
   "US" when no region can be detected, and can be manually overridden and persisted in `app_config`.
@@ -90,8 +92,27 @@ All notable changes to this project will be documented in this file.
 - New `playtime_source` column on the `games` table, recording whether a game's playtime came from an official platform
   API (Steam, Itch.io, IndieGala) or from local tracking.
 
+### Changed
+
+- **Domain Reorganization — `nexus_games`**: The Nexus game catalog (`nexus_games`, `nexus_games_cache_meta`) moved from
+  `cache.db` to `games.db`, reflecting that it's reference/domain data rather than short-lived API response cache.
+- **Domain Reorganization — `app_config`**: The `app_config` table moved from `cache.db` to the new `config.db`,
+  separating persistent app configuration from ephemeral API cache.
+- **Codebase Structure**: Split oversized modules along `commands/ → services/ → providers/ → database/`
+  responsibilities:
+    - Extracted secrets management (`encrypted_keys` access) from `database/core.rs` into a new `database/secrets.rs`.
+    - Moved cache statistics and cleanup logic (`DetailedCacheStats`, `clear_all_cache`) out of `commands/caches.rs` and
+      into `services/cache.rs`, leaving the command layer as thin delegation.
+- **Cache Cleanup Logic**: `cleanup_expired_cache` now derives expired entries dynamically from the single TTL source of
+  truth (`get_ttl_for_cache_type`) instead of a manually maintained, per-type SQL cutoff list — new cache types are
+  covered automatically without extra bookkeeping.
+
 ### Fixed
 
+- **Cache Cleanup Gaps**: `cleanup_expired_cache` and cache statistics previously used two separately maintained lists
+  of cache types, which had drifted out of sync — `trending_mods_` (Nexus) and `achievements_circuit_breaker_` entries
+  were never being physically removed once expired, and the "expired" count shown to the user didn't match what cleanup
+  actually removed. Both now derive from the same logic.
 - Steam Store Search requests were silently returning empty results due to a missing `User-Agent` header, causing
   `steam_app_id` resolution to fail for every non-Steam game without any visible error.
 - Steam library name-resolution requests (for non-installed games) were not covered by the shared Steam rate limiter,

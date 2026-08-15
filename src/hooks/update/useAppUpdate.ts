@@ -1,8 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
-import { toast } from '@/utils/toast';
 
 import { getAppVersionInfo } from '@/services/updaterService.ts';
+import { toast } from '@/utils/toast';
 
 export type UpdateType = 'none' | 'patch' | 'minor' | 'major';
 
@@ -89,4 +89,3 @@ export function useAppUpdate() {
     closeMajorModal: () => setIsMajorOpen(false),
   };
 }
-
