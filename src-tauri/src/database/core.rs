@@ -12,6 +12,7 @@ use crate::constants::{
     DB_FILENAME_CACHE, DB_FILENAME_GAMES, DB_FILENAME_SECRETS, DB_JOURNAL_MODE,
 };
 use crate::errors::AppError;
+use crate::providers::mods::nexus::initialize_nexus_tables;
 use crate::providers::technical::pcgamingwiki::db::initialize_pcgamingwiki_tables;
 use crate::security;
 use crate::services::playtime::PlaytimeRegistry;
@@ -365,8 +366,9 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
     )
         .map_err(|e| e.to_string())?;
 
-    // Tabelas extras - PCGamingWiki e subscriptions relacionados
+    // Tabelas extras - PCGamingWiki, Nexus e relacionadas
     initialize_pcgamingwiki_tables(conn).map_err(|e| e.to_string())?;
+    initialize_nexus_tables(conn).map_err(|e| e.to_string())?;
 
     // Marca versão do schema
     conn.pragma_update(None, "user_version", schema_version)

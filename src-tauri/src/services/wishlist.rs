@@ -3,7 +3,6 @@
 //! Orquestra: resolve IDs ITAD (com cache local), busca preços em lote,
 //! calcula preço normal a partir do desconto, e persiste os resultados.
 
-use crate::database;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::providers::metadata::igdb::client::igdb_request;
@@ -15,6 +14,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tracing::{error, info};
+
 // === STRUCTS ===
 
 #[derive(Debug, Deserialize)]

@@ -6,11 +6,11 @@ use crate::constants::{
     BACKGROUND_TASK_INTERVAL_SECS, GAMERPOWER_CACHE_SOURCE, GAMERPOWER_LIST_ACTIVE_CACHE_KEY,
     STARTUP_DELAY_SECS,
 };
-use crate::database;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::providers::giveaways::gamerpower;
 use crate::providers::metadata::steam::get_app_reviews;
+use crate::providers::mods::nexus::refresh_nexus_games_if_stale;
 use crate::providers::pricing::itad;
 use crate::services::cache;
 use crate::services::locale::get_or_detect_region;
@@ -75,6 +75,13 @@ pub async fn check_and_refresh_background(app: AppHandle) -> Result<(), AppError
 
         if let Err(e) = refresh_wishlist_prices_background(&app_clone, &state).await {
             warn!("Falha ao atualizar preços: {}", e);
+        }
+
+        // 4. Atualizar catálogo de jogos do Nexus (Se cache > 30 dias)
+        sleep(Duration::from_secs(BACKGROUND_TASK_INTERVAL_SECS)).await;
+
+        if let Err(e) = refresh_nexus_games_if_stale(&app_clone).await {
+            warn!("Falha ao atualizar catálogo Nexus: {}", e);
         }
 
         // Avisa o frontend que o ciclo de background terminou

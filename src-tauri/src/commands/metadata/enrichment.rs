@@ -19,7 +19,6 @@ use crate::database::AppState;
 use crate::providers::metadata::igdb;
 use crate::providers::metadata::steam::detect_adult_content;
 use crate::providers::mods::nexus::{find_best_nexus_match, get_cached_nexus_games, NexusGame};
-use crate::services::cache;
 use std::collections::{HashMap, HashSet};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tracing::{info, warn};
@@ -52,7 +51,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
     let mut all_session_tags: HashSet<String> = HashSet::new();
 
     let nexus_games: Vec<NexusGame> = state
-        .cache_db
+        .games_db
         .lock()
         .ok()
         .and_then(|conn| get_cached_nexus_games(&conn).ok())

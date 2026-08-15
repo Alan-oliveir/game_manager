@@ -289,7 +289,7 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
 
         // Carrega o catálogo do Nexus do cache
         let nexus_games: Vec<NexusGame> = state
-            .cache_db
+            .games_db
             .lock()
             .ok()
             .and_then(|conn| get_cached_nexus_games(&conn).ok())

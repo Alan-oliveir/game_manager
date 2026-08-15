@@ -61,11 +61,11 @@ pub fn set_secrets(
     rawg_api_key: Option<String>,
     gemini_api_key: Option<String>,
     gamebrain_api_key: Option<String>,
-    nexus_api_key: Option<String>,
     igdb_client_id: Option<String>,
     igdb_client_secret: Option<String>,
     xbox_live_client_id: Option<String>,
     xbox_live_client_secret: Option<String>,
+    nexus_api_key: Option<String>,
 ) -> Result<(), AppError> {
     // Helper para salvar ou deletar baseado no valor
     let save_or_delete = |key: &str, value: Option<String>| -> Result<(), AppError> {
@@ -85,11 +85,20 @@ pub fn set_secrets(
     save_or_delete("rawg_api_key", rawg_api_key)?;
     save_or_delete("gemini_api_key", gemini_api_key)?;
     save_or_delete("gamebrain_api_key", gamebrain_api_key)?;
-    save_or_delete("nexus_api_key", nexus_api_key)?;
     save_or_delete("igdb_client_id", igdb_client_id)?;
     save_or_delete("igdb_client_secret", igdb_client_secret)?;
     save_or_delete("xbox_live_client_id", xbox_live_client_id)?;
     save_or_delete("xbox_live_client_secret", xbox_live_client_secret)?;
+
+    let nexus_key_provided = nexus_api_key
+        .as_ref()
+        .is_some_and(|v| !v.trim().is_empty());
+    save_or_delete("nexus_api_key", nexus_api_key)?;
+
+    if nexus_key_provided {
+        crate::providers::mods::nexus::spawn_nexus_games_bootstrap(&app);
+    }
+
     Ok(())
 }
 
@@ -106,7 +115,13 @@ pub fn set_secret(app: AppHandle, key_name: String, key_value: String) -> Result
         ));
     }
 
-    database::set_secret(&app, &key_name, trimmed_val)
+    database::set_secret(&app, &key_name, trimmed_val)?;
+
+    if key_name == "nexus_api_key" {
+        crate::providers::mods::nexus::spawn_nexus_games_bootstrap(&app);
+    }
+
+    Ok(())
 }
 
 /// Recupera um secret individual por nome de chave.

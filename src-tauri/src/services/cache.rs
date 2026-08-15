@@ -61,34 +61,6 @@ pub fn initialize_cache_db(conn: &Connection) -> Result<(), String> {
     )
         .map_err(|e| format!("Erro ao criar índice: {}", e))?;
 
-    // Tabelas para o cache de jogos do Nexus
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS nexus_games (
-        domain_name TEXT PRIMARY KEY,
-        nexus_id    INTEGER NOT NULL,
-        name        TEXT NOT NULL,
-        genre       TEXT,
-        approved_date INTEGER
-    )",
-        [],
-    )
-        .map_err(|e| format!("Erro ao criar tabela nexus_games: {}", e))?;
-
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_nexus_games_name ON nexus_games(name)",
-        [],
-    )
-        .map_err(|e| format!("Erro ao criar índice: {}", e))?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS nexus_games_cache_meta (
-            id         INTEGER PRIMARY KEY CHECK (id = 1), -- singleton row
-            fetched_at INTEGER NOT NULL
-        )",
-        [],
-    )
-        .map_err(|e| format!("Erro ao criar tabela nexus_games_cache_meta: {}", e))?;
-
     Ok(())
 }
 

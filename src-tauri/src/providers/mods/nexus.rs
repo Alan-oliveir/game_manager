@@ -1,8 +1,11 @@
 use crate::constants::NEXUS_CACHE_TTL_DAYS;
+use crate::database::AppState;
 use crate::services::cache;
 use crate::utils::text::{normalize_for_matching, strip_edition_suffix};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Deserialize;
+use tauri::{AppHandle, Manager};
+use tracing::{info, warn};
 
 // === STRUCTS ===
 
@@ -104,7 +107,7 @@ pub fn extract_domain_from_nexus_url(url: &str) -> Option<&str> {
 pub async fn fetch_trending_mods_cached(
     api_key: &str,
     domain: &str,
-    cache_conn: &rusqlite::Connection,
+    cache_conn: &Connection,
 ) -> Result<Vec<TrendingMod>, String> {
     let cache_key = format!("trending_mods_{domain}");
 
@@ -160,7 +163,39 @@ pub fn find_best_nexus_match<'a>(
         .map(|(g, _)| g)
 }
 
-// === CACHE ===
+// === DATABASE E CACHE ===
+
+/// Cria as tabelas de catálogo do Nexus (domínio games, não cache de API).
+pub fn initialize_nexus_tables(conn: &Connection) -> Result<(), String> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS nexus_games (
+            domain_name TEXT PRIMARY KEY,
+            nexus_id    INTEGER NOT NULL,
+            name        TEXT NOT NULL,
+            genre       TEXT,
+            approved_date INTEGER
+        )",
+        [],
+    )
+        .map_err(|e| format!("Erro ao criar tabela nexus_games: {}", e))?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_nexus_games_name ON nexus_games(name)",
+        [],
+    )
+        .map_err(|e| format!("Erro ao criar índice: {}", e))?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS nexus_games_cache_meta (
+            id         INTEGER PRIMARY KEY CHECK (id = 1),
+            fetched_at INTEGER NOT NULL
+        )",
+        [],
+    )
+        .map_err(|e| format!("Erro ao criar tabela nexus_games_cache_meta: {}", e))?;
+
+    Ok(())
+}
 
 pub fn save_nexus_games_cache(
     conn: &Connection,
@@ -233,4 +268,45 @@ pub fn get_cached_nexus_games(conn: &Connection) -> Result<Vec<NexusGame>, rusql
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(games)
+}
+
+/// Verifica se o catálogo de jogos do Nexus está desatualizado e, se sim, busca e salva em cache.
+/// Não faz nada se a chave não estiver configurada ou se o cache ainda for válido (TTL de 30 dias).
+pub async fn refresh_nexus_games_if_stale(app: &AppHandle) -> Result<(), String> {
+    let state: tauri::State<AppState> = app.state();
+
+    let needs_refresh = {
+        let conn = state.games_db.lock().map_err(|_| "Falha DB Games Lock")?;
+        nexus_cache_is_stale(&conn).unwrap_or(true)
+    };
+
+    if !needs_refresh {
+        return Ok(());
+    }
+
+    let api_key = match crate::database::get_secret(app, "nexus_api_key") {
+        Ok(k) if !k.is_empty() => k,
+        _ => return Ok(()), // sem chave configurada, não é erro
+    };
+
+    let games = fetch_nexus_games(&api_key)
+        .await
+        .map_err(|e| format!("Erro ao buscar jogos do Nexus: {e}"))?;
+
+    let conn = state.games_db.lock().map_err(|_| "Falha DB Games Lock")?;
+    save_nexus_games_cache(&conn, &games).map_err(|e| e.to_string())?;
+
+    info!("Catálogo Nexus atualizado: {} jogos salvos em cache", games.len());
+    Ok(())
+}
+
+/// Dispara o bootstrap em background — usado logo após salvar uma `nexus_api_key` válida, sem
+/// bloquear o comando que a persistiu.
+pub fn spawn_nexus_games_bootstrap(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = refresh_nexus_games_if_stale(&app).await {
+            warn!("Bootstrap Nexus: {}", e);
+        }
+    });
 }
