@@ -3,7 +3,7 @@
 //! Duas tabelas:
 //! - `achievements`: conquistas desbloqueadas, já resolvidas (nome, ícone etc).
 //! - `achievement_sync_state`: controla, por (plataforma, jogo), quando foi a última sincronização
-//! e se o jogo não tem conquistas públicas (has_achievements = 0) e assim busca mais na API
+//! e se o jogo não tem conquistas públicas (has_achievements = 0) e assim pula na API
 //! conquistas para esse jogo, já que isso não muda (é o schema do jogo na Steam/Xbox).
 
 use crate::database::AppState;
@@ -226,4 +226,34 @@ pub fn should_skip(app: &AppHandle, platform: Platform, game_id: &str, ttl_secs:
         }
         _ => false,
     }
+}
+
+/// Retorna (platform_game_id, name) de todos os jogos já importados na biblioteca para uma
+/// plataforma. Reaproveita o que a importação já salvou em `games`, evitando uma nova chamada à API
+/// externa (ex.: GetOwnedGames da Steam) só pra montar a lista de jogos a sincronizar.
+pub fn get_owned_games_by_platform(
+    app: &AppHandle,
+    platform: &str,
+) -> Result<Vec<(String, String)>, AppError> {
+    let state: tauri::State<AppState> = app.state();
+    let conn = state
+        .games_db
+        .lock()
+        .map_err(|_| AppError::DatabaseError("Falha ao bloquear mutex do games_db".into()))?;
+
+    let mut stmt = conn
+        .prepare("SELECT platform_game_id, name FROM games WHERE platform = ?1")
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+    let rows = stmt
+        .query_map(params![platform], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+    let mut out = Vec::new();
+    for row in rows {
+        out.push(row.map_err(|e| AppError::DatabaseError(e.to_string()))?);
+    }
+    Ok(out)
 }

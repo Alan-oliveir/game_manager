@@ -12,6 +12,7 @@ use crate::providers::achievements::xbox::XboxProvider;
 use async_trait::async_trait;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
+use tracing::warn;
 
 const DASHBOARD_LIMIT: usize = 5;
 
@@ -65,7 +66,7 @@ pub async fn sync_all_achievements(app: &AppHandle) -> Result<(), AppError> {
             Ok(count) => total += count,
             Err(err) => {
                 // Erro em uma plataforma não derruba as demais.
-                log::warn!(
+                warn!(
                     "Falha ao sincronizar conquistas de {:?}: {err}",
                     provider.platform()
                 );

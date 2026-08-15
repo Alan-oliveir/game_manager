@@ -1,21 +1,37 @@
+use crate::commands::games::{get_game_by_id, get_library_game_details};
 use crate::database::AppState;
+use crate::models::Platform;
 use crate::providers::technical::anticheat::fetcher::ensure_fresh;
 use crate::providers::technical::anticheat::lookup::find_anticheat_info;
 use crate::providers::technical::anticheat::models::AnticheatInfo;
 use crate::utils::http_client::HTTP_CLIENT;
-use rusqlite::OptionalExtension;
 use tauri::State;
 
 #[tauri::command]
 pub async fn get_anticheat_info(
     state: State<'_, AppState>,
-    game_id: i64,
+    game_id: String,
 ) -> Result<Option<AnticheatInfo>, String> {
     if !cfg!(target_os = "linux") {
-        return Ok(None); // gate de plataforma: não faz busca de anticheat info em Windows
+        return Ok(None); // gate de plataforma
     }
 
-    // ensure_fresh gerencia o próprio lock internamente — não segura MutexGuard durante o await.
+    // tauri::State é apenas uma referência wrapada — Clone é barato (não clona a conexão).
+    let game = get_game_by_id(state.clone(), game_id.clone())
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Jogo não encontrado".to_string())?;
+
+    let details = get_library_game_details(state.clone(), game_id).map_err(|e| e.to_string())?;
+
+    // Prioridade: steam_app_id resolvido via metadados (cobre GOG/Epic com
+    // versão Steam catalogada) > platform_game_id quando o jogo é da própria Steam.
+    let steam_id = details
+        .and_then(|d| d.steam_app_id)
+        .or_else(|| match game.platform {
+            Platform::Steam => Some(game.platform_game_id.clone()),
+            _ => None,
+        });
+
     ensure_fresh(&state.games_db, &HTTP_CLIENT)
         .await
         .map_err(|e| e.to_string())?;
@@ -25,25 +41,6 @@ pub async fn get_anticheat_info(
         .lock()
         .map_err(|_| "Erro ao acessar o banco de dados".to_string())?;
 
-    let game = conn
-        .query_row(
-            "SELECT platform_game_id, name, slug FROM games WHERE id = ?1",
-            rusqlite::params![game_id.to_string()],
-            |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, String>(2)?,
-                ))
-            },
-        )
-        .optional()
-        .map_err(|e| e.to_string())?;
-
-    let Some((platform_game_id, name, slug)) = game else {
-        return Ok(None);
-    };
-
-    find_anticheat_info(&conn, Some(platform_game_id.as_str()), &name, &slug)
+    find_anticheat_info(&conn, steam_id.as_deref(), &game.name, &game.slug)
         .map_err(|e| e.to_string())
 }

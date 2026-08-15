@@ -222,6 +222,8 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         game_id TEXT NOT NULL,     -- FK para games.id (jogo base na biblioteca)
         igdb_id INTEGER NOT NULL,  -- id do DLC/expansion no IGDB
         name TEXT NOT NULL,
+        slug TEXT,
+        cover_image_id TEXT,
         kind TEXT NOT NULL,        -- 'expansion' | 'standalone_expansion'
         owned INTEGER NOT NULL DEFAULT 0, -- se o standalone já foi importado como jogo próprio
         PRIMARY KEY (game_id, igdb_id)

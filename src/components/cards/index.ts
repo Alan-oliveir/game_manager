@@ -1,4 +1,5 @@
 // Card components - Game cards, stat cards, playlist items, etc.
+export { DlcCard } from './DlcCard';
 export { FreeGameCard } from './FreeGameCard';
 export { LibraryGameCard } from './LibraryGameCard';
 export { ModCard } from './ModCard';

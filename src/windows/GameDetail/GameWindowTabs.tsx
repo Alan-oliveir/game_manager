@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 
 import { Game, GameDetails } from '@/types/game';
 import {
+  GameAddons,
   GameDescription,
   GameDiscovery,
   GameExtras,
   GameMedia,
-  GameMods,
 } from '@/windows';
 
 // === TIPOS ===
@@ -80,7 +80,9 @@ interface GameContentTabsProps {
   details: GameDetails | null;
   loading: boolean;
   isEditing: boolean;
-  onDescriptionUpdate: (translated: string) => void;
+  onDescriptionUpdate: React.ComponentProps<
+    typeof GameDescription
+  >['onDescriptionUpdate'];
 }
 
 export function GameContentTabs({
@@ -117,7 +119,7 @@ export function GameContentTabs({
         {activeTab === 'discovery' && !isEditing && (
           <GameDiscovery game={game} />
         )}
-        {activeTab === 'addons' && !isEditing && <GameMods game={game} />}
+        {activeTab === 'addons' && !isEditing && <GameAddons game={game} />}
         {activeTab === 'media' && !isEditing && <GameMedia game={game} />}
         {activeTab === 'extras' && !isEditing && (
           <GameExtras game={game} details={details} />

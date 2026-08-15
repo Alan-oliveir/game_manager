@@ -5,7 +5,9 @@ use std::collections::HashMap;
 pub struct IgdbDlc {
     pub igdb_id: i64,
     pub name: String,
-    pub kind: &'static str, // "expansion" | "standalone_expansion"
+    pub kind: &'static str,
+    pub slug: Option<String>,
+    pub cover_image_id: Option<String>,
 }
 
 pub struct IgdbMappedResult {
@@ -111,8 +113,8 @@ pub fn map_igdb_game(game: &IgdbGame, game_id: &str) -> IgdbMappedResult {
     merge_igdb_links(&mut links_map, game);
 
     let genres: Vec<String> = game.genres.iter().map(|g| g.name.clone()).collect();
-    let themes: Option<Vec<String>> = (!game.themes.is_empty())
-        .then(|| game.themes.iter().map(|t| t.name.clone()).collect());
+    let themes: Option<Vec<String>> =
+        (!game.themes.is_empty()).then(|| game.themes.iter().map(|t| t.name.clone()).collect());
 
     let series = game.collections.first().map(|c| c.name.clone());
     let franchise: Option<Vec<String>> = (!game.franchises.is_empty())
@@ -194,12 +196,16 @@ pub fn map_igdb_game(game: &IgdbGame, game_id: &str) -> IgdbMappedResult {
         .map(|e| IgdbDlc {
             igdb_id: e.id,
             name: e.name.clone(),
+            slug: e.slug.clone().filter(|s| !s.is_empty()),
+            cover_image_id: e.cover.as_ref().map(|c| c.image_id.clone()),
             kind: "expansion",
         })
         .collect();
     dlcs.extend(game.standalone_expansions.iter().map(|e| IgdbDlc {
         igdb_id: e.id,
         name: e.name.clone(),
+        slug: e.slug.clone().filter(|s| !s.is_empty()),
+        cover_image_id: e.cover.as_ref().map(|c| c.image_id.clone()),
         kind: "standalone_expansion",
     }));
 
@@ -214,10 +220,10 @@ where
 {
     for dlc in dlcs {
         conn.execute(
-            "INSERT INTO game_dlcs (game_id, igdb_id, name, kind, owned)
-             VALUES (?1, ?2, ?3, ?4, 0)
-             ON CONFLICT(game_id, igdb_id) DO UPDATE SET name = excluded.name, kind = excluded.kind",
-            rusqlite::params![game_id, dlc.igdb_id, dlc.name, dlc.kind],
+            "INSERT INTO game_dlcs (game_id, igdb_id, name, slug, cover_image_id, kind, owned)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0)
+             ON CONFLICT(game_id, igdb_id) DO UPDATE SET name = excluded.name, slug = excluded.slug, cover_image_id = excluded.cover_image_id, kind = excluded.kind",
+            rusqlite::params![game_id, dlc.igdb_id, dlc.name, dlc.slug, dlc.cover_image_id, dlc.kind],
         )?;
     }
     Ok(())

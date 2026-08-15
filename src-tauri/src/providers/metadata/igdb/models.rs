@@ -62,6 +62,15 @@ pub struct IgdbWebsite {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct IgdbExpansionRef {
+    pub id: i64,
+    pub name: String,
+    #[serde(default)]
+    pub slug: Option<String>,
+    pub cover: Option<IgdbCover>, // reaproveita a struct IgdbCover que já existe
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct IgdbGame {
     pub id: i64,
     pub name: String,
@@ -98,9 +107,9 @@ pub struct IgdbGame {
     #[serde(default)]
     pub language_supports: Vec<IgdbLanguageSupport>,
     #[serde(default)]
-    pub expansions: Vec<IgdbNamed>,
+    pub expansions: Vec<IgdbExpansionRef>,
     #[serde(default)]
-    pub standalone_expansions: Vec<IgdbNamed>,
+    pub standalone_expansions: Vec<IgdbExpansionRef>,
     #[serde(default)]
     pub websites: Vec<IgdbWebsite>,
 

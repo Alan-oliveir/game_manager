@@ -156,6 +156,17 @@
   "addons_view_on_nexus": "View on Nexus Mods",
   "addons_mod_link_title": "Open mod page",
   "addons_unknown_error": "Unknown error while searching for mods",
+  "addons_subtab_mods": "Mods",
+  "addons_subtab_dlcs": "DLCs",
+  "addons_dlcs_header_title": "DLCs and Expansions",
+  "addons_dlcs_count": "items",
+  "addons_dlcs_loading_message": "Loading DLCs...",
+  "addons_dlcs_empty_title": "No DLCs found",
+  "addons_dlc_kind_expansion": "Expansion",
+  "addons_dlc_kind_standalone_expansion": "Standalone Expansion",
+  "addons_dlc_kind_dlc": "DLC",
+  "addons_dlc_owned_badge": "In Library",
+  "addons_view_on_igdb": "View on IGDB",
 
   "path_row_copy_tooltip": "Copy path"
 }

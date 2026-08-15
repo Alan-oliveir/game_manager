@@ -91,18 +91,10 @@ pub fn run() {
             {
                 let app_handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
-                    // Espera para não competir com o resto do startup.
                     tokio::time::sleep(std::time::Duration::from_secs(20)).await;
 
-                    loop {
-                        if let Err(e) =
-                            providers::achievements::core::sync_all_achievements(&app_handle).await
-                        {
-                            tracing::warn!("Sync de conquistas falhou: {e}");
-                        }
-
-                        tokio::time::sleep(std::time::Duration::from_secs(60 * 60)).await;
-                        // a cada 1h
+                    if let Err(e) = providers::achievements::core::sync_all_achievements(&app_handle).await {
+                        tracing::warn!("Sync de conquistas falhou: {e}");
                     }
                 });
             }
@@ -179,11 +171,13 @@ pub fn run() {
             commands::metadata::search::get_profile_similar_games,
             commands::metadata::search::search_hltb,
             commands::metadata::search::get_trending_mods,
+            commands::metadata::search::get_game_dlcs,
             commands::metadata::pcgamingwiki::get_or_fetch_pcgw_data,
             commands::metadata::pcgamingwiki::refresh_pcgw_data,
             commands::metadata::pcgamingwiki::search_pcgw_games,
             commands::metadata::pcgamingwiki::get_pcgw_scraped_data,
             commands::metadata::protondb::fetch_protondb_data,
+            commands::metadata::anticheat::get_anticheat_info,
             // Comandos de Configuração (Secrets)
             commands::settings::set_secret,
             commands::settings::get_secret,

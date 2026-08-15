@@ -216,3 +216,14 @@ export interface GameDetails {
   hltbCoopTime?: number;
   updatedAt?: string;
 }
+
+export type DlcKind = 'expansion' | 'standalone_expansion' | 'dlc' | string;
+
+export interface GameDlc {
+  igdbId: number;
+  name: string;
+  igdbUrl: string | null;
+  coverUrl: string | null;
+  kind: DlcKind;
+  owned: boolean;
+}

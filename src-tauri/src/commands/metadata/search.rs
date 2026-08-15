@@ -49,6 +49,17 @@ pub struct TrendingModsResult {
     pub mods: Vec<TrendingMod>,
 }
 
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GameDlc {
+    pub igdb_id: i64,
+    pub name: String,
+    pub igdb_url: Option<String>,  // montado, não persistido
+    pub cover_url: Option<String>, // montado, não persistido
+    pub kind: String,              // "expansion" | "standalone_expansion" | outros valores do IGDB
+    pub owned: bool,
+}
+
 // === FUNÇÕES ===
 
 /// Busca detalhes de um jogo na RAWG
@@ -280,4 +291,36 @@ pub async fn get_trending_mods(
         availability: ModsAvailability::Available,
         mods,
     })
+}
+
+#[tauri::command]
+pub fn get_game_dlcs(state: State<AppState>, game_id: String) -> Result<Vec<GameDlc>, AppError> {
+    let conn = state.games_db.lock()?;
+
+    let mut stmt = conn.prepare(
+        "SELECT igdb_id, name, slug, cover_image_id, kind, owned
+         FROM game_dlcs
+         WHERE game_id = ?1
+         ORDER BY name",
+    )?;
+
+    let dlcs = stmt
+        .query_map(params![game_id], |row| {
+            let igdb_slug: Option<String> = row.get(2)?;
+            let cover_image_id: Option<String> = row.get(3)?;
+
+            Ok(GameDlc {
+                igdb_id: row.get(0)?,
+                name: row.get(1)?,
+                igdb_url: igdb_slug.map(|slug| format!("https://www.igdb.com/games/{slug}")),
+                cover_url: cover_image_id.map(|id| {
+                    format!("https://images.igdb.com/igdb/image/upload/t_cover_big/{id}.jpg")
+                }),
+                kind: row.get(4)?,
+                owned: row.get::<_, i64>(5)? != 0,
+            })
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(dlcs)
 }
