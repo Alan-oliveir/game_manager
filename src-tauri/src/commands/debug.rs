@@ -31,7 +31,6 @@ pub struct IgdbDebugResult {
     pub age_ratings: Option<String>,
     pub alternative_names: Option<Vec<String>>,
     pub external_links: Option<String>,
-    pub background_image: Option<String>,
     pub tags: Vec<crate::models::GameTag>,
     pub dlcs: Vec<(String, String)>, // (kind, name)
 }
@@ -61,7 +60,6 @@ pub async fn debug_igdb_fetch(app: AppHandle, name: String) -> Result<IgdbDebugR
         age_ratings: d.age_ratings,
         alternative_names: d.alternative_names,
         external_links: d.external_links,
-        background_image: d.background_image,
         tags: d.tags,
         dlcs: mapped
             .dlcs

@@ -3,7 +3,7 @@ export * from './formatTime';
 export * from './navigation';
 export * from './openLink';
 export * from './pcgw';
-export * from './platform';
 export * from './playtime';
 export * from './recommendation';
+export * from './store.ts';
 export * from './toast';

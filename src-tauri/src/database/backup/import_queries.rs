@@ -31,12 +31,12 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
         "INSERT OR REPLACE INTO game_details (
             game_id, steam_app_id, display_name, developer, publisher, release_date, genres, themes,
             series, franchise, game_modes, player_perspectives, keywords, tags,
-            background_image, critic_score, steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
-            esrb_rating, age_ratings, is_adult, adult_tags, external_links, hltb_main_story,
+            critic_score, steam_review_label, steam_review_count, steam_review_score, steam_review_updated_at,
+            age_ratings, is_adult, adult_tags, external_links, hltb_main_story,
             hltb_main_extra, hltb_completionist, hltb_coop_time, updated_at
         ) VALUES (
             ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20,
-            ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30
+            ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28
         )"
     )?;
 
@@ -103,13 +103,11 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             serialize_vec(&detail.player_perspectives),
             serialize_vec(&detail.keywords),
             tags_json,
-            detail.background_image,
             detail.critic_score,
             detail.steam_review_label,
             detail.steam_review_count,
             detail.steam_review_score,
             detail.steam_review_updated_at,
-            detail.esrb_rating,
             serialize_map(&detail.age_ratings),
             detail.is_adult,
             detail.adult_tags,

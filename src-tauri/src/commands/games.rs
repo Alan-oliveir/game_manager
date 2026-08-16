@@ -313,13 +313,12 @@ pub fn get_library_game_details(
             gd.genres, gd.tags, gd.series, gd.franchise, gd.game_modes, gd.player_perspectives,
             gd.themes, gd.keywords, gd.critic_score,
             gd.steam_review_label, gd.steam_review_count, gd.steam_review_score, gd.steam_review_updated_at,
-            gd.esrb_rating, gd.age_ratings, gd.is_adult, gd.adult_tags, gd.external_links,
+            gd.age_ratings, gd.is_adult, gd.adult_tags, gd.external_links,
             gd.hltb_main_story, gd.hltb_main_extra, gd.hltb_completionist, gd.hltb_coop_time,
             gd.display_name, gd.updated_at,
             gdesc.summary, gdesc.storyline, gdesc.short_description, gdesc.description,
             gdesc.summary_translated, gdesc.storyline_translated,
-            gdesc.short_description_translated, gdesc.description_translated, gdesc.translated_lang,
-            (SELECT url FROM game_images WHERE game_id = ?1 AND image_type = 'background' ORDER BY priority ASC LIMIT 1) AS background_url
+            gdesc.short_description_translated, gdesc.description_translated, gdesc.translated_lang
          FROM game_details gd
          LEFT JOIN game_descriptions gdesc ON gd.game_id = gdesc.game_id
          WHERE gd.game_id = ?1",
@@ -333,8 +332,8 @@ pub fn get_library_game_details(
         let perspectives_json: Option<String> = row.get(10)?;
         let themes_json: Option<String> = row.get(11)?;
         let keywords_json: Option<String> = row.get(12)?;
-        let age_ratings_json: Option<String> = row.get(19)?;
-        let links_json: Option<String> = row.get(22)?;
+        let age_ratings_json: Option<String> = row.get(18)?;
+        let links_json: Option<String> = row.get(21)?;
 
         Ok(models::GameDetails {
             game_id: row.get(0)?,
@@ -355,29 +354,27 @@ pub fn get_library_game_details(
             steam_review_count: row.get(15)?,
             steam_review_score: row.get(16)?,
             steam_review_updated_at: row.get(17)?,
-            esrb_rating: row.get(18)?,
             age_ratings: age_ratings_json.and_then(|s| serde_json::from_str(&s).ok()),
-            is_adult: row.get(20).unwrap_or(false),
-            adult_tags: row.get(21)?,
+            is_adult: row.get(19).unwrap_or(false),
+            adult_tags: row.get(20)?,
             external_links: links_json.and_then(|s| serde_json::from_str(&s).ok()),
-            hltb_main_story: row.get(23)?,
-            hltb_main_extra: row.get(24)?,
-            hltb_completionist: row.get(25)?,
-            hltb_coop_time: row.get(26)?,
-            display_name: row.get(27)?,
-            updated_at: row.get(28)?,
+            hltb_main_story: row.get(22)?,
+            hltb_main_extra: row.get(23)?,
+            hltb_completionist: row.get(24)?,
+            hltb_coop_time: row.get(25)?,
+            display_name: row.get(26)?,
+            updated_at: row.get(27)?,
             description: models::GameDescription {
-                summary: row.get(29)?,
-                storyline: row.get(30)?,
-                short_description: row.get(31)?,
-                description: row.get(32)?,
-                summary_translated: row.get(33)?,
-                storyline_translated: row.get(34)?,
-                short_description_translated: row.get(35)?,
-                description_translated: row.get(36)?,
-                translated_lang: row.get(37)?,
+                summary: row.get(28)?,
+                storyline: row.get(29)?,
+                short_description: row.get(30)?,
+                description: row.get(31)?,
+                summary_translated: row.get(32)?,
+                storyline_translated: row.get(33)?,
+                short_description_translated: row.get(34)?,
+                description_translated: row.get(35)?,
+                translated_lang: row.get(36)?,
             },
-            background_image: row.get(39)?,
         })
     })?;
 

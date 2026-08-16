@@ -111,7 +111,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                             &nexus_games,
                             sgdb_client.as_ref(),
                         )
-                        .await
+                            .await
                     })
                 })
             };
@@ -240,13 +240,11 @@ async fn enrich_game_metadata(
         developer: None,
         publisher: None,
         critic_score: None,
-        background_image: None,
         series: None,
         steam_review_label: None,
         steam_review_count: None,
         steam_review_score: None,
         steam_review_updated_at: None,
-        esrb_rating: None,
         is_adult: false,
         adult_tags: None,
         external_links: None,
@@ -322,7 +320,7 @@ async fn enrich_game_metadata(
             thumb_url: Some(cover.thumb_url),
             width: Some(cover.width),
             height: Some(cover.height),
-            priority: 0,
+            priority: 1,
         });
     }
 
@@ -347,14 +345,14 @@ async fn enrich_game_metadata(
                 }
             }
 
-            if let Some(url) = &mapped.details.background_image {
+            if let Some(url) = &mapped.cover_url {
                 cover_candidates.push(CoverCandidate {
                     source: "igdb",
                     url: url.clone(),
                     thumb_url: None,
                     width: None,
                     height: None,
-                    priority: 1,
+                    priority: 0,
                 });
             }
 
@@ -365,9 +363,7 @@ async fn enrich_game_metadata(
             details.developer = mapped.details.developer;
             details.publisher = mapped.details.publisher;
             details.critic_score = mapped.details.critic_score;
-            details.background_image = mapped.details.background_image;
             details.series = mapped.details.series;
-            details.esrb_rating = mapped.details.esrb_rating;
             details.alternative_names = mapped.details.alternative_names;
             details.franchise = mapped.details.franchise;
             details.game_modes = mapped.details.game_modes;
@@ -399,19 +395,6 @@ async fn enrich_game_metadata(
                 .get_or_insert(store_data.short_description);
             if details.release_date.is_none() {
                 details.release_date = store_data.release_date;
-            }
-
-            cover_candidates.push(CoverCandidate {
-                source: "steam",
-                url: store_data.header_image.clone(),
-                thumb_url: None,
-                width: None,
-                height: None,
-                priority: 2,
-            });
-
-            if details.background_image.is_none() {
-                details.background_image = Some(store_data.header_image);
             }
         }
 

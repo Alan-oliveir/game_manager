@@ -13,6 +13,7 @@ pub struct IgdbDlc {
 pub struct IgdbMappedResult {
     pub details: ProcessedGameDetails,
     pub dlcs: Vec<IgdbDlc>,
+    pub cover_url: Option<String>,
 }
 
 /// Developer/publisher via as flags booleanas do IGDB — não por ordem/índice.
@@ -164,13 +165,11 @@ pub fn map_igdb_game(game: &IgdbGame, game_id: &str) -> IgdbMappedResult {
         developer,
         publisher,
         critic_score: game.aggregated_rating.map(|r| r.round() as i32),
-        background_image: cover_url,
         series,
         steam_review_label: None,
         steam_review_count: None,
         steam_review_score: None,
         steam_review_updated_at: None,
-        esrb_rating: age_ratings.get("ESRB").cloned(),
         is_adult: false,
         adult_tags: None,
         external_links: serde_json::to_string(&links_map).ok(),
@@ -209,7 +208,7 @@ pub fn map_igdb_game(game: &IgdbGame, game_id: &str) -> IgdbMappedResult {
         kind: "standalone_expansion",
     }));
 
-    IgdbMappedResult { details, dlcs }
+    IgdbMappedResult { details, dlcs, cover_url }
 }
 
 // === FUNÇÕES DE PERSISTÊNCIA ===

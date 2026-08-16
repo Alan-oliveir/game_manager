@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { platformsService } from '@/services/plataformsService';
+import { storesService } from '@/services/storesService.ts';
 import { Game } from '@/types';
 import { toast } from '@/utils/toast';
 
@@ -30,7 +30,7 @@ export function useLaunchGame() {
           localStorage.getItem(launcherPathOverrideKey(game.platform)) ||
           undefined;
 
-        const outcome = await platformsService.launchGame(game.id, override);
+        const outcome = await storesService.launchGame(game.id, override);
 
         switch (outcome.kind) {
           case 'launched':

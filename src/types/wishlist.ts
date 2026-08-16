@@ -3,7 +3,7 @@ export interface WishlistGame {
   name: string;
   coverUrl: string | null;
   storeUrl: string | null;
-  storePlatform: string | null;
+  store: string | null;
   currentPrice: number | null;
   normalPrice: number | null;
   lowestPrice: number | null;

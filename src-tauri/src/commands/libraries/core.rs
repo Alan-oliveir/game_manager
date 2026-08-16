@@ -112,15 +112,14 @@ pub(crate) async fn persist_source_games(
 
             tx.execute(
                 "INSERT INTO games (
-                        id, name, slug, cover_url, platform, platform_game_id,
-                        installed, status, playtime, playtime_source, last_played, added_at,
-                        favorite, user_rating, install_path, executable_path, source_label
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, NULL, ?13, ?14, ?15)",
+                    id, name, slug, platform, platform_game_id,
+                    installed, status, playtime, playtime_source, last_played, added_at,
+                    favorite, user_rating, install_path, executable_path, source_label
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0, NULL, ?12, ?13, ?14)",
                 params![
                     new_id,
                     display_name,
                     slug,
-                    cover_url,
                     game.platform,
                     game.platform_game_id,
                     game.installed,
@@ -135,6 +134,20 @@ pub(crate) async fn persist_source_games(
                 ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+            if let Some(url) = &cover_url {
+                crate::providers::media::steamgriddb::db::upsert_game_image(
+                    &tx,
+                    &new_id,
+                    "steam_cdn",
+                    url,
+                    None,
+                    None,
+                    None,
+                    2,
+                )
+                    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+            }
 
             newly_imported.push(NewlyImportedGame {
                 game_id: new_id,

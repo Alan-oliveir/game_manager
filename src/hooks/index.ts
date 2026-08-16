@@ -49,7 +49,7 @@ export * from './configuration';
 export * from './game_detail';
 
 // Plataforms hooks
-export * from './platforms';
+export * from './stores';
 
 // Special hooks (na raiz)
 export * from './useEnrichmentNotifications';

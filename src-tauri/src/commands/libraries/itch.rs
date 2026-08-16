@@ -6,7 +6,7 @@ use crate::errors::AppError;
 use crate::providers::libraries::itch::{ItchioGame, ItchioSource};
 use crate::utils::status_logic;
 use chrono::{TimeZone, Utc};
-use rusqlite::params;
+use rusqlite::{params, OptionalExtension};
 use tauri::{AppHandle, Manager};
 use uuid::Uuid;
 
@@ -56,28 +56,35 @@ async fn persist_itch_games(
 
             tx.execute(
                 "INSERT INTO games (
-                            id, name, slug, cover_url, platform, platform_game_id,
-                            installed, status, playtime, playtime_source, last_played, added_at,
-                            favorite, user_rating, install_path, executable_path
-                    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, 0, NULL, ?13, ?14)",
+                    id, name, slug, platform, platform_game_id,
+                    installed, status, playtime, playtime_source, last_played, added_at,
+                    favorite, user_rating, install_path, executable_path
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0, NULL, ?12, ?13)",
                 params![
-                        new_id,
-                        display_name,
-                        slug,
-                        itchio_game.cover_url,
-                        game.platform,
-                        game.platform_game_id,
-                        game.installed,
-                        status,
-                        game.playtime_minutes.unwrap_or(0),
-                        crate::models::PlaytimeSource::Platform(crate::models::Platform::Itch).as_db_str(),
-                        last_played_iso,
-                        now,
-                        game.install_path,
-                        game.executable_path,
-                    ],
+                    new_id,
+                    display_name,
+                    slug,
+                    game.platform,
+                    game.platform_game_id,
+                    game.installed,
+                    status,
+                    game.playtime_minutes.unwrap_or(0),
+                    crate::models::PlaytimeSource::Platform(crate::models::Platform::Itch)
+                        .as_db_str(),
+                    last_played_iso,
+                    now,
+                    game.install_path,
+                    game.executable_path,
+                ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+            if let Some(url) = &itchio_game.cover_url {
+                crate::providers::media::steamgriddb::db::upsert_game_image(
+                    &tx, &new_id, "itch", url, None, None, None, 2,
+                )
+                    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+            }
 
             // Salva a descrição (se existir) na tabela de detalhes
             if let Some(desc) = &itchio_game.description {
@@ -106,9 +113,8 @@ async fn persist_itch_games(
                     playtime_source = CASE WHEN ?3 IS NOT NULL THEN ?4 ELSE playtime_source END,
                     last_played     = COALESCE(?5, last_played),
                     install_path    = COALESCE(?6, install_path),
-                    executable_path = COALESCE(?7, executable_path),
-                    cover_url       = COALESCE(?8, cover_url)
-                WHERE platform = ?9 AND platform_game_id = ?10",
+                    executable_path = COALESCE(?7, executable_path)
+                WHERE platform = ?8 AND platform_game_id = ?9",
                 params![
                     game.installed,
                     status,
@@ -118,12 +124,29 @@ async fn persist_itch_games(
                     last_played_iso,
                     game.install_path,
                     game.executable_path,
-                    itchio_game.cover_url,
                     game.platform,
                     game.platform_game_id,
                 ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+            if let Some(url) = &itchio_game.cover_url {
+                let existing_id: Option<String> = tx
+                    .query_row(
+                        "SELECT id FROM games WHERE platform = ?1 AND platform_game_id = ?2",
+                        params![game.platform, game.platform_game_id],
+                        |row| row.get(0),
+                    )
+                    .optional()
+                    .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+                if let Some(id) = existing_id {
+                    crate::providers::media::steamgriddb::db::upsert_game_image(
+                        &tx, &id, "itch", url, None, None, None, 2,
+                    )
+                        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+                }
+            }
 
             // Atualiza a descrição caso o jogo já exista e não tenha (ou tenha mudado)
             if let Some(desc) = &itchio_game.description {

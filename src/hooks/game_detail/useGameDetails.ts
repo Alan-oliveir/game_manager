@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
-import { Game, GameDetails, GamePlatformLink } from 'src/types';
+import { Game, GameDetails, GameStoreLink } from 'src/types';
 
 /**
  * Hook para gerenciar os detalhes de um jogo selecionado, incluindo o carregamento
@@ -13,7 +13,7 @@ import { Game, GameDetails, GamePlatformLink } from 'src/types';
 export function useGameDetails(selectedGame: Game | null, allGames: Game[]) {
   const [details, setDetails] = useState<GameDetails | null>(null);
   const [loading, setLoading] = useState(false);
-  const [siblings, setSiblings] = useState<GamePlatformLink[]>([]);
+  const [siblings, setSiblings] = useState<GameStoreLink[]>([]);
 
   // Move loadData outside useEffect so it can be returned
   const loadData = async () => {

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { Game, GameDetails, GamePlatformLink, GameTag } from '@/types/game';
+import { Game, GameDetails, GameStoreLink, GameTag } from '@/types/game';
 import { Badge } from '@/ui/badge';
 import { Button } from '@/ui/button';
 import { formatTime } from '@/utils';
@@ -27,7 +27,7 @@ import {
 interface GameSidebarProps {
   game: Game;
   details: GameDetails | null;
-  siblings: GamePlatformLink[];
+  siblings: GameStoreLink[];
   onSwitchGame: (id: string) => void;
 }
 
@@ -197,7 +197,13 @@ export function GameSidebar({
         <DetailRow
           icon={Building2}
           label={t('sidebar_dev_pub')}
-          value={`${details?.developer}, ${details?.publisher}`}
+          value={`${details?.developer}`}
+        />
+
+        <DetailRow
+          icon={Building2}
+          label={t('sidebar_dev_pub')}
+          value={`${details?.publisher}`}
         />
 
         {details?.releaseDate && (
@@ -227,14 +233,6 @@ export function GameSidebar({
             details?.criticScore ? details.criticScore.toString() : undefined
           }
         />
-
-        {details?.esrbRating && (
-          <DetailRow
-            icon={Trophy}
-            label={t('sidebar_classification')}
-            value={`ESRB ${details.esrbRating}`}
-          />
-        )}
 
         <DetailRow
           icon={Users}
@@ -273,7 +271,7 @@ export function GameSidebar({
                 onClick={() => onSwitchGame(sib.id)}
                 className="border-border/50 h-7 border text-xs"
               >
-                {sib.platform}
+                {sib.store}
               </Button>
             ))}
           </div>

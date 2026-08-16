@@ -5,7 +5,7 @@ import { Affinity } from '@/components';
 import { cn } from '@/lib/utils';
 import { Giveaway } from '@/types';
 import { Badge } from '@/ui/badge';
-import { getPlatformColor, getPlatformLabel } from '@/utils/platform';
+import { getStoreColor, getStoreLabel } from '@/utils/store.ts';
 
 interface FreeGameCardProps extends Giveaway {
   badge?: 'SÉRIE FAVORITA' | 'TOP PICK' | 'PARA VOCÊ';
@@ -31,8 +31,8 @@ export function FreeGameCard({
   };
 
   // Usa funções centralizadas
-  const platformLabel = getPlatformLabel(platforms);
-  const platformColor = getPlatformColor(platforms);
+  const platformLabel = getStoreLabel(platforms);
+  const platformColor = getStoreColor(platforms);
 
   const isValidDate =
     endDate && endDate !== 'N/A' && !Number.isNaN(new Date(endDate).getTime());

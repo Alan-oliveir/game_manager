@@ -229,8 +229,8 @@ export default function Wishlist({ searchTerm = '' }: WishlistProps) {
               (game.itadId
                 ? `https://isthereanydeal.com/game/${game.itadId}/`
                 : null);
-            const storeLabel = game.storePlatform
-              ? t('open_in_store', { store: game.storePlatform })
+            const storeLabel = game.store
+              ? t('open_in_store', { store: game.store })
               : targetUrl
                 ? t('view_on_itad')
                 : t('no_link_available');

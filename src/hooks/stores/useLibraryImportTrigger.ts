@@ -1,0 +1,48 @@
+import { useCallback } from 'react';
+
+import { parsePlatformError } from '@/errors/errorMessages';
+import { useLibraryImportListener } from '@/hooks';
+import type { ImportStatus } from '@/types';
+import { toast } from '@/utils/toast';
+
+interface UsePlatformImportTriggerOptions {
+  platformLabel: string;
+  setStatus: (status: ImportStatus) => void;
+  onLibraryUpdate?: () => void;
+}
+
+/**
+ * Substitui `usePlatformImportAction` para comandos migrados para `spawn_import`
+ * no backend (retornam void imediatamente, resultado chega via evento).
+ * Mantém a mesma interface externa (`isImporting`, `run`) para minimizar
+ * mudanças nos call sites — só troca a fonte de verdade de Promise para evento.
+ */
+export function useLibraryImportTrigger<Args extends unknown[] = []>(
+  importFn: (...args: Args) => Promise<void>,
+  { platformLabel, setStatus, onLibraryUpdate }: UsePlatformImportTriggerOptions
+) {
+  const { isImporting } = useLibraryImportListener({
+    platformLabel,
+    setStatus,
+    onLibraryUpdate,
+  });
+
+  const run = useCallback(
+    async (...args: Args) => {
+      try {
+        await importFn(...args);
+        // Sucesso/erro do processo em si chegam via import_complete/import_error,
+        // tratados dentro de useLibraryImportListener — não duplicar aqui.
+      } catch (e) {
+        // Só captura falha síncrona (ex: comando nem chegou a spawnar).
+        const errorMsg = parsePlatformError(e);
+        setStatus({ type: 'error', message: errorMsg });
+        toast.error(errorMsg);
+      }
+    },
+
+    [importFn, platformLabel]
+  );
+
+  return { isImporting, run };
+}

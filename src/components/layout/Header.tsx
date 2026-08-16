@@ -22,7 +22,7 @@ import { Game } from '@/types';
 import { Button } from '@/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/tooltip';
 import { openExternalLink } from '@/utils/openLink.ts';
-import { PlataformsConfig } from '@/windows/PlatformsConfig';
+import { PlataformsConfig } from '@/windows/LibrariesConfig';
 
 interface HeaderProps {
   onAddGame: () => void;

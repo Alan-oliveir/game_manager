@@ -172,7 +172,7 @@ All notable changes to this project will be documented in this file.
 - Import command success/empty messages/login success messages standardized across all platform sources via shared
   `format_import_summary`/`format_import_empty`/`format_login_success` helpers in `commands/platforms/core.rs`,
   replacing inconsistent per-platform phrasing with a single consistent format.
-- Frontend rendering of platform names now utilizes a centralized `PlatformDisplayNames` dictionary to map internal
+- Frontend rendering of platform names now utilizes a centralized `LibraryDisplayNames` dictionary to map internal
   `PascalCase` codes to their proper commercial names (e.g., `Battle.net`, `Itch.io`) across all UI components
 - Platform settings screens standardized across all integrations: page titles now show only the platform name,
   descriptions and account-connection labels use consistent imperative phrasing, and the import button includes the
@@ -183,7 +183,7 @@ All notable changes to this project will be documented in this file.
 - GOG's import button is no longer hidden entirely while logged out; it now stays visible but disabled, with a tooltip
   explaining that an account connection is required — consistent with how other platforms present unmet prerequisites.
 - Manually selected paths (EA, GOG, Legacy Games) now persist consistently across sessions through a shared
-  `useLocalStoragePlatformPath` hook, replacing per-component `localStorage` handling
+  `useLocalStorageLibraryPath` hook, replacing per-component `localStorage` handling
 - Reorganized platform-name translation keys into a single contiguous block for easier maintenance
 - OAuth token storage extended to support provider-specific auxiliary data (e.g. Amazon Games' device serial) without
   affecting previously stored tokens.

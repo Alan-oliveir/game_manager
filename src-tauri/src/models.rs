@@ -300,9 +300,6 @@ pub struct GameDetails {
     // Descrição
     pub description: GameDescription,
 
-    // Mídia
-    pub background_image: Option<String>,
-
     // Scores e Avaliações
     pub critic_score: Option<i32>,
 
@@ -313,7 +310,6 @@ pub struct GameDetails {
     pub steam_review_updated_at: Option<String>,
 
     // Conteúdo Adulto
-    pub esrb_rating: Option<String>, // OLD
     pub age_ratings: Option<HashMap<String, String>>,
     pub is_adult: bool,
     pub adult_tags: Option<String>,

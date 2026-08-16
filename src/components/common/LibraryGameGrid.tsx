@@ -4,7 +4,7 @@ import { type CellComponentProps, Grid } from 'react-window';
 
 import { LibraryGameCard } from '@/components';
 import { type GridRow, useElementWidth, useGroupedLibrary } from '@/hooks';
-import { Game, Platform, PlatformDisplayNames } from '@/types';
+import { Game, LibraryDisplayNames, Platform } from '@/types';
 import { Badge } from '@/ui/badge';
 
 const GAP = 24;
@@ -108,7 +108,7 @@ function GridCell({
           ) : (
             <ChevronDown size={16} />
           )}
-          {PlatformDisplayNames[row.platform] ?? row.platform}
+          {LibraryDisplayNames[row.platform] ?? row.platform}
           <Badge variant="secondary">{row.count}</Badge>
         </button>
       </div>

@@ -53,24 +53,25 @@ async fn persist_indiegala_games(
 
             tx.execute(
                 "INSERT INTO games (
-                        id, name, slug, cover_url, platform, platform_game_id,
-                        installed, status, playtime, playtime_source, last_played, added_at,
-                        favorite, user_rating, install_path, executable_path
-                    ) VALUES (?1, ?2, ?3, NULL, ?4, ?5, ?6, ?7, ?8, ?9, NULL, ?10, 0, NULL, ?11, ?12)",
+                    id, name, slug, platform, platform_game_id,
+                    installed, status, playtime, playtime_source, last_played, added_at,
+                    favorite, user_rating, install_path, executable_path
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, NULL, ?10, 0, NULL, ?11, ?12)",
                 params![
-                        new_id,
-                        display_name,
-                        slug,
-                        game.platform,
-                        game.platform_game_id,
-                        game.installed,
-                        status,
-                        game.playtime_minutes.unwrap_or(0),
-                        crate::models::PlaytimeSource::Platform(crate::models::Platform::Indiegala).as_db_str(), // <- novo
-                        now,
-                        game.install_path,
-                        game.executable_path,
-                    ],
+                    new_id,
+                    display_name,
+                    slug,
+                    game.platform,
+                    game.platform_game_id,
+                    game.installed,
+                    status,
+                    game.playtime_minutes.unwrap_or(0),
+                    crate::models::PlaytimeSource::Platform(crate::models::Platform::Indiegala)
+                        .as_db_str(),
+                    now,
+                    game.install_path,
+                    game.executable_path,
+                ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 

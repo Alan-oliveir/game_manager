@@ -155,13 +155,13 @@ fn fetch_games_with_details(
     let conn = state.games_db.lock()?;
 
     let mut stmt = conn.prepare(
-        "SELECT
-            g.id, g.name, g.slug, g.playtime, g.favorite, g.user_rating, g.cover_url,
-            g.platform_game_id, g.last_played, g.added_at, g.platform, g.playtime_source, g.alternative_names,
-            gd.genres, gd.steam_app_id, gd.release_date, gd.series, gd.tags
-         FROM games g
-         LEFT JOIN game_details gd ON g.id = gd.game_id
-         ORDER BY g.name ASC",
+        "SELECT g.id, g.name, g.slug, g.playtime, g.favorite, g.user_rating,
+                (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url,
+                g.platform_game_id, g.last_played, g.added_at, g.platform, g.playtime_source, g.alternative_names,
+                gd.genres, gd.steam_app_id, gd.release_date, gd.series, gd.tags
+        FROM games g
+        LEFT JOIN game_details gd ON g.id = gd.game_id
+        ORDER BY g.name ASC",
     )?;
 
     let games_with_details: Result<Vec<GameWithDetails>, _> = stmt

@@ -26,10 +26,10 @@ export const CATEGORY_MULTIPLIERS: Record<TagCategory | 'unknown', number> = {
   unknown: 0.5,
 };
 
-// === PLATAFORMAS (STEAM, EPIG, GOG, etc.) ===
+// === BIBLIOTECA (STEAM, EPIG, GOG, etc.) ===
 
 /**
- * Plataformas suportadas (deve corresponder ao enum Platform do Rust)
+ * Bibliotecas suportadas (deve corresponder ao enum Platform do Rust)
  */
 export type Platform =
   | 'Steam'
@@ -49,7 +49,7 @@ export type Platform =
 /**
  * Dicionário para renderização visual na interface
  */
-export const PlatformDisplayNames: Record<Platform, string> = {
+export const LibraryDisplayNames: Record<Platform, string> = {
   Steam: 'Steam',
   Epic: 'Epic Games',
   GOG: 'GOG',
@@ -82,9 +82,9 @@ export type LaunchOutcome =
   | { kind: 'openedStore' }
   | { kind: 'unavailable' };
 
-export interface GamePlatformLink {
+export interface GameStoreLink {
   id: string;
-  platform: string;
+  store: string;
 }
 
 export interface GameActions {
@@ -204,7 +204,6 @@ export interface GameDetails {
   steamReviewUpdatedAt?: string;
 
   // Classificação & Conteúdo
-  esrbRating?: string; // "Mature", "Teen", etc.
   isAdult?: boolean;
   adultTags?: string;
 

@@ -66,7 +66,6 @@ fn get_games_to_fill(
             OR gdesc.game_id IS NULL
             OR (gdesc.summary IS NULL AND gdesc.description IS NULL)
             OR gd.release_date     IS NULL OR gd.release_date     = ''
-            OR gd.background_image IS NULL OR gd.background_image = ''
         ){}
         LIMIT ?1",
         exclusions
@@ -123,13 +122,11 @@ async fn process_missing_metadata(
         developer: None,
         publisher: None,
         critic_score: None,
-        background_image: None,
         series: None,
         steam_review_label: None,
         steam_review_count: None,
         steam_review_score: None,
         steam_review_updated_at: None,
-        esrb_rating: None,
         is_adult: false,
         adult_tags: None,
         external_links: None,
@@ -209,9 +206,7 @@ async fn process_missing_metadata(
             details.developer = mapped.details.developer;
             details.publisher = mapped.details.publisher;
             details.critic_score = mapped.details.critic_score;
-            details.background_image = mapped.details.background_image;
             details.series = mapped.details.series;
-            details.esrb_rating = mapped.details.esrb_rating;
             details.alternative_names = mapped.details.alternative_names;
             details.franchise = mapped.details.franchise;
             details.game_modes = mapped.details.game_modes;
@@ -243,9 +238,6 @@ async fn process_missing_metadata(
                 .get_or_insert(store_data.short_description);
             if details.release_date.is_none() {
                 details.release_date = store_data.release_date;
-            }
-            if details.background_image.is_none() {
-                details.background_image = Some(store_data.header_image);
             }
         }
 
@@ -344,7 +336,7 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                             &cache_conn,
                             &nexus_games,
                         )
-                        .await
+                            .await
                     })
                 });
 
