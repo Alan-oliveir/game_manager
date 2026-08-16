@@ -12,7 +12,6 @@ use crate::providers::discovery::gamebrain as gamebrain_discovery;
 use crate::providers::giveaways::gamerpower::{self, Giveaway};
 use crate::providers::media::gamebrain as gamebrain_media;
 use crate::providers::metadata::hltb::{HltbClient, HltbEntry};
-use crate::providers::metadata::rawg;
 use crate::providers::mods::nexus::TrendingMod;
 use crate::providers::trending::igdb::{
     fetch_trending_inner, fetch_upcoming_games, TrendingGame, UpcomingGame,
@@ -61,18 +60,6 @@ pub struct GameDlc {
 }
 
 // === FUNÇÕES ===
-
-/// Busca detalhes de um jogo na RAWG
-#[tauri::command]
-pub async fn fetch_game_details(
-    app: AppHandle,
-    query: String,
-) -> Result<rawg::RawgGameDetails, AppError> {
-    let api_key = database::get_secret(&app, "rawg_api_key")?;
-    rawg::fetch_game_details(&api_key, query)
-        .await
-        .map_err(AppError::NetworkError)
-}
 
 /// Busca giveaways ativos na GamerPower
 #[tauri::command]

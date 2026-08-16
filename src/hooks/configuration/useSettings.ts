@@ -26,6 +26,7 @@ export function useSettings(onLibraryUpdate: () => void) {
     igdbClientSecret: '',
     xboxLiveClientId: '',
     xboxLiveClientSecret: '',
+    steamgriddbApiKey: '',
   });
 
   const [loading, setLoading] = useState({
@@ -80,6 +81,7 @@ export function useSettings(onLibraryUpdate: () => void) {
           igdbClientSecret: data.igdbClientSecret || '',
           xboxLiveClientId: data.xboxLiveClientId || '',
           xboxLiveClientSecret: data.xboxLiveClientSecret || '',
+          steamgriddbApiKey: data.steamgriddbApiKey || '',
         });
       })
       .catch(e => console.error('Erro ao carregar settings', e))
@@ -105,6 +107,7 @@ export function useSettings(onLibraryUpdate: () => void) {
         igdbClientSecret: keys.igdbClientSecret.trim() || null,
         xboxLiveClientId: keys.xboxLiveClientId.trim() || null,
         xboxLiveClientSecret: keys.xboxLiveClientSecret.trim() || null,
+        steamgriddbApiKey: keys.steamgriddbApiKey.trim() || null,
       });
       setStatus({
         type: 'success',

@@ -19,7 +19,7 @@ use tauri::AppHandle;
 pub struct KeysBatch {
     pub steam_id: String,
     pub steam_api_key: String,
-    pub rawg_api_key: String,
+    pub steamgriddb_api_key: String,
     pub gemini_api_key: String,
     pub gamebrain_api_key: String,
     pub nexus_api_key: String,
@@ -38,7 +38,7 @@ pub fn get_secrets(app: AppHandle) -> Result<KeysBatch, AppError> {
     Ok(KeysBatch {
         steam_id: database::get_secret(&app, "steam_id")?,
         steam_api_key: database::get_secret(&app, "steam_api_key")?,
-        rawg_api_key: database::get_secret(&app, "rawg_api_key")?,
+        steamgriddb_api_key: database::get_secret(&app, "steamgriddb_api_key")?,
         gemini_api_key: database::get_secret(&app, "gemini_api_key")?,
         gamebrain_api_key: database::get_secret(&app, "gamebrain_api_key")?,
         nexus_api_key: database::get_secret(&app, "nexus_api_key")?,
@@ -58,7 +58,7 @@ pub fn set_secrets(
     app: AppHandle,
     steam_id: Option<String>,
     steam_api_key: Option<String>,
-    rawg_api_key: Option<String>,
+    steamgriddb_api_key: Option<String>,
     gemini_api_key: Option<String>,
     gamebrain_api_key: Option<String>,
     igdb_client_id: Option<String>,
@@ -82,7 +82,7 @@ pub fn set_secrets(
 
     save_or_delete("steam_id", steam_id)?;
     save_or_delete("steam_api_key", steam_api_key)?;
-    save_or_delete("rawg_api_key", rawg_api_key)?;
+    save_or_delete("steamgriddb_api_key", steamgriddb_api_key)?;
     save_or_delete("gemini_api_key", gemini_api_key)?;
     save_or_delete("gamebrain_api_key", gamebrain_api_key)?;
     save_or_delete("igdb_client_id", igdb_client_id)?;

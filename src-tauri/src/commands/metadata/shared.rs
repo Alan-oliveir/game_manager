@@ -5,10 +5,10 @@
 use crate::constants::NOT_FOUND_MARKER;
 use crate::database;
 use crate::models::{GameDescription, ImportConfidence};
+use crate::providers::metadata::hltb;
 use crate::providers::metadata::steam::{
     get_app_details, get_app_reviews, search_app_by_name, SteamReviewSummary, SteamStoreData,
 };
-use crate::providers::metadata::{hltb, rawg};
 use crate::services::cache;
 use crate::utils::text::{is_likely_non_base_game, normalize_for_matching, strip_edition_suffix};
 use rusqlite::params;
@@ -80,106 +80,15 @@ pub struct SteamIdResolution {
     pub confidence: ImportConfidence,
 }
 
-// === HELPERS LOCAIS ===
-
-fn rawg_cache_key(name: &str) -> String {
-    format!("search_{}", name.to_lowercase())
-}
-
-async fn fetch_rawg_metadata_inner(
-    api_key: &str,
-    name: &str,
-    cache_conn: &rusqlite::Connection,
-    bypass_cache: bool,
-) -> Option<rawg::RawgGameDetails> {
-    let cache_key = rawg_cache_key(name);
-
-    if !bypass_cache {
-        if let Some(cached) = cache::get_cached_api_data(cache_conn, "rawg", &cache_key) {
-            if cached == NOT_FOUND_MARKER {
-                return None;
-            }
-            if let Ok(details) = serde_json::from_str::<rawg::RawgGameDetails>(&cached) {
-                return Some(details);
-            }
-        }
-    }
-
-    let search_result = crate::services::rate_limiter::RAWG_LIMITER
-        .run(|| rawg::search_games(api_key, name))
-        .await;
-
-    match search_result {
-        Ok(results) => {
-            if let Some(best_match) = results.first() {
-                let details_result = crate::services::rate_limiter::RAWG_LIMITER
-                    .run(|| rawg::fetch_game_details(api_key, best_match.id.to_string()))
-                    .await;
-
-                match details_result {
-                    Ok(details) => {
-                        if let Ok(json) = serde_json::to_string(&details) {
-                            let _ =
-                                cache::save_cached_api_data(cache_conn, "rawg", &cache_key, &json);
-                        }
-                        Some(details)
-                    }
-                    Err(err) => {
-                        // Só marca como NOT_FOUND em 404 real — 429 já foi
-                        // tentado via backoff e não deve ser confundido com ausência.
-                        if err.contains("não encontrado") || err.contains("404") {
-                            let _ = cache::save_cached_api_data(
-                                cache_conn,
-                                "rawg",
-                                &cache_key,
-                                NOT_FOUND_MARKER,
-                            );
-                        } else {
-                            warn!(
-                                "RAWG fetch_game_details falhou (não-404) para '{}': {}",
-                                name, err
-                            );
-                        }
-                        None
-                    }
-                }
-            } else {
-                let _ =
-                    cache::save_cached_api_data(cache_conn, "rawg", &cache_key, NOT_FOUND_MARKER);
-                None
-            }
-        }
-        Err(e) => {
-            warn!("RAWG search_games falhou para '{}': {}", name, e);
-            None // erro de rede/429 esgotado — NÃO cacheia como not-found
-        }
-    }
-}
-
-// === FUNÇÕES COMPARTILHADAS - RAWG ===
-
-/// Busca metadados RAWG com cache
-///
-/// Esta função é compartilhada entre enrichment e covers para buscar informações de jogos na API
-/// RAWG com suporte a cache SQLite.
-pub async fn fetch_rawg_metadata(
-    api_key: &str,
-    name: &str,
-    cache_conn: &rusqlite::Connection,
-) -> Option<rawg::RawgGameDetails> {
-    fetch_rawg_metadata_inner(api_key, name, cache_conn, false).await
-}
-
-/// Variante que ignora o cache e sempre consulta a RAWG ao vivo.
-///
-/// Usada pelo comando `fill_missing_metadata` para garantir que dados possivelmente atualizados na
-/// RAWG sejam buscados mesmo para jogos cujo cache ainda é válido.
-pub async fn fetch_rawg_metadata_fresh(
-    api_key: &str,
-    name: &str,
-    cache_conn: &rusqlite::Connection,
-) -> Option<rawg::RawgGameDetails> {
-    fetch_rawg_metadata_inner(api_key, name, cache_conn, true).await
+/// Candidata a capa coletada durante o enrichment, ainda não persistida.
+/// `priority` segue a convenção de `game_images`: menor valor = maior preferência.
+pub struct CoverCandidate {
+    pub source: &'static str, // "steamgriddb" | "igdb" | "steam"
+    pub url: String,
+    pub thumb_url: Option<String>,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    pub priority: i32,
 }
 
 // === FUNÇÕES COMPARTILHADAS - STEAM ===
@@ -440,13 +349,6 @@ where
 
     save_game_description(conn, &d.game_id, &d.description)?;
 
-    if let Some(img) = d.background_image {
-        conn.execute(
-            "UPDATE games SET cover_url = ?1 WHERE id = ?2 AND (cover_url IS NULL OR cover_url = '')",
-            params![img, d.game_id],
-        )?;
-    }
-
     if let Some(alt_names) = d.alternative_names {
         if !alt_names.is_empty() {
             let alt_json = serde_json::to_string(&alt_names).unwrap_or_default();
@@ -485,16 +387,16 @@ where
            translated_lang             = COALESCE(?10, translated_lang)
          WHERE game_id = ?1",
         params![
-           game_id,
-           d.summary,
-           d.storyline,
-           d.short_description,
-           d.description,
-           d.summary_translated,
-           d.storyline_translated,
-           d.short_description_translated,
-           d.description_translated,
-           d.translated_lang,
+            game_id,
+            d.summary,
+            d.storyline,
+            d.short_description,
+            d.description,
+            d.summary_translated,
+            d.storyline_translated,
+            d.short_description_translated,
+            d.description_translated,
+            d.translated_lang,
         ],
     )?;
     Ok(())

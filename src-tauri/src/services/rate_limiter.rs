@@ -7,7 +7,7 @@
 
 use crate::constants::{
     IGDB_BACKOFF_BASE_MS, IGDB_BACKOFF_MAX_RETRIES, IGDB_MAX_CONCURRENT_REQUESTS,
-    RAWG_BACKOFF_BASE_MS, RAWG_BACKOFF_MAX_RETRIES, RAWG_MAX_CONCURRENT_REQUESTS,
+    STEAMGRIDDB_BACKOFF_BASE_MS, STEAMGRIDDB_BACKOFF_MAX_RETRIES, STEAMGRIDDB_MAX_CONCURRENT_REQUESTS,
     STEAM_BACKOFF_BASE_MS, STEAM_BACKOFF_MAX_RETRIES, STEAM_MAX_CONCURRENT_REQUESTS,
 };
 use lazy_static::lazy_static;
@@ -70,12 +70,6 @@ impl ApiRateLimiter {
 }
 
 lazy_static! {
-    pub static ref RAWG_LIMITER: ApiRateLimiter = ApiRateLimiter::new(
-        RAWG_MAX_CONCURRENT_REQUESTS as usize,
-        RAWG_BACKOFF_MAX_RETRIES,
-        RAWG_BACKOFF_BASE_MS,
-        "RAWG",
-    );
     pub static ref STEAM_LIMITER: ApiRateLimiter = ApiRateLimiter::new(
         STEAM_MAX_CONCURRENT_REQUESTS as usize,
         STEAM_BACKOFF_MAX_RETRIES,
@@ -87,6 +81,12 @@ lazy_static! {
         IGDB_BACKOFF_MAX_RETRIES,
         IGDB_BACKOFF_BASE_MS,
         "IGDB",
+    );
+    pub static ref STEAMGRIDDB_LIMITER: ApiRateLimiter = ApiRateLimiter::new(
+        STEAMGRIDDB_MAX_CONCURRENT_REQUESTS as usize,
+        STEAMGRIDDB_BACKOFF_MAX_RETRIES,
+        STEAMGRIDDB_BACKOFF_BASE_MS,
+        "SteamGridDB",
     );
 }
 

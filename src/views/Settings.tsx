@@ -174,18 +174,20 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
           </div>
         </SettingsRow>
 
-        {/* Configurações de API para metadados - RAWG */}
+        {/* Configurações de API para imagens - SteamGridDB */}
         <SettingsRow
           icon={Search}
-          title={t('rawg_title')}
-          description={t('rawg_description')}
+          title={t('steamgriddb_title')}
+          description={t('steamgriddb_description')}
         >
           <div className="grid gap-2">
             <Input
               type="password"
-              placeholder={t('rawg_api_key_placeholder')}
-              value={keys.rawgApiKey}
-              onChange={e => setKeys({ ...keys, rawgApiKey: e.target.value })}
+              placeholder={t('steamgriddb_api_key_placeholder')}
+              value={keys.steamgriddbApiKey}
+              onChange={e =>
+                setKeys({ ...keys, steamgriddbApiKey: e.target.value })
+              }
               className="bg-background/50"
             />
 
@@ -193,12 +195,12 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
               <span>{t('no_key_question')}</span>
 
               <a
-                href="https://rawg.io/login?forward=developer"
+                href="https://steamgriddb.com/developer"
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-0.5 text-blue-400 hover:underline"
               >
-                {t('get_api_key_button_rawg')} <ExternalLink size={10} />
+                {t('get_api_key_button_steamgriddb')} <ExternalLink size={10} />
               </a>
             </div>
           </div>

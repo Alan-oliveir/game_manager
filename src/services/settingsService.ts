@@ -23,6 +23,7 @@ export const settingsService = {
   setSecrets: async (keys: {
     steamId: string | null;
     steamApiKey: string | null;
+    steamgriddbApiKey: string | null;
     rawgApiKey: string | null;
     geminiApiKey: string | null;
     gamebrainApiKey: string | null;

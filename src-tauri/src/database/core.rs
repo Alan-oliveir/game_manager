@@ -224,6 +224,44 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     conn.execute(
+        "CREATE TABLE IF NOT EXISTS game_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        game_id TEXT NOT NULL,
+        image_type TEXT NOT NULL CHECK (image_type IN ('cover', 'background')),
+        source TEXT NOT NULL CHECK (source IN ('manual', 'steamgriddb', 'igdb', 'steam')),
+        url TEXT NOT NULL,
+        thumb_url TEXT,
+        width INTEGER,
+        height INTEGER,
+        priority INTEGER NOT NULL DEFAULT 0,
+        fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(game_id, image_type, source),
+        FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
+    )",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_game_images_lookup ON game_images(game_id, image_type, priority)",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
+    // Controla se já tentamos resolver a capa deste jogo na SteamGridDB — evita
+    // reconsultar a cada enrichment. TTL de 30 dias é checado no lado do covers.rs.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS steamgriddb_cache_meta (
+        game_id TEXT PRIMARY KEY,
+        checked_at TEXT NOT NULL,
+        found INTEGER NOT NULL,
+        FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
+    )",
+        [],
+    )
+        .map_err(|e| e.to_string())?;
+
+    conn.execute(
         "CREATE TABLE IF NOT EXISTS subscriptions (
         service TEXT PRIMARY KEY,   -- 'prime_gaming', 'game_pass', etc.
         enabled BOOLEAN DEFAULT 0,

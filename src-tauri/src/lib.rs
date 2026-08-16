@@ -164,7 +164,6 @@ pub fn run() {
             commands::metadata::refresh::check_and_refresh_background,
             commands::metadata::search::get_trending_games,
             commands::metadata::search::get_upcoming_games,
-            commands::metadata::search::fetch_game_details,
             commands::metadata::search::get_active_giveaways,
             commands::metadata::search::get_similar_games,
             commands::metadata::search::get_game_media,

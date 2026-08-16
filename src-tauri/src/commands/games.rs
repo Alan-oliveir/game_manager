@@ -9,6 +9,7 @@ use crate::database::AppState;
 use crate::errors::AppError;
 use crate::models;
 use crate::models::Platform;
+use crate::providers::media::steamgriddb;
 use crate::utils::status_logic;
 use crate::utils::text::slugify;
 use chrono::Utc;
@@ -152,15 +153,14 @@ pub fn add_game(state: State<AppState>, game: GameInput) -> Result<(), AppError>
 
     conn.execute(
         "INSERT INTO games (
-        id, name, slug, cover_url, platform, platform_game_id,
+        id, name, slug, platform, platform_game_id,
         installed, import_confidence, install_path, executable_path, launch_args,
         user_rating, status, playtime, added_at
-    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
+        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
         params![
             game.id,
             game.name,
             slugify(&game.name),
-            game.cover_url,
             platform.to_string(),
             platform_game_id,
             game.installed,
@@ -174,6 +174,10 @@ pub fn add_game(state: State<AppState>, game: GameInput) -> Result<(), AppError>
             added_at
         ],
     )?;
+
+    if let Some(url) = &game.cover_url {
+        steamgriddb::db::upsert_game_image(&conn, &game.id, "manual", url, None, None, None, -1)?;
+    }
 
     Ok(())
 }
@@ -194,22 +198,20 @@ pub fn update_game(state: State<AppState>, game: GameInput) -> Result<(), AppErr
         "UPDATE games SET
         name = ?1,
         slug = ?2,
-        cover_url = ?3,
-        platform = ?4,
-        platform_game_id = ?5,
-        installed = ?6,
-        import_confidence = ?7,
-        playtime = ?8,
-        user_rating = ?9,
-        status = ?10,
-        install_path = ?11,
-        executable_path = ?12,
-        launch_args = ?13
-    WHERE id = ?14",
+        platform = ?3,
+        platform_game_id = ?4,
+        installed = ?5,
+        import_confidence = ?6,
+        playtime = ?7,
+        user_rating = ?8,
+        status = ?9,
+        install_path = ?10,
+        executable_path = ?11,
+        launch_args = ?12
+    WHERE id = ?13",
         params![
             game.name,
             slugify(&game.name),
-            game.cover_url,
             game.platform.to_string(),
             game.platform_game_id,
             game.installed,
@@ -224,6 +226,13 @@ pub fn update_game(state: State<AppState>, game: GameInput) -> Result<(), AppErr
         ],
     )?;
 
+    match &game.cover_url {
+        Some(url) => steamgriddb::db::upsert_game_image(
+            &conn, &game.id, "manual", url, None, None, None, -1,
+        )?,
+        None => steamgriddb::db::delete_game_image(&conn, &game.id, "cover", "manual")?,
+    }
+
     Ok(())
 }
 
@@ -237,9 +246,10 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
 
     let mut stmt = conn.prepare(
         "SELECT
-            g.id, g.name, g.slug, g.cover_url, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
+            g.id, g.name, g.slug, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
             g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
-            gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label
+            gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label,
+            (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url
         FROM games g
         LEFT JOIN game_details gd ON g.id = gd.game_id
         ORDER BY g.name ASC"
@@ -247,37 +257,37 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
 
     let games = stmt
         .query_map([], |row| {
-            let alt_names_json: Option<String> = row.get(18)?;
+            let alt_names_json: Option<String> = row.get(17)?;
             let alternative_names = alt_names_json.and_then(|s| serde_json::from_str(&s).ok());
 
             Ok(models::Game {
                 id: row.get(0)?,
                 name: row.get(1)?,
                 slug: row.get(2)?,
-                cover_url: row.get(3)?,
-                platform: row.get::<_, String>(4)?.parse().unwrap_or(Platform::Outra),
-                platform_game_id: row.get(5)?,
-                installed: row.get(6)?,
+                platform: row.get::<_, String>(3)?.parse().unwrap_or(Platform::Outra),
+                platform_game_id: row.get(4)?,
+                installed: row.get(5)?,
                 import_confidence: row
-                    .get::<_, Option<String>>(7)?
+                    .get::<_, Option<String>>(6)?
                     .and_then(|s| s.parse().ok()),
-                install_path: row.get(8)?,
-                executable_path: row.get(9)?,
-                launch_args: row.get(10)?,
-                user_rating: row.get(11)?,
-                favorite: row.get(12)?,
-                status: row.get(13)?,
-                playtime: row.get(14)?,
+                install_path: row.get(7)?,
+                executable_path: row.get(8)?,
+                launch_args: row.get(9)?,
+                user_rating: row.get(10)?,
+                favorite: row.get(11)?,
+                status: row.get(12)?,
+                playtime: row.get(13)?,
                 playtime_source: row
-                    .get::<_, Option<String>>(15)?
+                    .get::<_, Option<String>>(14)?
                     .and_then(|s| s.parse().ok()),
-                last_played: row.get(16)?,
-                added_at: row.get(17)?,
+                last_played: row.get(15)?,
+                added_at: row.get(16)?,
                 alternative_names,
-                genres: row.get(19)?,
-                developer: row.get(20)?,
-                is_adult: row.get(21)?,
-                source_label: row.get(22)?,
+                genres: row.get(18)?,
+                developer: row.get(19)?,
+                is_adult: row.get(20)?,
+                source_label: row.get(21)?,
+                cover_url: row.get(22)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
@@ -301,14 +311,15 @@ pub fn get_library_game_details(
         "SELECT
             gd.game_id, gd.steam_app_id, gd.developer, gd.publisher, gd.release_date,
             gd.genres, gd.tags, gd.series, gd.franchise, gd.game_modes, gd.player_perspectives,
-            gd.themes, gd.keywords, gd.background_image, gd.critic_score,
+            gd.themes, gd.keywords, gd.critic_score,
             gd.steam_review_label, gd.steam_review_count, gd.steam_review_score, gd.steam_review_updated_at,
             gd.esrb_rating, gd.age_ratings, gd.is_adult, gd.adult_tags, gd.external_links,
             gd.hltb_main_story, gd.hltb_main_extra, gd.hltb_completionist, gd.hltb_coop_time,
             gd.display_name, gd.updated_at,
             gdesc.summary, gdesc.storyline, gdesc.short_description, gdesc.description,
             gdesc.summary_translated, gdesc.storyline_translated,
-            gdesc.short_description_translated, gdesc.description_translated, gdesc.translated_lang
+            gdesc.short_description_translated, gdesc.description_translated, gdesc.translated_lang,
+            (SELECT url FROM game_images WHERE game_id = ?1 AND image_type = 'background' ORDER BY priority ASC LIMIT 1) AS background_url
          FROM game_details gd
          LEFT JOIN game_descriptions gdesc ON gd.game_id = gdesc.game_id
          WHERE gd.game_id = ?1",
@@ -322,8 +333,8 @@ pub fn get_library_game_details(
         let perspectives_json: Option<String> = row.get(10)?;
         let themes_json: Option<String> = row.get(11)?;
         let keywords_json: Option<String> = row.get(12)?;
-        let age_ratings_json: Option<String> = row.get(20)?;
-        let links_json: Option<String> = row.get(23)?;
+        let age_ratings_json: Option<String> = row.get(19)?;
+        let links_json: Option<String> = row.get(22)?;
 
         Ok(models::GameDetails {
             game_id: row.get(0)?,
@@ -339,34 +350,34 @@ pub fn get_library_game_details(
             player_perspectives: perspectives_json.and_then(|s| serde_json::from_str(&s).ok()),
             themes: themes_json.and_then(|s| serde_json::from_str(&s).ok()),
             keywords: keywords_json.and_then(|s| serde_json::from_str(&s).ok()),
-            background_image: row.get(13)?,
-            critic_score: row.get(14)?,
-            steam_review_label: row.get(15)?,
-            steam_review_count: row.get(16)?,
-            steam_review_score: row.get(17)?,
-            steam_review_updated_at: row.get(18)?,
-            esrb_rating: row.get(19)?,
+            critic_score: row.get(13)?,
+            steam_review_label: row.get(14)?,
+            steam_review_count: row.get(15)?,
+            steam_review_score: row.get(16)?,
+            steam_review_updated_at: row.get(17)?,
+            esrb_rating: row.get(18)?,
             age_ratings: age_ratings_json.and_then(|s| serde_json::from_str(&s).ok()),
-            is_adult: row.get(21).unwrap_or(false),
-            adult_tags: row.get(22)?,
+            is_adult: row.get(20).unwrap_or(false),
+            adult_tags: row.get(21)?,
             external_links: links_json.and_then(|s| serde_json::from_str(&s).ok()),
-            hltb_main_story: row.get(24)?,
-            hltb_main_extra: row.get(25)?,
-            hltb_completionist: row.get(26)?,
-            hltb_coop_time: row.get(27)?,
-            display_name: row.get(28)?,
-            updated_at: row.get(29)?,
+            hltb_main_story: row.get(23)?,
+            hltb_main_extra: row.get(24)?,
+            hltb_completionist: row.get(25)?,
+            hltb_coop_time: row.get(26)?,
+            display_name: row.get(27)?,
+            updated_at: row.get(28)?,
             description: models::GameDescription {
-                summary: row.get(30)?,
-                storyline: row.get(31)?,
-                short_description: row.get(32)?,
-                description: row.get(33)?,
-                summary_translated: row.get(34)?,
-                storyline_translated: row.get(35)?,
-                short_description_translated: row.get(36)?,
-                description_translated: row.get(37)?,
-                translated_lang: row.get(38)?,
+                summary: row.get(29)?,
+                storyline: row.get(30)?,
+                short_description: row.get(31)?,
+                description: row.get(32)?,
+                summary_translated: row.get(33)?,
+                storyline_translated: row.get(34)?,
+                short_description_translated: row.get(35)?,
+                description_translated: row.get(36)?,
+                translated_lang: row.get(37)?,
             },
+            background_image: row.get(39)?,
         })
     })?;
 
@@ -389,50 +400,52 @@ pub fn get_game_by_id(
 
     let mut stmt = conn.prepare(
         "SELECT
-            g.id, g.name, g.slug, g.cover_url, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
+            g.id, g.name, g.slug, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
             g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
-            gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label
+            gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label,
+            (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url
         FROM games g
         LEFT JOIN game_details gd ON g.id = gd.game_id
-        WHERE g.id = ?1",
+        WHERE g.id = ?"
     )?;
 
     let game = stmt
-        .query_row(params![id], |row| {
-            let alt_names_json: Option<String> = row.get(18)?;
+        .query_map([&id], |row| {
+            let alt_names_json: Option<String> = row.get(17)?;
             let alternative_names = alt_names_json.and_then(|s| serde_json::from_str(&s).ok());
 
             Ok(models::Game {
                 id: row.get(0)?,
                 name: row.get(1)?,
                 slug: row.get(2)?,
-                cover_url: row.get(3)?,
-                platform: row.get::<_, String>(4)?.parse().unwrap_or(Platform::Outra),
-                platform_game_id: row.get(5)?,
-                installed: row.get(6)?,
+                platform: row.get::<_, String>(3)?.parse().unwrap_or(Platform::Outra),
+                platform_game_id: row.get(4)?,
+                installed: row.get(5)?,
                 import_confidence: row
-                    .get::<_, Option<String>>(7)?
+                    .get::<_, Option<String>>(6)?
                     .and_then(|s| s.parse().ok()),
-                install_path: row.get(8)?,
-                executable_path: row.get(9)?,
-                launch_args: row.get(10)?,
-                user_rating: row.get(11)?,
-                favorite: row.get(12)?,
-                status: row.get(13)?,
-                playtime: row.get(14)?,
+                install_path: row.get(7)?,
+                executable_path: row.get(8)?,
+                launch_args: row.get(9)?,
+                user_rating: row.get(10)?,
+                favorite: row.get(11)?,
+                status: row.get(12)?,
+                playtime: row.get(13)?,
                 playtime_source: row
-                    .get::<_, Option<String>>(15)?
+                    .get::<_, Option<String>>(14)?
                     .and_then(|s| s.parse().ok()),
-                last_played: row.get(16)?,
-                added_at: row.get(17)?,
+                last_played: row.get(15)?,
+                added_at: row.get(16)?,
                 alternative_names,
-                genres: row.get(19)?,
-                developer: row.get(20)?,
-                is_adult: row.get(21)?,
-                source_label: row.get(22)?,
+                genres: row.get(18)?,
+                developer: row.get(19)?,
+                is_adult: row.get(20)?,
+                source_label: row.get(21)?,
+                cover_url: row.get(22)?,
             })
-        })
-        .optional()?;
+        })?
+        .next()
+        .transpose()?;
 
     Ok(game)
 }
@@ -529,7 +542,8 @@ pub fn update_game_details(
 
     match current_state {
         Some((summary, storyline, short_description, description)) => {
-            let has_original_description = summary.is_some() || storyline.is_some() || short_description.is_some();
+            let has_original_description =
+                summary.is_some() || storyline.is_some() || short_description.is_some();
 
             if description.is_none() && has_original_description {
                 return Err(AppError::ValidationError(

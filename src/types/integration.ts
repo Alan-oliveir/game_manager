@@ -19,6 +19,7 @@ export interface UpcomingGame {
 export interface KeysBatch {
   steamId: string;
   steamApiKey: string;
+  steamgriddbApiKey?: string;
   igdbClientId: string;
   igdbClientSecret?: string;
   rawgApiKey: string;

@@ -2,10 +2,10 @@
 //!
 //! Diferente do fluxo de enriquecimento inicial (`enrichment.rs`), este módulo
 //! foca em jogos que já foram importados mas ainda têm lacunas nos metadados
-//! (genres, developer, tags, description, etc.), usando RAWG apenas como fallback.
+//! (genres, developer, tags, description, etc.).
 //!
 //! Design notes:
-//! - Prioriza IGDB e consulta RAWG em paralelo como fallback.
+//! - Busca metadata via IGDB
 //! - Usa `COALESCE` via `save_game_details` — nunca sobrescreve campos existentes com NULL.
 //! - Reutiliza `ProcessedGameDetails` e `save_game_details` de `enrichment.rs`.
 
@@ -104,7 +104,7 @@ fn get_games_to_fill(
     }
 }
 
-/// Processa um único jogo priorizando IGDB, com RAWG e Steam como fallback.
+/// Processa um único jogo.
 async fn process_missing_metadata(
     app: &AppHandle,
     game_id: &str,
@@ -156,8 +156,7 @@ async fn process_missing_metadata(
         links_map.insert("nexus".to_string(), url);
     }
 
-    // IGDB é a fonte principal. RAWG roda em paralelo como fallback — só é
-    // usada campo a campo pro que o IGDB não trouxer (ou não achar o jogo).
+    // IGDB é a fonte principal, Steam e HLTB são consultados em paralelo para complementar os dados.
     let igdb_future = igdb::fetch::search_and_resolve(app, name);
     let hltb_future = fetch_hltb_metadata(name, cache_conn);
 
@@ -222,10 +221,7 @@ async fn process_missing_metadata(
             details.age_ratings = mapped.details.age_ratings;
             details.display_name = mapped.details.display_name;
         }
-        Ok(None) => warn!(
-            "IGDB: nenhum resultado para '{}', usando RAWG como fallback",
-            name
-        ),
+        Ok(None) => warn!("IGDB: nenhum resultado para {}", name),
         Err(e) => warn!("IGDB search_and_resolve falhou para '{}': {}", name, e),
     }
 
@@ -281,7 +277,7 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
     let app_handle = app.clone();
 
     tauri::async_runtime::spawn(async move {
-        info!("Iniciando preenchimento de campos vazios (fresh RAWG)...");
+        info!("Iniciando preenchimento de campos vazios ...");
 
         let state: State<AppState> = app_handle.state();
         let mut all_session_tags: HashSet<String> = HashSet::new();
@@ -348,7 +344,7 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                             &cache_conn,
                             &nexus_games,
                         )
-                            .await
+                        .await
                     })
                 });
 

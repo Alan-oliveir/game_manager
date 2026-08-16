@@ -66,14 +66,7 @@ pub const RECOMMENDATION_DEFAULT_AGE_DECAY: f32 = 0.98;
 pub const DEFAULT_CURRENCY: &str = "BRL";
 
 // === LIMITES DE REQUISIÇÕES A SERVIÇOS EXTERNOS ===
-pub const RAWG_RATE_LIMIT_MS: u64 = 150;
-pub const RAWG_MAX_CONCURRENT_REQUESTS: u32 = 4;
 pub const REQUISITIONS_PER_BATCH: u32 = 25;
-pub const RAWG_BACKOFF_BASE_MS: u64 = 2000; // espera inicial após 429
-pub const RAWG_BACKOFF_MAX_RETRIES: u32 = 3; // 2s, 4s, 8s antes de desistir
-pub const RAWG_SEARCH_PAGE_SIZE: u32 = 10;
-pub const RAWG_TRENDING_PAGE_SIZE: u32 = 15;
-pub const RAWG_UPCOMING_PAGE_SIZE: u32 = 10;
 pub const STEAM_RATE_LIMIT_MS: u64 = 200;
 pub const STEAM_MAX_CONCURRENT_REQUESTS: u32 = 2;
 pub const STEAM_BACKOFF_BASE_MS: u64 = 2000;
@@ -84,6 +77,9 @@ pub const IGDB_BACKOFF_BASE_MS: u64 = 2000;
 pub const GAME_PASS_BATCH_SIZE: usize = 20;
 pub const GAMEBRAIN_SIMILAR_REQUEST_LIMIT: u32 = 12;
 pub const REQUEST_PCGW_DELAY_MS: u64 = 250; // Delay (ms) devido ao rate limit de 30 req/min de PCGamingWiki.
+pub const STEAMGRIDDB_MAX_CONCURRENT_REQUESTS: u32 = 2;
+pub const STEAMGRIDDB_BACKOFF_MAX_RETRIES: u32 = 3;
+pub const STEAMGRIDDB_BACKOFF_BASE_MS: u64 = 2000;
 
 // === TIMEOUTS DE REQUISIÇÕES HTTP (em segundos) ===
 pub const HTTP_REQUEST_TIMEOUT_SECS: u64 = 30;

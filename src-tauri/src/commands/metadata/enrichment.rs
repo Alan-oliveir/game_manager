@@ -8,21 +8,24 @@
 //! - Cache persistente via SQLite (metadata.db)
 //! - block_in_place usado para manter conexão SQLite durante awaits
 //! - Itens compartilhados com covers estão no módulo shared
+//! - Capas: SteamGridDB é a fonte primária, resolvida em paralelo ao restante
+//!   dos metadados. IGDB/Steam entram como candidatas de fallback (priority
+//!   1 e 2) e são persistidas em `game_images`, nunca mais em `games.cover_url`.
 
 use super::shared::{
     apply_hltb_metadata, fetch_hltb_metadata, fetch_steam_reviews, fetch_steam_store_data,
-    resolve_steam_app_id, save_game_details, EnrichCompletePayload, EnrichProgress,
+    resolve_steam_app_id, save_game_details, CoverCandidate, EnrichCompletePayload, EnrichProgress,
     ProcessedGameDetails,
 };
 use crate::commands::libraries::core::NewlyImportedGame;
 use crate::database::AppState;
+use crate::providers::media::steamgriddb::{self, SteamGridDbClient};
 use crate::providers::metadata::igdb;
 use crate::providers::metadata::steam::detect_adult_content;
 use crate::providers::mods::nexus::{find_best_nexus_match, get_cached_nexus_games, NexusGame};
 use std::collections::{HashMap, HashSet};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tracing::{info, warn};
-
 // === ESTRUTURAS DE DADOS ===
 
 #[derive(serde::Serialize)]
@@ -39,9 +42,10 @@ struct MissingMetadataBatchItem {
     game_name: String,
     processed_data: ProcessedGameDetails,
     dlcs: Vec<igdb::core::IgdbDlc>,
+    cover_candidates: Vec<CoverCandidate>,
 }
 
-// === LÓGICA CORE (REFATORADA) ===
+// === LÓGICA CORE ===
 
 pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>) {
     let platform_label = games.first().map(|g| g.platform.clone());
@@ -56,6 +60,16 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
         .ok()
         .and_then(|conn| get_cached_nexus_games(&conn).ok())
         .unwrap_or_default();
+
+    // Client SteamGridDB montado uma vez por batch. Se a key não estiver
+    // configurada, segue sem capas via SGDB — IGDB/Steam cobrem o fallback.
+    let sgdb_client = match crate::database::get_secret(&app, "steamgriddb_api_key") {
+        Ok(key) if !key.is_empty() => Some(SteamGridDbClient::new(key)),
+        _ => {
+            warn!("SteamGridDB: API key não configurada, pulando resolução de capas neste batch");
+            None
+        }
+    };
 
     let batch_size = crate::constants::REQUISITIONS_PER_BATCH as usize;
     let mut processed_count = 0usize;
@@ -79,7 +93,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                 },
             );
 
-            let (processed_data, raw_tags, dlcs, _igdb_found) = {
+            let (processed_data, raw_tags, dlcs, cover_candidates, _igdb_found) = {
                 let cache_conn = match state.cache_db.lock() {
                     Ok(c) => c,
                     Err(_) => continue,
@@ -95,8 +109,9 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                             Some(game.platform_game_id.clone()),
                             &cache_conn,
                             &nexus_games,
+                            sgdb_client.as_ref(),
                         )
-                            .await
+                        .await
                     })
                 })
             };
@@ -109,6 +124,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                 game_name: game.name.clone(),
                 processed_data,
                 dlcs,
+                cover_candidates,
             });
         }
 
@@ -125,10 +141,38 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                             item.game_name, e
                         );
                         errors += 1;
-                    } else {
-                        let _ = igdb::core::save_game_dlcs(&tx, &item.game_id, &item.dlcs);
-                        success += 1;
+                        continue;
                     }
+
+                    let _ = igdb::core::save_game_dlcs(&tx, &item.game_id, &item.dlcs);
+
+                    for candidate in &item.cover_candidates {
+                        if let Err(e) = steamgriddb::db::upsert_game_image(
+                            &tx,
+                            &item.game_id,
+                            candidate.source,
+                            &candidate.url,
+                            candidate.thumb_url.as_deref(),
+                            candidate.width,
+                            candidate.height,
+                            candidate.priority,
+                        ) {
+                            warn!(
+                                "enrich_newly_imported: erro ao salvar capa ({}) de {}: {}",
+                                candidate.source, item.game_name, e
+                            );
+                        }
+                    }
+
+                    // Marca o cache_meta mesmo em miss, pra covers.rs não reprocessar
+                    // via TTL antes da hora quando o batch já tentou.
+                    let sgdb_found = item
+                        .cover_candidates
+                        .iter()
+                        .any(|c| c.source == "steamgriddb");
+                    let _ = steamgriddb::db::set_cache_meta(&tx, &item.game_id, sgdb_found);
+
+                    success += 1;
                 }
                 match tx.commit() {
                     Ok(_) => {
@@ -168,7 +212,9 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
     );
 }
 
-/// Processa um único jogo com cache integrado (sem manter lock)
+/// Processa um único jogo com cache integrado (sem manter lock).
+/// Retorna as candidatas de capa coletadas (SteamGridDB, IGDB, Steam) para
+/// que o chamador persista em `game_images` dentro da mesma transação do batch.
 async fn enrich_game_metadata(
     app: &AppHandle,
     game_id: &str,
@@ -177,10 +223,12 @@ async fn enrich_game_metadata(
     platform_game_id: Option<String>,
     cache_conn: &rusqlite::Connection,
     nexus_games: &[NexusGame],
+    sgdb_client: Option<&SteamGridDbClient>,
 ) -> (
     ProcessedGameDetails,
     Vec<String>,
     Vec<igdb::core::IgdbDlc>,
+    Vec<CoverCandidate>,
     bool,
 ) {
     let mut details = ProcessedGameDetails {
@@ -219,14 +267,15 @@ async fn enrich_game_metadata(
     };
 
     let mut links_map: HashMap<String, String> = HashMap::new();
+    let mut cover_candidates: Vec<CoverCandidate> = Vec::new();
 
     if let Some(nexus_match) = find_best_nexus_match(name, nexus_games) {
         let url = format!("https://www.nexusmods.com/{}", nexus_match.domain_name);
         links_map.insert("nexus".to_string(), url);
     }
 
-    // IGDB é a fonte principal. RAWG roda em paralelo como fallback — só é
-    // usada campo a campo pro que o IGDB não trouxer (ou não achar o jogo).
+    // IGDB é a fonte principal de metadados textuais. Steam resolve o AppID e, junto, tenta a capa
+    // via SGDB (usa o AppID pra pular fuzzy match quando disponível).
     let igdb_future = igdb::fetch::search_and_resolve(app, name);
     let hltb_future = fetch_hltb_metadata(name, cache_conn);
 
@@ -236,20 +285,46 @@ async fn enrich_game_metadata(
                 .await
                 .map(|resolution| resolution.app_id);
 
+        let sgdb_cover = if let Some(client) = sgdb_client {
+            let appid_num = target_steam_id
+                .as_deref()
+                .and_then(|s| s.parse::<u32>().ok());
+            match steamgriddb::resolve_cover(client, name, appid_num).await {
+                Ok(cover) => cover,
+                Err(e) => {
+                    warn!("SteamGridDB resolve_cover falhou para '{}': {}", name, e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
         match &target_steam_id {
             Some(steam_id) => {
                 let (store_data, reviews) = tokio::join!(
                     fetch_steam_store_data(steam_id, cache_conn),
                     fetch_steam_reviews(steam_id, cache_conn)
                 );
-                (target_steam_id, store_data, reviews)
+                (target_steam_id, store_data, reviews, sgdb_cover)
             }
-            None => (target_steam_id, None, None),
+            None => (target_steam_id, None, None, sgdb_cover),
         }
     };
 
-    let (igdb_result, (target_steam_id, store_data, reviews), hltb_result) =
+    let (igdb_result, (target_steam_id, store_data, reviews, sgdb_cover), hltb_result) =
         tokio::join!(igdb_future, steam_future, hltb_future);
+
+    if let Some(cover) = sgdb_cover {
+        cover_candidates.push(CoverCandidate {
+            source: "steamgriddb",
+            url: cover.url,
+            thumb_url: Some(cover.thumb_url),
+            width: Some(cover.width),
+            height: Some(cover.height),
+            priority: 0,
+        });
+    }
 
     let mut found_raw_tags: Vec<String> = Vec::new();
     let mut igdb_dlcs: Vec<igdb::core::IgdbDlc> = Vec::new();
@@ -272,6 +347,17 @@ async fn enrich_game_metadata(
                 }
             }
 
+            if let Some(url) = &mapped.details.background_image {
+                cover_candidates.push(CoverCandidate {
+                    source: "igdb",
+                    url: url.clone(),
+                    thumb_url: None,
+                    width: None,
+                    height: None,
+                    priority: 1,
+                });
+            }
+
             details.description = mapped.details.description;
             details.release_date = mapped.details.release_date;
             details.genres = mapped.details.genres;
@@ -291,10 +377,7 @@ async fn enrich_game_metadata(
             details.age_ratings = mapped.details.age_ratings;
             details.display_name = mapped.details.display_name;
         }
-        Ok(None) => warn!(
-            "IGDB: nenhum resultado para '{}', usando RAWG como fallback",
-            name
-        ),
+        Ok(None) => warn!("IGDB: nenhum resultado para {}", name),
         Err(e) => warn!("IGDB search_and_resolve falhou para '{}': {}", name, e),
     }
 
@@ -317,6 +400,16 @@ async fn enrich_game_metadata(
             if details.release_date.is_none() {
                 details.release_date = store_data.release_date;
             }
+
+            cover_candidates.push(CoverCandidate {
+                source: "steam",
+                url: store_data.header_image.clone(),
+                thumb_url: None,
+                width: None,
+                height: None,
+                priority: 2,
+            });
+
             if details.background_image.is_none() {
                 details.background_image = Some(store_data.header_image);
             }
@@ -342,5 +435,11 @@ async fn enrich_game_metadata(
         apply_hltb_metadata(&mut details, &hltb_det);
     }
 
-    (details, found_raw_tags, igdb_dlcs, igdb_found)
+    (
+        details,
+        found_raw_tags,
+        igdb_dlcs,
+        cover_candidates,
+        igdb_found,
+    )
 }
