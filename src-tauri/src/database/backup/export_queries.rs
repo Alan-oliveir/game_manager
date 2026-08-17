@@ -5,7 +5,7 @@
 use crate::database::{current_schema_version, AppState};
 use crate::errors::AppError;
 use crate::models::{
-    Game, GameDataPath, GameDetails, GameExtras, Platform, SystemRequirements, WishlistGame,
+    Game, GameDataPath, GameDetails, GameExtras, Library, SystemRequirements, WishlistGame,
 };
 use rusqlite::Connection;
 use tauri::State;
@@ -52,7 +52,7 @@ pub fn fetch_backup_data(state: &State<AppState>) -> Result<BackupDataTuple, App
 /// Busca todos os jogos na biblioteca
 fn fetch_games(conn: &Connection) -> Result<Vec<Game>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, slug, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, playtime_source, last_played, added_at, alternative_names, source_label FROM games"
+        "SELECT id, name, slug, cover_url, library, library_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, playtime_source, last_played, added_at, alternative_names, source_label FROM games"
     )?;
 
     let game_iter = stmt.query_map([], |row| {
@@ -66,8 +66,8 @@ fn fetch_games(conn: &Connection) -> Result<Vec<Game>, AppError> {
             cover_url: row.get(3)?,
             genres: None,
             developer: None,
-            platform: row.get::<_, String>(4)?.parse().unwrap_or(Platform::Outra),
-            platform_game_id: row.get(5)?,
+            library: row.get::<_, String>(4)?.parse().unwrap_or(Library::Outra),
+            library_game_id: row.get(5)?,
             alternative_names,
             installed: row.get(6)?,
             import_confidence: row
@@ -171,7 +171,7 @@ fn fetch_game_details(conn: &Connection) -> Result<Vec<GameDetails>, AppError> {
 /// Busca todos os jogos da wishlist
 fn fetch_wishlist(conn: &Connection) -> Result<Vec<WishlistGame>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, cover_url, store_url, store_platform, itad_id, current_price, normal_price, lowest_price, currency, on_sale, voucher, added_at FROM wishlist"
+        "SELECT id, name, cover_url, store_url, store, itad_id, current_price, normal_price, lowest_price, currency, on_sale, voucher, added_at FROM wishlist"
     )?;
 
     let wishlist_iter = stmt.query_map([], |row| {
@@ -180,7 +180,7 @@ fn fetch_wishlist(conn: &Connection) -> Result<Vec<WishlistGame>, AppError> {
             name: row.get(1)?,
             cover_url: row.get(2)?,
             store_url: row.get(3)?,
-            store_platform: row.get(4)?,
+            store: row.get(4)?,
             itad_id: row.get(5)?,
             current_price: row.get(6)?,
             normal_price: row.get(7)?,

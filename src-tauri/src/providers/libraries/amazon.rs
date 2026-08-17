@@ -420,8 +420,8 @@ impl AmazonSource {
         let games = products
             .into_iter()
             .map(|(id, title)| SourceGame {
-                platform: "Amazon".to_string(),
-                platform_game_id: id,
+                library: "Amazon".to_string(),
+                library_game_id: id,
                 name: Some(title),
                 installed: false,
                 executable_path: None,
@@ -617,8 +617,8 @@ pub fn import_installed() -> Result<Vec<SourceGame>, AppError> {
                 .map(|p| p.to_string_lossy().to_string());
 
             Ok(SourceGame {
-                platform: "Amazon".to_string(),
-                platform_game_id: id,
+                library: "Amazon".to_string(),
+                library_game_id: id,
                 name: title,
                 installed: true,
                 executable_path, // resolvido via fuel.json quando disponível
@@ -646,7 +646,7 @@ pub fn merge_local_install_status(
     for local in local_games {
         let matched = library_games
             .iter_mut()
-            .find(|g| g.platform_game_id == local.platform_game_id);
+            .find(|g| g.library_game_id == local.library_game_id);
 
         match matched {
             Some(g) => {

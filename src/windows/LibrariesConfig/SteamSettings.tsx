@@ -102,7 +102,7 @@ export function SteamSettings({
         </SettingsRow>
 
         <LauncherPathSection
-          platform="Steam"
+          library="Steam"
           title={t('steam_launcher_path_title')}
           description={t('launcher_path_description')}
         />

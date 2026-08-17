@@ -99,7 +99,7 @@ export function GogSettings({ onLibraryUpdate }: Readonly<GogSettingsProps>) {
         </SettingsRow>
 
         <LauncherPathSection
-          platform="GOG"
+          library="GOG"
           title={t('gog_launcher_path_title')}
           description={t('launcher_path_description')}
         />

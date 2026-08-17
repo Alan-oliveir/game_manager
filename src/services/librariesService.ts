@@ -20,8 +20,8 @@ export const librariesService = {
   addGame: async (game: {
     id: string;
     name: string;
-    platform: string;
-    platformGameId: string;
+    library: string;
+    libraryGameId: string;
     coverUrl: string | null;
     installed: boolean;
     importConfidence: string | null;
@@ -42,8 +42,8 @@ export const librariesService = {
   updateGame: async (game: {
     id: string;
     name: string;
-    platform: string;
-    platformGameId: string;
+    library: string;
+    libraryGameId: string;
     coverUrl: string | null;
     installed: boolean;
     importConfidence: string | null;

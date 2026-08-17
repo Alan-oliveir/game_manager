@@ -448,8 +448,8 @@ impl GameSource for ScanSource {
         let games = discoveries
             .into_iter()
             .map(|game| SourceGame {
-                platform: "Outra".to_string(),
-                platform_game_id: game.executable_path.clone(),
+                library: "Outra".to_string(),
+                library_game_id: game.executable_path.clone(),
                 name: Some(game.suggested_name),
                 installed: true,
                 executable_path: Some(game.executable_path),

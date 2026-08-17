@@ -24,17 +24,17 @@ pub struct EnrichProgress {
     pub total_found: i32,
     pub last_game: String,
     pub status: String,
-    pub platform: Option<String>,
+    pub library: Option<String>,
 }
 
 /// Payload do evento `enrich_complete`.
 ///
-/// `platform` é `Some` quando o enrichment é escopado a uma importação
+/// `library` é `Some` quando o enrichment é escopado a uma importação
 /// específica (`enrich_newly_imported`), e `None` quando é uma varredura
 /// geral da biblioteca (`update_metadata`, `fill_missing_metadata`).
 #[derive(serde::Serialize, Clone)]
 pub struct EnrichCompletePayload {
-    pub platform: Option<String>,
+    pub library: Option<String>,
     pub message: String,
 }
 
@@ -93,12 +93,12 @@ pub struct CoverCandidate {
 
 pub async fn resolve_steam_app_id(
     name: &str,
-    platform: &str,
-    platform_game_id: Option<&str>,
+    library: &str,
+    library_game_id: Option<&str>,
     cache_conn: &rusqlite::Connection,
 ) -> Option<SteamIdResolution> {
-    if platform.to_lowercase() == "steam" {
-        if let Some(id) = platform_game_id {
+    if library.to_lowercase() == "steam" {
+        if let Some(id) = library_game_id {
             return Some(SteamIdResolution {
                 app_id: id.to_string(),
                 confidence: ImportConfidence::High,
@@ -271,34 +271,34 @@ where
 
     conn.execute(
         "UPDATE game_details SET
-            release_date        = COALESCE(?2,  release_date),
-            genres              = COALESCE(NULLIF(?3, '[]'), genres),
-            tags                = COALESCE(NULLIF(?4, '[]'), tags),
-            developer           = COALESCE(?5,  developer),
-            publisher           = COALESCE(?6,  publisher),
-            critic_score        = COALESCE(?7,  critic_score),
-            series              = COALESCE(?8,  series),
-            steam_review_label  = COALESCE(?9, steam_review_label),
-            steam_review_count  = COALESCE(?10, steam_review_count),
-            steam_review_score  = COALESCE(?11, steam_review_score),
-            steam_review_updated_at = COALESCE(?12, steam_review_updated_at),
-            is_adult            = ?14,
-            adult_tags          = COALESCE(?15, adult_tags),
-            external_links      = COALESCE(?16, external_links),
-            steam_app_id        = COALESCE(?17, steam_app_id),
-            hltb_main_story     = COALESCE(?18, hltb_main_story),
-            hltb_main_extra     = COALESCE(?19, hltb_main_extra),
-            hltb_completionist  = COALESCE(?20, hltb_completionist),
-            hltb_coop_time      = COALESCE(?21, hltb_coop_time),
-            franchise           = COALESCE(?22, franchise),
-            game_modes          = COALESCE(?23, game_modes),
-            player_perspectives = COALESCE(?24, player_perspectives),
-            themes              = COALESCE(?25, themes),
-            keywords            = COALESCE(?26, keywords),
-            age_ratings         = COALESCE(?27, age_ratings),
-            display_name        = COALESCE(?28, display_name),
-            updated_at          = ?29
-         WHERE game_id = ?1",
+        release_date        = COALESCE(?2,  release_date),
+        genres              = COALESCE(NULLIF(?3, '[]'), genres),
+        tags                = COALESCE(NULLIF(?4, '[]'), tags),
+        developer           = COALESCE(?5,  developer),
+        publisher           = COALESCE(?6,  publisher),
+        critic_score        = COALESCE(?7,  critic_score),
+        series              = COALESCE(?8,  series),
+        steam_review_label  = COALESCE(?9,  steam_review_label),
+        steam_review_count  = COALESCE(?10, steam_review_count),
+        steam_review_score  = COALESCE(?11, steam_review_score),
+        steam_review_updated_at = COALESCE(?12, steam_review_updated_at),
+        is_adult            = ?13,
+        adult_tags          = COALESCE(?14, adult_tags),
+        external_links      = COALESCE(?15, external_links),
+        steam_app_id        = COALESCE(?16, steam_app_id),
+        hltb_main_story     = COALESCE(?17, hltb_main_story),
+        hltb_main_extra     = COALESCE(?18, hltb_main_extra),
+        hltb_completionist  = COALESCE(?19, hltb_completionist),
+        hltb_coop_time      = COALESCE(?20, hltb_coop_time),
+        franchise           = COALESCE(?21, franchise),
+        game_modes          = COALESCE(?22, game_modes),
+        player_perspectives = COALESCE(?23, player_perspectives),
+        themes              = COALESCE(?24, themes),
+        keywords            = COALESCE(?25, keywords),
+        age_ratings         = COALESCE(?26, age_ratings),
+        display_name        = COALESCE(?27, display_name),
+        updated_at          = ?28
+    WHERE game_id = ?1",
         params![
             d.game_id,
             d.release_date,

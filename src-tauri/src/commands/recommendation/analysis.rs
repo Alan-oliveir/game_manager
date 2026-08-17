@@ -6,7 +6,7 @@
 use crate::constants::MINUTES_PER_HOUR_F32;
 use crate::database::AppState;
 use crate::errors::AppError;
-use crate::models::Platform;
+use crate::models::Library;
 use crate::services::recommendation::{
     calculate_user_profile, export_games_csv, export_report_json, export_report_txt,
     generate_analysis_report, parse_release_year, GameWithDetails, RecommendationConfig,
@@ -157,7 +157,7 @@ fn fetch_games_with_details(
     let mut stmt = conn.prepare(
         "SELECT g.id, g.name, g.slug, g.playtime, g.favorite, g.user_rating,
                 (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url,
-                g.platform_game_id, g.last_played, g.added_at, g.platform, g.playtime_source, g.alternative_names,
+                g.library_game_id, g.last_played, g.added_at, g.library, g.playtime_source, g.alternative_names,
                 gd.genres, gd.steam_app_id, gd.release_date, gd.series, gd.tags
         FROM games g
         LEFT JOIN game_details gd ON g.id = gd.game_id
@@ -177,10 +177,10 @@ fn fetch_games_with_details(
                 favorite: row.get(4)?,
                 user_rating: row.get(5)?,
                 cover_url: row.get(6)?,
-                platform_game_id: row.get(7)?,
+                library_game_id: row.get(7)?,
                 last_played: row.get(8)?,
                 added_at: row.get(9)?,
-                platform: row.get::<_, String>(10)?.parse().unwrap_or(Platform::Outra),
+                library: row.get::<_, String>(10)?.parse().unwrap_or(Library::Outra),
                 alternative_names,
                 installed: false,
                 import_confidence: None,

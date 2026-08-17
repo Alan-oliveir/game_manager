@@ -64,7 +64,7 @@ export function IndiegalaSettings({
         </SettingsRow>
 
         <LauncherPathSection
-          platform="Indiegala"
+          library="Indiegala"
           title={t('indiegala_launcher_path_title')}
           description={t('launcher_path_description')}
         />

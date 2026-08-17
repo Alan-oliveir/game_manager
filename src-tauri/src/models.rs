@@ -48,7 +48,7 @@ impl std::fmt::Display for ImportConfidence {
 
 /// Plataformas suportadas
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum Platform {
+pub enum Library {
     Steam,
     Epic,
     GOG,
@@ -64,44 +64,44 @@ pub enum Platform {
     Outra,
 }
 
-impl FromStr for Platform {
+impl FromStr for Library {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Steam" => Ok(Platform::Steam),
-            "Epic" => Ok(Platform::Epic),
-            "GOG" => Ok(Platform::GOG),
-            "Amazon" => Ok(Platform::Amazon),
-            "Ubisoft" => Ok(Platform::Ubisoft),
-            "EA" => Ok(Platform::EA),
-            "BattleNet" => Ok(Platform::BattleNet),
-            "Xbox" => Ok(Platform::Xbox),
-            "LegacyGames" => Ok(Platform::LegacyGames),
-            "Indiegala" => Ok(Platform::Indiegala),
-            "Itch" => Ok(Platform::Itch),
-            "Indie" => Ok(Platform::Indie),
-            "Outra" => Ok(Platform::Outra),
+            "Steam" => Ok(Library::Steam),
+            "Epic" => Ok(Library::Epic),
+            "GOG" => Ok(Library::GOG),
+            "Amazon" => Ok(Library::Amazon),
+            "Ubisoft" => Ok(Library::Ubisoft),
+            "EA" => Ok(Library::EA),
+            "BattleNet" => Ok(Library::BattleNet),
+            "Xbox" => Ok(Library::Xbox),
+            "LegacyGames" => Ok(Library::LegacyGames),
+            "Indiegala" => Ok(Library::Indiegala),
+            "Itch" => Ok(Library::Itch),
+            "Indie" => Ok(Library::Indie),
+            "Outra" => Ok(Library::Outra),
             _ => Err(()),
         }
     }
 }
 
-impl std::fmt::Display for Platform {
+impl std::fmt::Display for Library {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Platform::Steam => "Steam",
-            Platform::Epic => "Epic",
-            Platform::GOG => "GOG",
-            Platform::Amazon => "Amazon",
-            Platform::EA => "EA",
-            Platform::Ubisoft => "Ubisoft",
-            Platform::BattleNet => "BattleNet",
-            Platform::Xbox => "Xbox",
-            Platform::LegacyGames => "LegacyGames",
-            Platform::Indiegala => "Indiegala",
-            Platform::Itch => "Itch",
-            Platform::Indie => "Indie",
-            Platform::Outra => "Outra",
+            Library::Steam => "Steam",
+            Library::Epic => "Epic",
+            Library::GOG => "GOG",
+            Library::Amazon => "Amazon",
+            Library::EA => "EA",
+            Library::Ubisoft => "Ubisoft",
+            Library::BattleNet => "BattleNet",
+            Library::Xbox => "Xbox",
+            Library::LegacyGames => "LegacyGames",
+            Library::Indiegala => "Indiegala",
+            Library::Itch => "Itch",
+            Library::Indie => "Indie",
+            Library::Outra => "Outra",
         };
         write!(f, "{}", s)
     }
@@ -110,7 +110,7 @@ impl std::fmt::Display for Platform {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum PlaytimeSource {
-    Platform(Platform), // API oficial (Steam, Itch, Indiegala)
+    Store(Library), // API oficial (Steam, Itch, Indiegala)
     Local,              // tracker local via processo
 }
 
@@ -119,7 +119,7 @@ impl PlaytimeSource {
     pub fn as_db_str(&self) -> String {
         match self {
             PlaytimeSource::Local => "local".to_string(),
-            PlaytimeSource::Platform(p) => p.to_string(),
+            PlaytimeSource::Store(p) => p.to_string(),
         }
     }
 }
@@ -130,7 +130,7 @@ impl FromStr for PlaytimeSource {
         if s == "local" {
             Ok(PlaytimeSource::Local)
         } else {
-            s.parse::<Platform>().map(PlaytimeSource::Platform)
+            s.parse::<Library>().map(PlaytimeSource::Store)
         }
     }
 }
@@ -239,12 +239,12 @@ pub struct Game {
     pub slug: String,
     pub alternative_names: Option<Vec<String>>,
     pub source_label: Option<String>,
-    pub platform_game_id: String,
+    pub library_game_id: String,
 
     // Metadados básicos
     pub genres: Option<String>,
     pub developer: Option<String>,
-    pub platform: Platform,
+    pub library: Library,
 
     // Mídia
     pub cover_url: Option<String>,
@@ -338,7 +338,7 @@ pub struct WishlistGame {
     pub name: String,
     pub cover_url: Option<String>,
     pub store_url: Option<String>,
-    pub store_platform: Option<String>,
+    pub store: Option<String>,
     pub itad_id: Option<String>,
     pub current_price: Option<f64>,
     pub normal_price: Option<f64>,

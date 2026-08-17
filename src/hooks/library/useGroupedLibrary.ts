@@ -1,24 +1,24 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { Game, Platform } from '@/types';
+import { Game, Library } from '@/types';
 
 export type GridRow =
-  | { type: 'header'; platform: Platform; count: number; collapsed: boolean }
+  | { type: 'header'; library: Library; count: number; collapsed: boolean }
   | { type: 'cards'; games: Game[] }; // slice de até columnCount jogos
 
 export function useGroupedLibrary(
   games: Game[],
-  groupByPlatform: boolean,
+  groupByLibrary: boolean,
   columnCount: number
 ) {
-  const [collapsedPlatforms, setCollapsedPlatforms] = useState<Set<string>>(
+  const [collapsedLibraries, setCollapsedLibraries] = useState<Set<string>>(
     new Set()
   );
 
   const rows = useMemo<GridRow[]>(() => {
     if (columnCount <= 0) return [];
 
-    if (!groupByPlatform) {
+    if (!groupByLibrary) {
       const result: GridRow[] = [];
 
       for (let i = 0; i < games.length; i += columnCount) {
@@ -28,55 +28,55 @@ export function useGroupedLibrary(
       return result;
     }
 
-    const groups = new Map<Platform, Game[]>();
+    const groups = new Map<Library, Game[]>();
 
     for (const game of games) {
-      const key = game.platform; // PascalCase padronizado
+      const key = game.library; // PascalCase padronizado
 
       if (!groups.has(key)) groups.set(key, []);
 
       groups.get(key)!.push(game);
     }
 
-    const sortedPlatforms = [...groups.keys()].sort();
+    const sortedLibraries = [...groups.keys()].sort();
     const result: GridRow[] = [];
 
-    for (const platform of sortedPlatforms) {
-      const platformGames = groups.get(platform)!;
-      const collapsed = collapsedPlatforms.has(platform);
+    for (const library of sortedLibraries) {
+      const libraryGames = groups.get(library)!;
+      const collapsed = collapsedLibraries.has(library);
       result.push({
         type: 'header',
-        platform,
-        count: platformGames.length,
+        library,
+        count: libraryGames.length,
         collapsed,
       });
 
       if (!collapsed) {
-        for (let i = 0; i < platformGames.length; i += columnCount) {
+        for (let i = 0; i < libraryGames.length; i += columnCount) {
           result.push({
             type: 'cards',
-            games: platformGames.slice(i, i + columnCount),
+            games: libraryGames.slice(i, i + columnCount),
           });
         }
       }
     }
 
     return result;
-  }, [games, groupByPlatform, columnCount, collapsedPlatforms]);
+  }, [games, groupByLibrary, columnCount, collapsedLibraries]);
 
-  const togglePlatform = useCallback((platform: Platform) => {
-    setCollapsedPlatforms(prev => {
+  const toggleLibrary = useCallback((library: Library) => {
+    setCollapsedLibraries(prev => {
       const next = new Set(prev);
 
-      if (next.has(platform)) {
-        next.delete(platform);
+      if (next.has(library)) {
+        next.delete(library);
       } else {
-        next.add(platform);
+        next.add(library);
       }
 
       return next;
     });
   }, []);
 
-  return { rows, togglePlatform };
+  return { rows, toggleLibrary };
 }

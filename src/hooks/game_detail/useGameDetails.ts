@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
-import { Game, GameDetails, GameStoreLink } from 'src/types';
+import { Game, GameDetails, GameLibraryLink } from 'src/types';
 
 /**
  * Hook para gerenciar os detalhes de um jogo selecionado, incluindo o carregamento
@@ -13,7 +13,7 @@ import { Game, GameDetails, GameStoreLink } from 'src/types';
 export function useGameDetails(selectedGame: Game | null, allGames: Game[]) {
   const [details, setDetails] = useState<GameDetails | null>(null);
   const [loading, setLoading] = useState(false);
-  const [siblings, setSiblings] = useState<GameStoreLink[]>([]);
+  const [siblings, setSiblings] = useState<GameLibraryLink[]>([]);
 
   // Move loadData outside useEffect so it can be returned
   const loadData = async () => {
@@ -54,7 +54,7 @@ export function useGameDetails(selectedGame: Game | null, allGames: Game[]) {
           g.name.toLowerCase() === selectedGame.name.toLowerCase() &&
           g.id !== selectedGame.id
       )
-      .map(g => ({ id: g.id, platform: g.platform || 'Outra' }));
+      .map(g => ({ id: g.id, library: g.library || 'Outra' }));
     setSiblings(related);
     // 2. Busca detalhes do banco de dados local
     loadData();

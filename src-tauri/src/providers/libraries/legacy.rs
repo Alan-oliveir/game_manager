@@ -353,8 +353,8 @@ impl LegacySource {
                 Self::resolve_install_info(library_paths, &catalog_game.game_name);
 
             let source = SourceGame {
-                platform: "LegacyGames".to_string(),
-                platform_game_id: acquired.product_id.clone(),
+                library: "LegacyGames".to_string(),
+                library_game_id: acquired.product_id.clone(),
                 name: Some(normalize_game_name(&catalog_game.game_name)),
                 installed,
                 executable_path,

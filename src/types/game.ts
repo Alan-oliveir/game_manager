@@ -29,9 +29,9 @@ export const CATEGORY_MULTIPLIERS: Record<TagCategory | 'unknown', number> = {
 // === BIBLIOTECA (STEAM, EPIG, GOG, etc.) ===
 
 /**
- * Bibliotecas suportadas (deve corresponder ao enum Platform do Rust)
+ * Bibliotecas suportadas (deve corresponder ao enum Library do Rust)
  */
-export type Platform =
+export type Library =
   | 'Steam'
   | 'Epic'
   | 'GOG'
@@ -49,7 +49,7 @@ export type Platform =
 /**
  * Dicionário para renderização visual na interface
  */
-export const LibraryDisplayNames: Record<Platform, string> = {
+export const LibraryDisplayNames: Record<Library, string> = {
   Steam: 'Steam',
   Epic: 'Epic Games',
   GOG: 'GOG',
@@ -66,7 +66,7 @@ export const LibraryDisplayNames: Record<Platform, string> = {
 };
 
 /**
- * Status exibido nas telas de configuração de plataformas (StatusBadge).
+ * Status exibido nas telas de configuração de bibliotecas (StatusBadge).
  */
 export interface ImportStatus {
   type: 'success' | 'error' | null;
@@ -74,7 +74,7 @@ export interface ImportStatus {
 }
 
 /**
- * Tipos para iniciar jogos por plataforma
+ * Tipos para iniciar jogos por biblioteca
  */
 export type LaunchOutcome =
   | { kind: 'launched' }
@@ -85,6 +85,15 @@ export type LaunchOutcome =
 export interface GameStoreLink {
   id: string;
   store: string;
+}
+
+/**
+ * Referência a outra cópia do mesmo jogo em uma biblioteca diferente
+ * (ex: o usuário possui o jogo tanto na Steam quanto na GOG).
+ */
+export interface GameLibraryLink {
+  id: string;
+  library: Library;
 }
 
 export interface GameActions {
@@ -117,7 +126,7 @@ export type SteamReviewSummary =
  */
 export type ImportConfidence = 'High' | 'Medium' | 'Low';
 
-export type PlaytimeSource = 'local' | { platform: Platform };
+export type PlaytimeSource = 'local' | { store: Library };
 
 export interface GameDescriptionData {
   summary?: string;
@@ -147,9 +156,9 @@ export interface Game {
   coverUrl?: string;
 
   // Identificação
-  platform: Platform;
+  library: Library;
   sourceLabel?: string;
-  platformGameId: string;
+  libraryGameId: string;
   genres?: string;
   developer?: string;
   alternativeNames?: string;
@@ -180,7 +189,7 @@ export interface Game {
  * Detalhes adicionais do jogo - Schema 4.0
  *
  * Metadados enriquecidos armazenados no banco de dados local,
- * provenientes de APIs externas (RAWG, STEAM).
+ * provenientes de APIs externas (IGDB, STEAM).
  */
 export interface GameDetails {
   gameId: string;
@@ -194,7 +203,6 @@ export interface GameDetails {
   genres?: string;
   tags?: GameTag[] | string;
   series?: string;
-  backgroundImage?: string;
 
   // Scores & Reviews
   criticScore?: number; // Metacritic

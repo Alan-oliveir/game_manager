@@ -73,7 +73,7 @@ struct ItadGame {
 fn insert_game_internal(conn: &Connection, game: &WishlistGame) -> Result<(), AppError> {
     conn.execute(
         "INSERT OR REPLACE INTO wishlist (
-            id, name, cover_url, store_url, store_platform,
+            id, name, cover_url, store_url, store,
             current_price, normal_price, lowest_price,
             currency, on_sale, voucher, itad_id, added_at
         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
@@ -82,7 +82,7 @@ fn insert_game_internal(conn: &Connection, game: &WishlistGame) -> Result<(), Ap
             game.name,
             game.cover_url,
             game.store_url,
-            game.store_platform,
+            game.store,
             game.current_price,
             game.normal_price,
             game.lowest_price,
@@ -146,7 +146,7 @@ fn parse_steam_wishlist(content: &str) -> Option<Vec<WishlistGame>> {
             name: item.title,
             cover_url: Some(cover_url),
             store_url: Some(format!("{}/app/{}", STEAM_STORE_URL, app_id)),
-            store_platform: Some("Steam".to_string()),
+            store: Some("Steam".to_string()),
             itad_id: None,
             current_price: price,
             normal_price: price,
@@ -177,7 +177,7 @@ fn parse_itad_wishlist(content: &str) -> Option<Vec<WishlistGame>> {
                 name: item.title,
                 cover_url: None, // ITAD export não tem capa, frontend deve mostrar placeholder
                 store_url: None,
-                store_platform: Some("ITAD".to_string()),
+                store: Some("ITAD".to_string()),
                 itad_id: None,
                 current_price: None,
                 normal_price: None,
@@ -313,7 +313,7 @@ pub fn add_to_wishlist(
         name,
         cover_url,
         store_url,
-        store_platform: None,
+        store: None,
         itad_id,
         current_price,
         normal_price: current_price,
@@ -347,7 +347,7 @@ pub fn get_wishlist(state: State<AppState>) -> Result<Vec<WishlistGame>, AppErro
     let conn = state.games_db.lock()?;
 
     let mut stmt = conn
-        .prepare("SELECT id, name, cover_url, store_url, store_platform, current_price, normal_price, lowest_price, currency, on_sale, voucher, added_at, itad_id FROM wishlist ORDER BY added_at DESC")?;
+        .prepare("SELECT id, name, cover_url, store_url, store, current_price, normal_price, lowest_price, currency, on_sale, voucher, added_at, itad_id FROM wishlist ORDER BY added_at DESC")?;
 
     let games = stmt
         .query_map([], |row| {
@@ -356,7 +356,7 @@ pub fn get_wishlist(state: State<AppState>) -> Result<Vec<WishlistGame>, AppErro
                 name: row.get(1)?,
                 cover_url: row.get(2)?,
                 store_url: row.get(3)?,
-                store_platform: row.get(4)?,
+                store: row.get(4)?,
                 current_price: row.get(5)?,
                 normal_price: row.get(6)?,
                 lowest_price: row.get(7)?,

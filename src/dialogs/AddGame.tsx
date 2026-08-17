@@ -124,8 +124,8 @@ export default function AddGame({
             <div className="grid gap-2">
               <Label>{t('add_game_platform_label')}</Label>
               <Select
-                value={formData.platform}
-                onValueChange={val => handleChange('platform', val)}
+                value={formData.library}
+                onValueChange={val => handleChange('library', val)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder={t('add_game_select_placeholder')} />

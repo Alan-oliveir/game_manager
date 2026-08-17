@@ -7,23 +7,22 @@ import { useTranslation } from 'react-i18next';
 
 import { Skeleton } from '@/ui/skeleton';
 
-type Platform = 'steam' | 'epic' | 'gog' | 'xbox';
+type Library = 'steam' | 'epic' | 'gog' | 'xbox';
 
 interface Achievement {
-  platform: Platform;
+  library: Library;
   game_name: string;
   achievement_name: string;
   unlock_time: number; // Timestamp Unix
   game_id: string;
 }
 
-const PLATFORM_STYLES: Record<Platform, { label: string; className: string }> =
-  {
-    steam: { label: 'Steam', className: 'bg-sky-500/10 text-sky-500' },
-    epic: { label: 'Epic', className: 'bg-neutral-500/10 text-neutral-400' },
-    gog: { label: 'GOG', className: 'bg-purple-500/10 text-purple-400' },
-    xbox: { label: 'Xbox', className: 'bg-green-500/10 text-green-500' },
-  };
+const PLATFORM_STYLES: Record<Library, { label: string; className: string }> = {
+  steam: { label: 'Steam', className: 'bg-sky-500/10 text-sky-500' },
+  epic: { label: 'Epic', className: 'bg-neutral-500/10 text-neutral-400' },
+  gog: { label: 'GOG', className: 'bg-purple-500/10 text-purple-400' },
+  xbox: { label: 'Xbox', className: 'bg-green-500/10 text-green-500' },
+};
 
 export default function Achievements() {
   const { t } = useTranslation('common');
@@ -69,11 +68,11 @@ export default function Achievements() {
 
       <div className="space-y-2">
         {achievements.map(ach => {
-          const platform = PLATFORM_STYLES[ach.platform];
+          const library = PLATFORM_STYLES[ach.library];
 
           return (
             <div
-              key={`${ach.platform}-${ach.game_id}-${ach.achievement_name}`}
+              key={`${ach.library}-${ach.game_id}-${ach.achievement_name}`}
               className="bg-card hover:bg-accent/5 flex items-center justify-between rounded-lg border p-3 transition-colors"
             >
               <div className="flex items-center gap-3 overflow-hidden">
@@ -86,9 +85,9 @@ export default function Achievements() {
                   </p>
                   <div className="flex items-center gap-1.5 overflow-hidden">
                     <span
-                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${platform.className}`}
+                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${library.className}`}
                     >
-                      {platform.label}
+                      {library.label}
                     </span>
                     <p className="text-muted-foreground truncate text-xs">
                       {ach.game_name}

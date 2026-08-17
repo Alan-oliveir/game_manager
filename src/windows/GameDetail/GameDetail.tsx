@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { WindowBase } from '@/components/wrappers/WindowBase';
 import { GameEditForm } from '@/dialogs';
-import { Game, GameDetails, GameStoreLink } from '@/types/game';
+import { Game, GameDetails, GameLibraryLink } from '@/types/game';
 import { GameHeader, GameSidebar } from '@/windows';
 import { GameContentTabs } from '@/windows/GameDetail/GameWindowTabs.tsx';
 
@@ -12,7 +12,7 @@ interface GameDetailsModalProps {
   game: Game | null;
   details: GameDetails | null;
   loading: boolean;
-  siblings: GameStoreLink[];
+  siblings: GameLibraryLink[];
   onSwitchGame: (id: string) => void;
   onRefresh?: () => void;
 }

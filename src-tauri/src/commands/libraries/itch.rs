@@ -32,8 +32,8 @@ async fn persist_itch_games(
 
         let exists: bool = tx
             .query_row(
-                "SELECT EXISTS(SELECT 1 FROM games WHERE platform = ?1 AND platform_game_id = ?2)",
-                params![&game.platform, &game.platform_game_id],
+                "SELECT EXISTS(SELECT 1 FROM games WHERE library = ?1 AND library_game_id = ?2)",
+                params![&game.library, &game.library_game_id],
                 |row| row.get(0),
             )
             .unwrap_or(false);
@@ -56,7 +56,7 @@ async fn persist_itch_games(
 
             tx.execute(
                 "INSERT INTO games (
-                    id, name, slug, platform, platform_game_id,
+                    id, name, slug, library, library_game_id,
                     installed, status, playtime, playtime_source, last_played, added_at,
                     favorite, user_rating, install_path, executable_path
                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0, NULL, ?12, ?13)",
@@ -64,12 +64,12 @@ async fn persist_itch_games(
                     new_id,
                     display_name,
                     slug,
-                    game.platform,
-                    game.platform_game_id,
+                    game.library,
+                    game.library_game_id,
                     game.installed,
                     status,
                     game.playtime_minutes.unwrap_or(0),
-                    crate::models::PlaytimeSource::Platform(crate::models::Platform::Itch)
+                    crate::models::PlaytimeSource::Store(crate::models::Library::Itch)
                         .as_db_str(),
                     last_played_iso,
                     now,
@@ -99,8 +99,8 @@ async fn persist_itch_games(
             newly_imported.push(NewlyImportedGame {
                 game_id: new_id,
                 name: display_name,
-                platform: game.platform.clone(),
-                platform_game_id: game.platform_game_id.clone(),
+                library: game.library.clone(),
+                library_game_id: game.library_game_id.clone(),
             });
 
             inserted += 1;
@@ -114,18 +114,18 @@ async fn persist_itch_games(
                     last_played     = COALESCE(?5, last_played),
                     install_path    = COALESCE(?6, install_path),
                     executable_path = COALESCE(?7, executable_path)
-                WHERE platform = ?8 AND platform_game_id = ?9",
+                WHERE library = ?8 AND library_game_id = ?9",
                 params![
                     game.installed,
                     status,
                     game.playtime_minutes,
-                    crate::models::PlaytimeSource::Platform(crate::models::Platform::Itch)
+                    crate::models::PlaytimeSource::Store(crate::models::Library::Itch)
                         .as_db_str(),
                     last_played_iso,
                     game.install_path,
                     game.executable_path,
-                    game.platform,
-                    game.platform_game_id,
+                    game.library,
+                    game.library_game_id,
                 ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;
@@ -133,8 +133,8 @@ async fn persist_itch_games(
             if let Some(url) = &itchio_game.cover_url {
                 let existing_id: Option<String> = tx
                     .query_row(
-                        "SELECT id FROM games WHERE platform = ?1 AND platform_game_id = ?2",
-                        params![game.platform, game.platform_game_id],
+                        "SELECT id FROM games WHERE library = ?1 AND library_game_id = ?2",
+                        params![game.library, game.library_game_id],
                         |row| row.get(0),
                     )
                     .optional()
@@ -152,9 +152,9 @@ async fn persist_itch_games(
             if let Some(desc) = &itchio_game.description {
                 tx.execute(
                     "INSERT INTO game_descriptions (game_id, description)
-                        VALUES ((SELECT id FROM games WHERE platform = ?1 AND platform_game_id = ?2), ?3)
+                        VALUES ((SELECT id FROM games WHERE library = ?1 AND library_game_id = ?2), ?3)
                         ON CONFLICT(game_id) DO UPDATE SET description = excluded.description",
-                    params![game.platform, game.platform_game_id, desc],
+                    params![game.library, game.library_game_id, desc],
                 ).map_err(|e| AppError::DatabaseError(e.to_string()))?;
             }
 

@@ -16,7 +16,7 @@ use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
 use tauri::{AppHandle, Manager};
 
 use crate::database::AppState;
-use crate::models::Platform;
+use crate::models::Library;
 use crate::utils::status_logic;
 
 /// Mesma granularidade das plataformas com API oficial (Steam/Itch/Indiegala
@@ -47,10 +47,10 @@ impl PlaytimeRegistry {
 
 /// Plataformas que já expõem playtime oficial — o tracker local nunca roda pra elas,
 /// pra não gerar dado duplicado/conflitante com o valor sincronizado na importação.
-pub fn has_official_playtime_source(platform: &Platform) -> bool {
+pub fn has_official_playtime_source(library: &Library) -> bool {
     matches!(
-        platform,
-        Platform::Steam | Platform::Itch | Platform::Indiegala
+        library,
+        Library::Steam | Library::Itch | Library::Indiegala
     )
 }
 

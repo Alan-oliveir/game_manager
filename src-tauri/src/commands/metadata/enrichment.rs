@@ -48,7 +48,7 @@ struct MissingMetadataBatchItem {
 // === LÓGICA CORE ===
 
 pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>) {
-    let platform_label = games.first().map(|g| g.platform.clone());
+    let library_label = games.first().map(|g| g.library.clone());
 
     let state: State<AppState> = app.state();
     let total = games.len();
@@ -89,7 +89,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                     total_found: total as i32,
                     last_game: game.name.clone(),
                     status: "running".to_string(),
-                    platform: platform_label.clone(),
+                    library: library_label.clone(),
                 },
             );
 
@@ -105,8 +105,8 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
                             &app,
                             &game.game_id,
                             &game.name,
-                            &game.platform,
-                            Some(game.platform_game_id.clone()),
+                            &game.library,
+                            Some(game.library_game_id.clone()),
                             &cache_conn,
                             &nexus_games,
                             sgdb_client.as_ref(),
@@ -194,14 +194,14 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
 
     let _ = crate::services::tags::generate_analysis_report(&app, all_session_tags);
 
-    let message = match &platform_label {
-        Some(platform) => format!("{}: enriquecimento concluído.", platform),
+    let message = match &library_label {
+        Some(library) => format!("{}: enriquecimento concluído.", library),
         None => "Enriquecimento pós-import concluído.".to_string(),
     };
     let _ = app.emit(
         "enrich_complete",
         EnrichCompletePayload {
-            platform: platform_label,
+            library: library_label,
             message,
         },
     );
@@ -219,8 +219,8 @@ async fn enrich_game_metadata(
     app: &AppHandle,
     game_id: &str,
     name: &str,
-    platform: &str,
-    platform_game_id: Option<String>,
+    library: &str,
+    library_game_id: Option<String>,
     cache_conn: &rusqlite::Connection,
     nexus_games: &[NexusGame],
     sgdb_client: Option<&SteamGridDbClient>,
@@ -279,7 +279,7 @@ async fn enrich_game_metadata(
 
     let steam_future = async {
         let target_steam_id =
-            resolve_steam_app_id(name, platform, platform_game_id.as_deref(), cache_conn)
+            resolve_steam_app_id(name, library, library_game_id.as_deref(), cache_conn)
                 .await
                 .map(|resolution| resolution.app_id);
 

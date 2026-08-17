@@ -23,7 +23,7 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
 
     // Prepared statements para melhor desempenho
     let mut game_stmt = conn.prepare(
-        "INSERT OR REPLACE INTO games (id, name, cover_url, platform, platform_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, last_played, added_at, alternative_names, source_label)
+        "INSERT OR REPLACE INTO games (id, name, cover_url, library, library_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, last_played, added_at, alternative_names, source_label)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)"
     )?;
 
@@ -50,7 +50,7 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
     )?;
 
     let mut wishlist_stmt = conn.prepare(
-        "INSERT OR REPLACE INTO wishlist (id, name, cover_url, store_url, store_platform, current_price, normal_price, lowest_price, currency, on_sale, voucher, added_at, itad_id)
+        "INSERT OR REPLACE INTO wishlist (id, name, cover_url, store_url, store, current_price, normal_price, lowest_price, currency, on_sale, voucher, added_at, itad_id)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)"
     )?;
 
@@ -64,8 +64,8 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             game.id,
             game.name,
             game.cover_url,
-            game.platform.to_string(),
-            game.platform_game_id,
+            game.library.to_string(),
+            game.library_game_id,
             game.installed,
             game.import_confidence.as_ref().map(|ic| ic.to_string()),
             game.install_path,
@@ -139,7 +139,7 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             item.name,
             item.cover_url,
             item.store_url,
-            item.store_platform,
+            item.store,
             item.current_price,
             item.normal_price,
             item.lowest_price,

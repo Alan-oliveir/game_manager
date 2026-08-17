@@ -8,12 +8,12 @@
 
 use crate::database::AppState;
 use crate::errors::AppError;
-use crate::providers::achievements::core::{DashboardAchievement, Platform};
+use crate::providers::achievements::core::{DashboardAchievement, Library};
 use rusqlite::params;
 use tauri::{AppHandle, Manager};
 
 pub struct AchievementRecord {
-    pub platform: Platform,
+    pub library: Library,
     pub game_id: String,
     pub game_name: String,
     pub achievement_key: String,
@@ -23,27 +23,27 @@ pub struct AchievementRecord {
     pub icon_url: Option<String>,
 }
 
-fn platform_str(p: Platform) -> &'static str {
+fn library_str(p: Library) -> &'static str {
     match p {
-        Platform::Steam => "steam",
-        Platform::Epic => "epic",
-        Platform::Gog => "gog",
-        Platform::Xbox => "xbox",
+        Library::Steam => "steam",
+        Library::Epic => "epic",
+        Library::Gog => "gog",
+        Library::Xbox => "xbox",
     }
 }
 
-fn parse_platform(raw: &str) -> Platform {
+fn parse_library(raw: &str) -> Library {
     match raw {
-        "epic" => Platform::Epic,
-        "gog" => Platform::Gog,
-        "xbox" => Platform::Xbox,
-        _ => Platform::Steam,
+        "epic" => Library::Epic,
+        "gog" => Library::Gog,
+        "xbox" => Library::Xbox,
+        _ => Library::Steam,
     }
 }
 
 // === CONQUISTAS ===
 
-/// Insere/atualiza um lote de conquistas. Idempotente — chave é (platform, game_id, achievement_key),
+/// Insere/atualiza um lote de conquistas. Idempotente — chave é (library, game_id, achievement_key),
 /// então rodar o sync de novo não duplica nada, só atualiza se algo mudou.
 pub fn upsert_achievements(
     app: &AppHandle,
@@ -68,20 +68,20 @@ pub fn upsert_achievements(
         let mut stmt = tx
             .prepare(
                 "INSERT INTO achievements
-                    (platform, game_id, game_name, achievement_key, achievement_name, achievement_description, unlocked_at, icon_url)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
-                 ON CONFLICT(platform, game_id, achievement_key) DO UPDATE SET
-                    unlocked_at = excluded.unlocked_at,
-                    achievement_name = excluded.achievement_name,
-                    achievement_description = excluded.achievement_description,
-                    icon_url = excluded.icon_url",
+                    (library, game_id, game_name, achievement_key, achievement_name, achievement_description, unlocked_at, icon_url)
+                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                    ON CONFLICT(library, game_id, achievement_key) DO UPDATE SET
+                        unlocked_at = excluded.unlocked_at,
+                        achievement_name = excluded.achievement_name,
+                        achievement_description = excluded.achievement_description,
+                        icon_url = excluded.icon_url",
             )
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
         for r in records {
             affected += stmt
                 .execute(params![
-                    platform_str(r.platform),
+                    library_str(r.library),
                     r.game_id,
                     r.game_name,
                     r.achievement_key,
@@ -113,7 +113,7 @@ pub fn get_dashboard_achievements(
 
     let mut stmt = conn
         .prepare(
-            "SELECT platform, game_name, achievement_name, unlocked_at, game_id
+            "SELECT library, game_name, achievement_name, unlocked_at, game_id
              FROM achievements
              ORDER BY unlocked_at DESC
              LIMIT ?1",
@@ -122,9 +122,9 @@ pub fn get_dashboard_achievements(
 
     let rows = stmt
         .query_map(params![limit as i64], |row| {
-            let platform_raw: String = row.get(0)?;
+            let library_raw: String = row.get(0)?;
             Ok(DashboardAchievement {
-                platform: parse_platform(&platform_raw),
+                library: parse_library(&library_raw),
                 game_name: row.get(1)?,
                 achievement_name: row.get(2)?,
                 unlock_time: row.get(3)?,
@@ -149,7 +149,7 @@ struct SyncState {
 
 fn get_sync_state(
     app: &AppHandle,
-    platform: Platform,
+    library: Library,
     game_id: &str,
 ) -> Result<Option<SyncState>, AppError> {
     let state: tauri::State<AppState> = app.state();
@@ -159,8 +159,8 @@ fn get_sync_state(
         .map_err(|_| AppError::DatabaseError("Falha ao bloquear mutex do games_db".into()))?;
 
     let result = conn.query_row(
-        "SELECT last_synced_at, has_achievements FROM achievement_sync_state WHERE platform = ?1 AND game_id = ?2",
-        params![platform_str(platform), game_id],
+        "SELECT last_synced_at, has_achievements FROM achievement_sync_state WHERE library = ?1 AND game_id = ?2",
+        params![library_str(library), game_id],
         |row| {
             Ok(SyncState {
                 last_synced_at: row.get(0)?,
@@ -176,11 +176,11 @@ fn get_sync_state(
     }
 }
 
-/// Marca (platform, game_id) como sincronizado agora. `has_achievements = false` é permanente:
+/// Marca (library, game_id) como sincronizado agora. `has_achievements = false` é permanente:
 /// significa "confirmamos, via 400 da API, que esse jogo não tem stats de conquista" — não muda.
 pub fn mark_synced(
     app: &AppHandle,
-    platform: Platform,
+    library: Library,
     game_id: &str,
     has_achievements: bool,
 ) -> Result<(), AppError> {
@@ -193,13 +193,13 @@ pub fn mark_synced(
     let now = chrono::Utc::now().timestamp();
 
     conn.execute(
-        "INSERT INTO achievement_sync_state (platform, game_id, last_synced_at, has_achievements)
+        "INSERT INTO achievement_sync_state (library, game_id, last_synced_at, has_achievements)
          VALUES (?1, ?2, ?3, ?4)
-         ON CONFLICT(platform, game_id) DO UPDATE SET
+         ON CONFLICT(library, game_id) DO UPDATE SET
             last_synced_at = excluded.last_synced_at,
             has_achievements = excluded.has_achievements",
         params![
-            platform_str(platform),
+            library_str(library),
             game_id,
             now,
             has_achievements as i64
@@ -215,8 +215,8 @@ pub fn mark_synced(
 /// - já foi sincronizado há menos de `ttl_secs`.
 ///
 /// Em caso de erro de leitura no banco, NÃO pula (mais seguro tentar de novo do que perder uma conquista).
-pub fn should_skip(app: &AppHandle, platform: Platform, game_id: &str, ttl_secs: i64) -> bool {
-    match get_sync_state(app, platform, game_id) {
+pub fn should_skip(app: &AppHandle, library: Library, game_id: &str, ttl_secs: i64) -> bool {
+    match get_sync_state(app, library, game_id) {
         Ok(Some(s)) => {
             if !s.has_achievements {
                 return true;
@@ -228,12 +228,12 @@ pub fn should_skip(app: &AppHandle, platform: Platform, game_id: &str, ttl_secs:
     }
 }
 
-/// Retorna (platform_game_id, name) de todos os jogos já importados na biblioteca para uma
+/// Retorna (library_game_id, name) de todos os jogos já importados na biblioteca para uma
 /// plataforma. Reaproveita o que a importação já salvou em `games`, evitando uma nova chamada à API
 /// externa (ex.: GetOwnedGames da Steam) só pra montar a lista de jogos a sincronizar.
-pub fn get_owned_games_by_platform(
+pub fn get_owned_games_by_library(
     app: &AppHandle,
-    platform: &str,
+    library: &str,
 ) -> Result<Vec<(String, String)>, AppError> {
     let state: tauri::State<AppState> = app.state();
     let conn = state
@@ -242,11 +242,11 @@ pub fn get_owned_games_by_platform(
         .map_err(|_| AppError::DatabaseError("Falha ao bloquear mutex do games_db".into()))?;
 
     let mut stmt = conn
-        .prepare("SELECT platform_game_id, name FROM games WHERE platform = ?1")
+        .prepare("SELECT library_game_id, name FROM games WHERE library = ?1")
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
     let rows = stmt
-        .query_map(params![platform], |row| {
+        .query_map(params![library], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
         })
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;

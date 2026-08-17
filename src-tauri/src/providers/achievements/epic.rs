@@ -16,7 +16,7 @@
 //! por esse caminho.
 
 use crate::errors::AppError;
-use crate::providers::achievements::core::{AchievementProvider, Platform};
+use crate::providers::achievements::core::{AchievementProvider, Library};
 use async_trait::async_trait;
 use tauri::AppHandle;
 
@@ -24,8 +24,8 @@ pub struct EpicProvider;
 
 #[async_trait]
 impl AchievementProvider for EpicProvider {
-    fn platform(&self) -> Platform {
-        Platform::Epic
+    fn library(&self) -> Library {
+        Library::Epic
     }
 
     async fn is_configured(&self, _app: &AppHandle) -> bool {

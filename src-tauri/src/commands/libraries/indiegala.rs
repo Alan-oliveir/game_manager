@@ -38,8 +38,8 @@ async fn persist_indiegala_games(
 
         let exists: bool = tx
             .query_row(
-                "SELECT EXISTS(SELECT 1 FROM games WHERE platform = ?1 AND platform_game_id = ?2)",
-                params![&game.platform, &game.platform_game_id],
+                "SELECT EXISTS(SELECT 1 FROM games WHERE library = ?1 AND library_game_id = ?2)",
+                params![&game.library, &game.library_game_id],
                 |row| row.get(0),
             )
             .unwrap_or(false);
@@ -53,7 +53,7 @@ async fn persist_indiegala_games(
 
             tx.execute(
                 "INSERT INTO games (
-                    id, name, slug, platform, platform_game_id,
+                    id, name, slug, library, library_game_id,
                     installed, status, playtime, playtime_source, last_played, added_at,
                     favorite, user_rating, install_path, executable_path
                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, NULL, ?10, 0, NULL, ?11, ?12)",
@@ -61,12 +61,12 @@ async fn persist_indiegala_games(
                     new_id,
                     display_name,
                     slug,
-                    game.platform,
-                    game.platform_game_id,
+                    game.library,
+                    game.library_game_id,
                     game.installed,
                     status,
                     game.playtime_minutes.unwrap_or(0),
-                    crate::models::PlaytimeSource::Platform(crate::models::Platform::Indiegala)
+                    crate::models::PlaytimeSource::Store(crate::models::Library::Indiegala)
                         .as_db_str(),
                     now,
                     game.install_path,
@@ -100,8 +100,8 @@ async fn persist_indiegala_games(
             newly_imported.push(NewlyImportedGame {
                 game_id: new_id,
                 name: display_name,
-                platform: game.platform.clone(),
-                platform_game_id: game.platform_game_id.clone(),
+                library: game.library.clone(),
+                library_game_id: game.library_game_id.clone(),
             });
 
             inserted += 1;
@@ -114,17 +114,17 @@ async fn persist_indiegala_games(
                         playtime_source = CASE WHEN ?3 IS NOT NULL THEN ?4 ELSE playtime_source END,
                         install_path    = COALESCE(?5, install_path),
                         executable_path = COALESCE(?6, executable_path)
-                    WHERE platform = ?7 AND platform_game_id = ?8",
+                    WHERE library = ?7 AND library_game_id = ?8",
                 params![
                     game.installed,
                     status,
                     game.playtime_minutes,
-                    crate::models::PlaytimeSource::Platform(crate::models::Platform::Indiegala)
+                    crate::models::PlaytimeSource::Store(crate::models::Library::Indiegala)
                         .as_db_str(),
                     game.install_path,
                     game.executable_path,
-                    game.platform,
-                    game.platform_game_id,
+                    game.library,
+                    game.library_game_id,
                 ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;

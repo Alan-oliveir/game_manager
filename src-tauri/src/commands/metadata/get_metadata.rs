@@ -54,7 +54,7 @@ fn get_games_to_fill(
     };
 
     let sql = format!(
-        "SELECT g.id, g.name, g.platform, g.platform_game_id
+        "SELECT g.id, g.name, g.library, g.library_game_id
         FROM games g
         LEFT JOIN game_details gd ON g.id = gd.game_id
         LEFT JOIN game_descriptions gdesc ON g.id = gdesc.game_id
@@ -108,8 +108,8 @@ async fn process_missing_metadata(
     app: &AppHandle,
     game_id: &str,
     name: &str,
-    platform: &str,
-    platform_game_id: Option<String>,
+    library: &str,
+    library_game_id: Option<String>,
     cache_conn: &Connection,
     nexus_games: &[NexusGame],
 ) -> (ProcessedGameDetails, Vec<String>, Vec<igdb::core::IgdbDlc>) {
@@ -159,7 +159,7 @@ async fn process_missing_metadata(
 
     let steam_future = async {
         let target_steam_id =
-            resolve_steam_app_id(&name, &platform, platform_game_id.as_deref(), cache_conn)
+            resolve_steam_app_id(&name, &library, library_game_id.as_deref(), cache_conn)
                 .await
                 .map(|resolution| resolution.app_id);
 
@@ -298,7 +298,7 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
             let mut batch_results: Vec<MissingMetadataBatchItem> = Vec::new();
 
             // 2. Processa cada jogo
-            for (index, (game_id, name, platform, platform_game_id)) in
+            for (index, (game_id, name, library, library_game_id)) in
                 games_to_fill.into_iter().enumerate()
             {
                 processed_ids.insert(game_id.clone());
@@ -310,7 +310,7 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                         total_found: total_in_batch as i32,
                         last_game: name.clone(),
                         status: "running".to_string(),
-                        platform: None,
+                        library: None,
                     },
                 );
 
@@ -331,8 +331,8 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                             &app,
                             &game_id,
                             &name,
-                            &platform,
-                            platform_game_id,
+                            &library,
+                            library_game_id,
                             &cache_conn,
                             &nexus_games,
                         )
@@ -382,7 +382,7 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
         let _ = app_handle.emit(
             "enrich_complete",
             EnrichCompletePayload {
-                platform: None,
+                library: None,
                 message: "Campos vazios preenchidos!".to_string(),
             },
         );

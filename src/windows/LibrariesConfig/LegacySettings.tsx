@@ -113,7 +113,7 @@ export function LegacySettings({
         </SettingsRow>
 
         <LauncherPathSection
-          platform="Legacy"
+          library="Legacy"
           title={t('legacy_launcher_path_title')}
           description={t('launcher_path_description')}
         />

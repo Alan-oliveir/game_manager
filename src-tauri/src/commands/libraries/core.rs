@@ -37,8 +37,8 @@ pub struct ScanGameInput {
 pub struct NewlyImportedGame {
     pub game_id: String,
     pub name: String,
-    pub platform: String,
-    pub platform_game_id: String,
+    pub library: String,
+    pub library_game_id: String,
 }
 
 // === Funções Genéricas de Persistência ===
@@ -66,8 +66,8 @@ pub(crate) async fn persist_source_games(
         // Verifica existência usando a transação
         let exists: bool = tx
             .query_row(
-                "SELECT EXISTS(SELECT 1 FROM games WHERE platform = ?1 AND platform_game_id = ?2)",
-                params![&game.platform, &game.platform_game_id],
+                "SELECT EXISTS(SELECT 1 FROM games WHERE library = ?1 AND library_game_id = ?2)",
+                params![&game.library, &game.library_game_id],
                 |row| row.get(0),
             )
             .unwrap_or(false);
@@ -82,18 +82,18 @@ pub(crate) async fn persist_source_games(
             }
         });
 
-        let is_official_playtime_platform = game.platform == "Steam";
+        let is_official_playtime_library = game.library == "Steam";
 
         if !exists {
             let new_id = Uuid::new_v4().to_string();
             let display_name = game.name.clone().unwrap_or_else(|| "Unknown".to_string());
             let slug = crate::utils::text::slugify(&display_name);
 
-            let cover_url = if game.platform == "Steam" {
+            let cover_url = if game.library == "Steam" {
                 Some(format!(
                     "{}/{}",
                     constants::STEAM_CDN_URL,
-                    constants::STEAM_LIBRARY_IMAGE_PATH.replace("{}", &game.platform_game_id)
+                    constants::STEAM_LIBRARY_IMAGE_PATH.replace("{}", &game.library_game_id)
                 ))
             } else {
                 None
@@ -101,9 +101,9 @@ pub(crate) async fn persist_source_games(
 
             // Só Steam grava playtime_source no INSERT; as demais ficam NULL até
             // o tracker local (playtime.rs) assumir e marcar como 'local'.
-            let playtime_source = if is_official_playtime_platform {
+            let playtime_source = if is_official_playtime_library {
                 Some(
-                    crate::models::PlaytimeSource::Platform(crate::models::Platform::Steam)
+                    crate::models::PlaytimeSource::Store(crate::models::Library::Steam)
                         .as_db_str(),
                 )
             } else {
@@ -112,7 +112,7 @@ pub(crate) async fn persist_source_games(
 
             tx.execute(
                 "INSERT INTO games (
-                    id, name, slug, platform, platform_game_id,
+                    id, name, slug, library, library_game_id,
                     installed, status, playtime, playtime_source, last_played, added_at,
                     favorite, user_rating, install_path, executable_path, source_label
                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0, NULL, ?12, ?13, ?14)",
@@ -120,8 +120,8 @@ pub(crate) async fn persist_source_games(
                     new_id,
                     display_name,
                     slug,
-                    game.platform,
-                    game.platform_game_id,
+                    game.library,
+                    game.library_game_id,
                     game.installed,
                     status,
                     game.playtime_minutes.unwrap_or(0),
@@ -152,13 +152,13 @@ pub(crate) async fn persist_source_games(
             newly_imported.push(NewlyImportedGame {
                 game_id: new_id,
                 name: display_name,
-                platform: game.platform.clone(),
-                platform_game_id: game.platform_game_id.clone(),
+                library: game.library.clone(),
+                library_game_id: game.library_game_id.clone(),
             });
 
             inserted += 1;
         } else {
-            if is_official_playtime_platform {
+            if is_official_playtime_library {
                 // Steam remanda playtime a cada sync — sobrescreve e marca fonte oficial.
                 tx.execute(
                     "UPDATE games SET
@@ -170,19 +170,19 @@ pub(crate) async fn persist_source_games(
                     install_path = COALESCE(?6, install_path),
                     executable_path = COALESCE(?7, executable_path),
                     source_label = COALESCE(?8, source_label)
-                WHERE platform = ?9 AND platform_game_id = ?10",
+                WHERE library = ?9 AND library_game_id = ?10",
                     params![
                         game.installed,
                         status,
                         game.playtime_minutes.unwrap_or(0),
-                        crate::models::PlaytimeSource::Platform(crate::models::Platform::Steam)
+                        crate::models::PlaytimeSource::Store(crate::models::Library::Steam)
                             .as_db_str(),
                         last_played_iso,
                         game.install_path,
                         game.executable_path,
                         game.source_label,
-                        game.platform,
-                        game.platform_game_id
+                        game.library,
+                        game.library_game_id
                     ],
                 )
                     .map_err(|e| AppError::DatabaseError(e.to_string()))?;
@@ -197,7 +197,7 @@ pub(crate) async fn persist_source_games(
                     install_path = COALESCE(?4, install_path),
                     executable_path = COALESCE(?5, executable_path),
                     source_label = COALESCE(?6, source_label)
-                WHERE platform = ?7 AND platform_game_id = ?8",
+                WHERE library = ?7 AND library_game_id = ?8",
                     params![
                         game.installed,
                         status,
@@ -205,8 +205,8 @@ pub(crate) async fn persist_source_games(
                         game.install_path,
                         game.executable_path,
                         game.source_label,
-                        game.platform,
-                        game.platform_game_id
+                        game.library,
+                        game.library_game_id
                     ],
                 )
                     .map_err(|e| AppError::DatabaseError(e.to_string()))?;
@@ -242,16 +242,16 @@ pub fn trigger_enrichment_if_needed(app: &AppHandle, newly_imported: Vec<NewlyIm
 ///
 /// O resultado chega ao **frontend** via eventos:
 ///
-/// - `import_started`   → payload: platform (string)
-/// - `import_complete`  → payload: (platform, message)
-/// - `import_error`     → payload: (platform, error)
+/// - `import_started`   → payload: library (string)
+/// - `import_complete`  → payload: (library, message)
+/// - `import_error`     → payload: (library, error)
 /// - `library_updated`  → (mantido, sem payload, para compatibilidade com listeners existentes)
-pub fn spawn_import<F, Fut>(app: AppHandle, platform: &'static str, fetch: F)
+pub fn spawn_import<F, Fut>(app: AppHandle, library: &'static str, fetch: F)
 where
     F: FnOnce(AppHandle) -> Fut + Send + 'static,
     Fut: std::future::Future<Output=Result<Vec<SourceGame>, AppError>> + Send + 'static,
 {
-    let _ = app.emit("import_started", platform);
+    let _ = app.emit("import_started", library);
     let app_task = app.clone();
     let app_for_fetch = app.clone();
 
@@ -259,15 +259,15 @@ where
         let games = match fetch(app_for_fetch).await {
             Ok(g) => g,
             Err(e) => {
-                warn!("Import {} falhou: {}", platform, e);
-                let _ = app_task.emit("import_error", (platform, e.to_string()));
+                warn!("Import {} falhou: {}", library, e);
+                let _ = app_task.emit("import_error", (library, e.to_string()));
                 return;
             }
         };
 
         if games.is_empty() {
-            let msg = format_import_empty(platform);
-            let _ = app_task.emit("import_complete", (platform, msg));
+            let msg = format_import_empty(library);
+            let _ = app_task.emit("import_complete", (library, msg));
             return;
         }
 
@@ -275,17 +275,17 @@ where
         let (inserted, updated, newly_imported) = match persist_source_games(&state, games).await {
             Ok(r) => r,
             Err(e) => {
-                warn!("Persist {} falhou: {}", platform, e);
-                let _ = app_task.emit("import_error", (platform, e.to_string()));
+                warn!("Persist {} falhou: {}", library, e);
+                let _ = app_task.emit("import_error", (library, e.to_string()));
                 return;
             }
         };
 
-        let message = format_import_summary(platform, inserted, updated);
+        let message = format_import_summary(library, inserted, updated);
         info!("{}", message);
 
         let _ = app_task.emit("library_updated", ());
-        let _ = app_task.emit("import_complete", (platform, message));
+        let _ = app_task.emit("import_complete", (library, message));
 
         trigger_enrichment_if_needed(&app_task, newly_imported);
     });
@@ -305,35 +305,35 @@ pub enum ImportOutcome {
 
 /// Como `spawn_import`, mas para fontes cuja persistência já está embutida em `run`
 /// (fetch + persist_*_games próprio), retornando o resultado final e não uma lista crua de `SourceGame`.
-pub fn spawn_import_custom<F, Fut>(app: AppHandle, platform: &'static str, run: F)
+pub fn spawn_import_custom<F, Fut>(app: AppHandle, library: &'static str, run: F)
 where
     F: FnOnce(AppHandle) -> Fut + Send + 'static,
     Fut: std::future::Future<Output=Result<ImportOutcome, AppError>> + Send + 'static,
 {
-    let _ = app.emit("import_started", platform);
+    let _ = app.emit("import_started", library);
     let app_task = app.clone();
     let app_for_run = app.clone();
 
     tauri::async_runtime::spawn(async move {
         match run(app_for_run).await {
             Ok(ImportOutcome::Empty) => {
-                let msg = format_import_empty(platform);
-                let _ = app_task.emit("import_complete", (platform, msg));
+                let msg = format_import_empty(library);
+                let _ = app_task.emit("import_complete", (library, msg));
             }
             Ok(ImportOutcome::Persisted {
                    inserted,
                    updated,
                    newly_imported,
                }) => {
-                let message = format_import_summary(platform, inserted, updated);
+                let message = format_import_summary(library, inserted, updated);
                 info!("{}", message);
                 let _ = app_task.emit("library_updated", ());
-                let _ = app_task.emit("import_complete", (platform, message));
+                let _ = app_task.emit("import_complete", (library, message));
                 trigger_enrichment_if_needed(&app_task, newly_imported);
             }
             Err(e) => {
-                warn!("Import {} falhou: {}", platform, e);
-                let _ = app_task.emit("import_error", (platform, e.to_string()));
+                warn!("Import {} falhou: {}", library, e);
+                let _ = app_task.emit("import_error", (library, e.to_string()));
             }
         }
     });
@@ -342,16 +342,16 @@ where
 // === Funções padronizadas para mensagens ===
 
 /// Mensagem padrão de sucesso: "<Plataforma>: X adicionados, Y atualizados".
-pub fn format_import_summary(platform: &str, inserted: u32, updated: u32) -> String {
-    format!("{platform}: {inserted} adicionados, {updated} atualizados")
+pub fn format_import_summary(library: &str, inserted: u32, updated: u32) -> String {
+    format!("{library}: {inserted} adicionados, {updated} atualizados")
 }
 
 /// Mensagem padrão de biblioteca vazia: "Nenhum jogo <plataforma> encontrado."
-pub fn format_import_empty(platform: &str) -> String {
-    format!("Nenhum jogo {platform} encontrado.")
+pub fn format_import_empty(library: &str) -> String {
+    format!("Nenhum jogo {library} encontrado.")
 }
 
 /// Mensagem padrão de conexão bem sucedida: "Conta <plataforma> conectada com sucesso!"
-pub fn format_login_success(platform: &str) -> String {
-    format!("Conta {platform} conectada com sucesso!")
+pub fn format_login_success(library: &str) -> String {
+    format!("Conta {library} conectada com sucesso!")
 }

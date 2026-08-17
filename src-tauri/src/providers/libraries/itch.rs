@@ -284,8 +284,8 @@ impl ItchioSource {
         let playtime_minutes = Some((playtime.total_seconds / 60) as u32);
 
         let source = SourceGame {
-            platform: "Itch".to_string(),
-            platform_game_id: game.id.to_string(),
+            library: "Itch".to_string(),
+            library_game_id: game.id.to_string(),
             name: Some(game.title.clone()),
             installed: true,
             executable_path,
@@ -382,8 +382,8 @@ impl ItchioSource {
             }
 
             let source = SourceGame {
-                platform: "Itch".to_string(),
-                platform_game_id: game.id.to_string(),
+                library: "Itch".to_string(),
+                library_game_id: game.id.to_string(),
                 name: Some(game.title.clone()),
                 installed: false,
                 executable_path: None,

@@ -222,8 +222,8 @@ impl IndiegalaSource {
                 (!raw_tag_slugs.is_empty()).then(|| classify_and_sort_tags(raw_tag_slugs, 10));
 
             let source = SourceGame {
-                platform: "Indiegala".to_string(),
-                platform_game_id: item.id_key_name.clone(),
+                library: "Indiegala".to_string(),
+                library_game_id: item.id_key_name.clone(),
                 name: Some(item.name.clone()),
                 installed: true,
                 executable_path,
@@ -290,7 +290,7 @@ impl IndiegalaSource {
         });
         let installed_by_id: HashMap<String, IndiegalaGame> = installed
             .into_iter()
-            .map(|g| (g.source.platform_game_id.clone(), g))
+            .map(|g| (g.source.library_game_id.clone(), g))
             .collect();
 
         let owned_games = config
@@ -319,8 +319,8 @@ impl IndiegalaSource {
                 (!raw_tag_slugs.is_empty()).then(|| classify_and_sort_tags(raw_tag_slugs, 10));
 
             let source = SourceGame {
-                platform: "Indiegala".to_string(),
-                platform_game_id: owned.prod_id_key_name.clone(),
+                library: "Indiegala".to_string(),
+                library_game_id: owned.prod_id_key_name.clone(),
                 name: Some(owned.prod_name.clone()),
                 installed: false,
                 executable_path: None,

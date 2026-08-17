@@ -186,8 +186,8 @@ impl EpicSource {
             .to_string();
 
         Ok(SourceGame {
-            platform: "Epic".to_string(),
-            platform_game_id: app_name,
+            library: "Epic".to_string(),
+            library_game_id: app_name,
             name: Some(name),
             installed: true,
             executable_path: Some(full_executable_path),
@@ -270,8 +270,8 @@ fn parse_legendary_installed(json: serde_json::Value) -> Result<Vec<SourceGame>,
                 .to_string();
 
             SourceGame {
-                platform: "Epic".to_string(),
-                platform_game_id: g.app_name,
+                library: "Epic".to_string(),
+                library_game_id: g.app_name,
                 name: Some(g.title),
                 installed: true,
                 executable_path: Some(full_executable_path),
@@ -328,8 +328,8 @@ impl EpicSource {
         let games = chosen_per_namespace
             .into_iter()
             .map(|(namespace, (_, title))| SourceGame {
-                platform: "Epic".to_string(),
-                platform_game_id: namespace,
+                library: "Epic".to_string(),
+                library_game_id: namespace,
                 name: Some(title),
                 installed: false,
                 executable_path: None,
@@ -477,7 +477,7 @@ async fn fetch_all_library_items(access_token: &str) -> Result<Vec<EpicLibraryIt
 
         if !status.is_success() {
             return Err(AppError::NetworkError(format!(
-                "Epic library retornou HTTP {status}: {body}"
+                "Epic retornou HTTP {status}: {body}"
             )));
         }
 
@@ -492,7 +492,7 @@ async fn fetch_all_library_items(access_token: &str) -> Result<Vec<EpicLibraryIt
 
         let next_cursor = parsed.response_metadata.and_then(|m| m.next_cursor);
         log::debug!(
-            "Epic library: página com {record_count} itens (total acumulado: {})",
+            "Epic: página com {record_count} itens (total acumulado: {})",
             all.len()
         );
 

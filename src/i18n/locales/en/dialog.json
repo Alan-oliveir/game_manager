@@ -5,7 +5,7 @@
   "add_game_name_placeholder": "e.g. Elden Ring",
   "add_game_cover_label": "Cover (URL)",
   "add_game_cover_placeholder": "https://...",
-  "add_game_platform_label": "Platform",
+  "add_game_platform_label": "Library",
   "add_game_select_placeholder": "Select",
   "add_game_platform_steam": "Steam",
   "add_game_platform_epic_games": "Epic Games",

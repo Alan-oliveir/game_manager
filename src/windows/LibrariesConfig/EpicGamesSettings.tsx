@@ -107,7 +107,7 @@ export function EpicGamesSettings({
         </SettingsRow>
 
         <LauncherPathSection
-          platform="Epic"
+          library="Epic"
           title={t('epic_launcher_path_title')}
           description={t('launcher_path_description')}
         />

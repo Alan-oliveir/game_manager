@@ -103,7 +103,7 @@ async fn refresh_steam_reviews_background(
     let steam_games: Vec<(u32, String)> = {
         let conn = state.games_db.lock().map_err(|_| "Falha DB Lock")?;
 
-        conn.prepare("SELECT platform_game_id, name FROM games WHERE platform = 'Steam'")
+        conn.prepare("SELECT library_game_id, name FROM games WHERE library = 'Steam'")
             .and_then(|mut stmt| {
                 stmt.query_map([], |row| {
                     let id_str: String = row.get(0)?;

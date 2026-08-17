@@ -195,8 +195,8 @@ fn parse_game_folder(game_folder: &Path) -> Result<Option<SourceGame>, AppError>
         .unwrap_or_else(|| manifest.identity.name.clone());
 
     Ok(Some(SourceGame {
-        platform: "Xbox".to_string(),
-        platform_game_id,
+        library: "Xbox".to_string(),
+        library_game_id: platform_game_id,
         name: Some(name),
         installed: true,
         executable_path: Some(executable_path),

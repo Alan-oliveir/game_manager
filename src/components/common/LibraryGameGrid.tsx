@@ -4,7 +4,7 @@ import { type CellComponentProps, Grid } from 'react-window';
 
 import { LibraryGameCard } from '@/components';
 import { type GridRow, useElementWidth, useGroupedLibrary } from '@/hooks';
-import { Game, LibraryDisplayNames, Platform } from '@/types';
+import { Game, Library, LibraryDisplayNames } from '@/types';
 import { Badge } from '@/ui/badge';
 
 const GAP = 24;
@@ -52,7 +52,7 @@ function getColumnCount(containerWidth: number): number {
 
 interface LibraryGameGridProps {
   games: Game[];
-  groupByPlatform?: boolean;
+  groupByLibrary?: boolean;
   onGameClick: (game: Game) => void;
   onToggleFavorite: (id: string) => void;
   onAddToPlaylist: (id: string) => void;
@@ -64,7 +64,7 @@ interface LibraryGameGridProps {
 interface CellProps {
   rows: GridRow[];
   gridWidth: number;
-  onTogglePlatform: (platform: Platform) => void;
+  onToggleLibrary: (library: Library) => void;
   onGameClick: (game: Game) => void;
   onToggleFavorite: (id: string) => void;
   onAddToPlaylist: (id: string) => void;
@@ -79,7 +79,7 @@ function GridCell({
   style,
   rows,
   gridWidth,
-  onTogglePlatform,
+  onToggleLibrary,
   onGameClick,
   onToggleFavorite,
   onAddToPlaylist,
@@ -100,7 +100,7 @@ function GridCell({
         className="flex items-center"
       >
         <button
-          onClick={() => onTogglePlatform(row.platform)}
+          onClick={() => onToggleLibrary(row.library)}
           className="hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-2 text-left font-semibold"
         >
           {row.collapsed ? (
@@ -108,7 +108,7 @@ function GridCell({
           ) : (
             <ChevronDown size={16} />
           )}
-          {LibraryDisplayNames[row.platform] ?? row.platform}
+          {LibraryDisplayNames[row.library] ?? row.library}
           <Badge variant="secondary">{row.count}</Badge>
         </button>
       </div>
@@ -136,7 +136,7 @@ function GridCell({
 
 export function LibraryGameGrid({
   games,
-  groupByPlatform = false,
+  groupByLibrary = false,
   onGameClick,
   onToggleFavorite,
   onAddToPlaylist,
@@ -161,9 +161,9 @@ export function LibraryGameGrid({
     };
   }, [width]);
 
-  const { rows, togglePlatform } = useGroupedLibrary(
+  const { rows, toggleLibrary } = useGroupedLibrary(
     games,
-    groupByPlatform,
+    groupByLibrary,
     columnCount
   );
 
@@ -176,7 +176,7 @@ export function LibraryGameGrid({
   const cellProps: CellProps = {
     rows,
     gridWidth: columnWidth * columnCount,
-    onTogglePlatform: togglePlatform,
+    onToggleLibrary: toggleLibrary,
     onGameClick,
     onToggleFavorite,
     onAddToPlaylist,

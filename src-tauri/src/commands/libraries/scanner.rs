@@ -61,7 +61,7 @@ pub async fn scan_games_folder(
     // Marca quem já está na biblioteca (compara pela pasta base do jogo, não pelo executável escolhido)
     if let Ok(conn) = state.games_db.lock() {
         if let Ok(mut stmt) = conn.prepare(
-            "SELECT install_path FROM games WHERE platform = 'Outra' AND install_path IS NOT NULL",
+            "SELECT install_path FROM games WHERE library = 'Outra' AND install_path IS NOT NULL",
         ) {
             if let Ok(rows) = stmt.query_map([], |row| row.get::<_, String>(0)) {
                 let existing: HashSet<String> = rows.flatten().collect();
@@ -147,8 +147,8 @@ pub async fn add_game_from_scan(
 
     let label = get_scan_source_label(&state, &root_folder_path)?;
     let game = SourceGame {
-        platform: "Outra".to_string(),
-        platform_game_id: executable_path.clone(),
+        library: "Outra".to_string(),
+        library_game_id: executable_path.clone(),
         name: Some(name),
         installed: true,
         executable_path: Some(executable_path.clone()),
@@ -185,8 +185,8 @@ pub async fn add_games_from_scan(
     let source_games: Vec<SourceGame> = games
         .into_iter()
         .map(|g| SourceGame {
-            platform: "Outra".to_string(),
-            platform_game_id: g.executable_path.clone(),
+            library: "Outra".to_string(),
+            library_game_id: g.executable_path.clone(),
             name: Some(g.name),
             installed: true,
             executable_path: Some(g.executable_path.clone()),
@@ -213,7 +213,7 @@ pub fn list_scan_sources(state: State<'_, AppState>) -> Result<Vec<ScanSourceInf
     let mut stmt = conn.prepare(
         "SELECT
             s.id, s.folder_path, s.label, s.created_at, s.last_scanned_at,
-            (SELECT COUNT(*) FROM games g WHERE g.source_label = s.label AND g.platform = 'Outra')
+            (SELECT COUNT(*) FROM games g WHERE g.source_label = s.label AND g.library = 'Outra')
          FROM scan_sources s
          ORDER BY s.label ASC",
     )?;
@@ -271,7 +271,7 @@ pub fn rename_scan_source(
     )?;
 
     tx.execute(
-        "UPDATE games SET source_label = ?1 WHERE source_label = ?2 AND platform = 'Outra'",
+        "UPDATE games SET source_label = ?1 WHERE source_label = ?2 AND library = 'Outra'",
         params![new_label, old_label],
     )?;
 
@@ -308,17 +308,17 @@ pub fn delete_scan_source(
     if remove_games {
         tx.execute(
             "DELETE FROM game_details WHERE game_id IN (
-                SELECT id FROM games WHERE source_label = ?1 AND platform = 'Outra'
+                SELECT id FROM games WHERE source_label = ?1 AND library = 'Outra'
             )",
             params![label],
         )?;
         tx.execute(
-            "DELETE FROM games WHERE source_label = ?1 AND platform = 'Outra'",
+            "DELETE FROM games WHERE source_label = ?1 AND library = 'Outra'",
             params![label],
         )?;
     } else {
         tx.execute(
-            "UPDATE games SET source_label = NULL WHERE source_label = ?1 AND platform = 'Outra'",
+            "UPDATE games SET source_label = NULL WHERE source_label = ?1 AND library = 'Outra'",
             params![label],
         )?;
     }

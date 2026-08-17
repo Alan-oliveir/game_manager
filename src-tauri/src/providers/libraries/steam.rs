@@ -44,8 +44,8 @@ struct SteamApiResponse {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct GameData {
     pub name: String,
-    pub platform: String,
-    pub platform_game_id: String,
+    pub library: String,
+    pub library_game_id: String,
     pub install_path: Option<String>,
     pub installed: bool,
     pub import_confidence: String,
@@ -77,14 +77,14 @@ pub async fn get_complete_library(
 
     let owned_appids: HashSet<String> = api_games
         .iter()
-        .map(|g| g.platform_game_id.clone())
+        .map(|g| g.library_game_id.clone())
         .collect();
 
     // 2. Jogos instalados (com filtro leve)
     let installed = match scan_installed_games(steam_root) {
         Ok(mut games) => {
             let mut seen = HashSet::new();
-            games.retain(|g| seen.insert(g.platform_game_id.clone()));
+            games.retain(|g| seen.insert(g.library_game_id.clone()));
             info!("VDF: {} jogos instalados encontrados", games.len());
             games
         }
@@ -98,7 +98,7 @@ pub async fn get_complete_library(
     let cached = match scan_library_cache(steam_root).await {
         Ok(mut games) => {
             let mut seen = HashSet::new();
-            games.retain(|g| seen.insert(g.platform_game_id.clone()));
+            games.retain(|g| seen.insert(g.library_game_id.clone()));
             info!("Cache: {} jogos encontrados", games.len());
             games
         }
@@ -232,8 +232,8 @@ fn parse_appmanifest(manifest_path: &Path, library_root: &Path) -> Result<GameDa
 
     Ok(GameData {
         name,
-        platform: "Steam".to_string(),
-        platform_game_id: appid,
+        library: "Steam".to_string(),
+        library_game_id: appid,
         install_path,
         installed: true,
         import_confidence: "High".to_string(),
@@ -284,7 +284,7 @@ pub async fn scan_library_cache(steam_root: &Path) -> Result<Vec<GameData>, Stri
     }
 
     let mut seen = HashSet::new();
-    games.retain(|g| seen.insert(g.platform_game_id.clone()));
+    games.retain(|g| seen.insert(g.library_game_id.clone()));
 
     Ok(games)
 }
@@ -326,8 +326,8 @@ async fn scan_librarycache_dir(dir: &Path, games: &mut Vec<GameData>) -> Result<
 
         games.push(GameData {
             name,
-            platform: "Steam".to_string(),
-            platform_game_id: appid,
+            library: "Steam".to_string(),
+            library_game_id: appid,
             install_path: None,
             installed: false,
             import_confidence: "Medium".to_string(),
@@ -442,8 +442,8 @@ async fn fetch_steam_api(api_key: &str, steam_id: &str) -> Result<Vec<GameData>,
         .into_iter()
         .map(|game| GameData {
             name: game.name,
-            platform: "Steam".to_string(),
-            platform_game_id: game.appid.to_string(),
+            library: "Steam".to_string(),
+            library_game_id: game.appid.to_string(),
             install_path: None,
             installed: false,
             import_confidence: "Low".to_string(),
@@ -538,7 +538,7 @@ fn filter_duplicate_demos(games: Vec<GameData>, owned_appids: &HashSet<String>) 
         if !base_games.is_empty() && !demos.is_empty() {
             let has_owned_base = base_games
                 .iter()
-                .any(|g| owned_appids.contains(&g.platform_game_id));
+                .any(|g| owned_appids.contains(&g.library_game_id));
 
             if has_owned_base {
                 debug!(
@@ -575,7 +575,7 @@ pub fn merge_games(sources: Vec<Vec<GameData>>) -> Vec<GameData> {
 
     for list in sources {
         for game in list {
-            let key = format!("{}::{}", game.platform, game.platform_game_id);
+            let key = format!("{}::{}", game.library, game.library_game_id);
             map.entry(key).or_default().push(game);
         }
     }
@@ -622,8 +622,8 @@ fn enrich(primary: &GameData, secondary: &GameData) -> GameData {
         } else {
             secondary.name.clone()
         },
-        platform: primary.platform.clone(),
-        platform_game_id: primary.platform_game_id.clone(),
+        library: primary.library.clone(),
+        library_game_id: primary.library_game_id.clone(),
         install_path: primary
             .install_path
             .clone()
@@ -657,8 +657,8 @@ impl GameSource for SteamSource {
             .into_iter()
             .map(|game| {
                 SourceGame {
-                    platform: "Steam".to_string(),
-                    platform_game_id: game.platform_game_id,
+                    library: "Steam".to_string(),
+                    library_game_id: game.library_game_id,
                     name: Some(game.name),
                     installed: game.installed,
                     executable_path: None, // Steam usa AppIDs, não paths diretos no import inicial

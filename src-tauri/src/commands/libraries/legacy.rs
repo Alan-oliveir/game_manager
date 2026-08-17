@@ -33,8 +33,8 @@ async fn persist_legacy_games(
 
         let exists: bool = tx
             .query_row(
-                "SELECT EXISTS(SELECT 1 FROM games WHERE platform = ?1 AND platform_game_id = ?2)",
-                params![&game.platform, &game.platform_game_id],
+                "SELECT EXISTS(SELECT 1 FROM games WHERE library = ?1 AND library_game_id = ?2)",
+                params![&game.library, &game.library_game_id],
                 |row| row.get(0),
             )
             .unwrap_or(false);
@@ -48,7 +48,7 @@ async fn persist_legacy_games(
 
             tx.execute(
                 "INSERT INTO games (
-                    id, name, slug, platform, platform_game_id,
+                    id, name, slug, library, library_game_id,
                     installed, status, playtime, playtime_source, last_played, added_at,
                     favorite, user_rating, install_path, executable_path
                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, NULL, NULL, ?9, 0, NULL, ?10, ?11)",
@@ -56,8 +56,8 @@ async fn persist_legacy_games(
                     new_id,
                     display_name,
                     slug,
-                    game.platform,
-                    game.platform_game_id,
+                    game.library,
+                    game.library_game_id,
                     game.installed,
                     status,
                     game.playtime_minutes.unwrap_or(0),
@@ -88,8 +88,8 @@ async fn persist_legacy_games(
             newly_imported.push(NewlyImportedGame {
                 game_id: new_id,
                 name: display_name,
-                platform: game.platform.clone(),
-                platform_game_id: game.platform_game_id.clone(),
+                library: game.library.clone(),
+                library_game_id: game.library_game_id.clone(),
             });
 
             inserted += 1;
@@ -100,14 +100,14 @@ async fn persist_legacy_games(
                     status      = ?2,
                     install_path     = COALESCE(?3, install_path),
                     executable_path  = COALESCE(?4, executable_path)
-                 WHERE platform = ?5 AND platform_game_id = ?6",
+                 WHERE library = ?5 AND library_game_id = ?6",
                 params![
                     game.installed,
                     status,
                     game.install_path,
                     game.executable_path,
-                    game.platform,
-                    game.platform_game_id,
+                    game.library,
+                    game.library_game_id,
                 ],
             )
                 .map_err(|e| AppError::DatabaseError(e.to_string()))?;

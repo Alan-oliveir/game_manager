@@ -9,17 +9,17 @@ interface EnrichProgressPayload {
   total_found: number;
   last_game: string;
   status: string;
-  platform: string | null;
+  library: string | null;
 }
 
 interface EnrichCompletePayload {
-  platform: string | null;
+  library: string | null;
   message: string;
 }
 
 /**
  * Toast de progresso por plataforma para o enriquecimento automático pós-import
- * (enrich_newly_imported). Ignora eventos sem `platform` (update_metadata,
+ * (enrich_newly_imported). Ignora eventos sem `library` (update_metadata,
  * fill_missing_metadata), que já têm feedback próprio na tela de Configurações.
  */
 export function useEnrichmentProgressNotifications() {
@@ -30,35 +30,35 @@ export function useEnrichmentProgressNotifications() {
     const unlistenProgress = listen<EnrichProgressPayload>(
       'enrich_progress',
       event => {
-        const { platform, current, total_found, last_game } = event.payload;
+        const { library, current, total_found, last_game } = event.payload;
 
-        if (!platform) return;
+        if (!library) return;
 
         const message = t('enriching_progress', {
           game: last_game,
           current,
           total: total_found,
         });
-        const existingId = toastIds.current.get(platform);
+        const existingId = toastIds.current.get(library);
 
         const id = toast.loading(
           message,
           existingId ? { id: existingId } : undefined
         );
-        toastIds.current.set(platform, id);
+        toastIds.current.set(library, id);
       }
     );
 
     const unlistenComplete = listen<EnrichCompletePayload>(
       'enrich_complete',
       event => {
-        const { platform, message } = event.payload;
+        const { library, message } = event.payload;
 
-        if (!platform) return;
+        if (!library) return;
 
-        const existingId = toastIds.current.get(platform);
+        const existingId = toastIds.current.get(library);
         toast.success(message, existingId ? { id: existingId } : undefined);
-        toastIds.current.delete(platform);
+        toastIds.current.delete(library);
       }
     );
 

@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import type { ImportStatus } from '@/types';
 import { toast } from '@/utils/toast';
 
-type ImportCompletePayload = [platform: string, message: string];
-type ImportErrorPayload = [platform: string, error: string];
+type ImportCompletePayload = [library: string, message: string];
+type ImportErrorPayload = [library: string, error: string];
 
-interface UsePlatformImportListenerOptions {
-  platformLabel: string;
+interface UseLibraryImportListenerOptions {
+  libraryLabel: string;
   setStatus: (status: ImportStatus) => void;
   onLibraryUpdate?: () => void;
 }
@@ -19,17 +19,17 @@ interface UsePlatformImportListenerOptions {
  * filtrando pelo nome da plataforma.
  */
 export function useLibraryImportListener({
-  platformLabel,
+  libraryLabel,
   setStatus,
   onLibraryUpdate,
-}: UsePlatformImportListenerOptions) {
+}: UseLibraryImportListenerOptions) {
   const [isImporting, setIsImporting] = useState(false);
   const onLibraryUpdateRef = useRef(onLibraryUpdate);
   onLibraryUpdateRef.current = onLibraryUpdate;
 
   useEffect(() => {
     const unlistenStarted = listen<string>('import_started', event => {
-      if (event.payload !== platformLabel) return;
+      if (event.payload !== libraryLabel) return;
 
       setIsImporting(true);
       setStatus({ type: null, message: '' });
@@ -38,9 +38,9 @@ export function useLibraryImportListener({
     const unlistenComplete = listen<ImportCompletePayload>(
       'import_complete',
       event => {
-        const [platform, message] = event.payload;
+        const [library, message] = event.payload;
 
-        if (platform !== platformLabel) return;
+        if (library !== libraryLabel) return;
 
         setIsImporting(false);
         setStatus({ type: 'success', message });
@@ -50,9 +50,9 @@ export function useLibraryImportListener({
     );
 
     const unlistenError = listen<ImportErrorPayload>('import_error', event => {
-      const [platform, error] = event.payload;
+      const [library, error] = event.payload;
 
-      if (platform !== platformLabel) return;
+      if (library !== libraryLabel) return;
 
       setIsImporting(false);
       setStatus({ type: 'error', message: error });
@@ -64,7 +64,7 @@ export function useLibraryImportListener({
       unlistenComplete.then(fn => fn());
       unlistenError.then(fn => fn());
     };
-  }, [platformLabel, setStatus]);
+  }, [libraryLabel, setStatus]);
 
   return { isImporting };
 }

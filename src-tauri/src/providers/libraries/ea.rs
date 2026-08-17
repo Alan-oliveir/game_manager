@@ -106,8 +106,8 @@ impl EaSource {
                         guess_main_executable(&path).map(|p| p.to_string_lossy().to_string());
 
                     games.push(SourceGame {
-                        platform: "EA".to_string(),
-                        platform_game_id: normalize_id(&display_name),
+                        library: "EA".to_string(),
+                        library_game_id: normalize_id(&display_name),
                         name: Some(display_name),
                         installed: true,
                         executable_path,
@@ -130,8 +130,8 @@ impl EaSource {
             }
 
             games.push(SourceGame {
-                platform: "EA".to_string(),
-                platform_game_id: normalize_id(known),
+                library: "EA".to_string(),
+                library_game_id: normalize_id(known),
                 name: Some(known.clone()),
                 installed: false,
                 executable_path: None,

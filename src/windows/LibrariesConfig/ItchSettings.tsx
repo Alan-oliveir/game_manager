@@ -63,7 +63,7 @@ export function ItchSettings({
         </SettingsRow>
 
         <LauncherPathSection
-          platform="Itch"
+          library="Itch"
           title={t('itch_launcher_path_title')}
           description={t('launcher_path_description')}
         />

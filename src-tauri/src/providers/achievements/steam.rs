@@ -15,7 +15,7 @@ use crate::database;
 use crate::database::achievements::{self, AchievementRecord};
 use crate::database::AppState;
 use crate::errors::AppError;
-use crate::providers::achievements::core::{AchievementProvider, Platform};
+use crate::providers::achievements::core::{AchievementProvider, Library};
 use crate::providers::libraries::steam::SteamGame;
 use crate::services::cache;
 use crate::services::rate_limiter::STEAM_LIMITER;
@@ -74,8 +74,8 @@ pub struct SteamProvider;
 
 #[async_trait]
 impl AchievementProvider for SteamProvider {
-    fn platform(&self) -> Platform {
-        Platform::Steam
+    fn library(&self) -> Library {
+        Library::Steam
     }
 
     async fn is_configured(&self, app: &AppHandle) -> bool {
@@ -138,7 +138,7 @@ impl AchievementProvider for SteamProvider {
         }
 
         // 2. Resto da biblioteca — lido de `games` (já importado),sem nova chamada à API pra "GetOwnedGames".
-        let owned_games = achievements::get_owned_games_by_platform(app, "steam")?;
+        let owned_games = achievements::get_owned_games_by_library(app, "steam")?;
 
         let already_checked: HashSet<&str> = recent_games.iter().map(|g| g.id.as_str()).collect();
         let remaining: Vec<OwnedGame> = owned_games
@@ -172,7 +172,7 @@ async fn sync_games(
     let mut consecutive_failures = 0u32;
 
     for game in games {
-        if achievements::should_skip(app, Platform::Steam, &game.id, ttl_secs) {
+        if achievements::should_skip(app, Library::Steam, &game.id, ttl_secs) {
             continue;
         }
 
@@ -188,7 +188,7 @@ async fn sync_games(
                     .into_iter()
                     .filter(|a| a.achieved == 1)
                     .map(|a| AchievementRecord {
-                        platform: Platform::Steam,
+                        library: Library::Steam,
                         game_id: game.id.clone(),
                         game_name: game.name.clone(),
                         achievement_key: a.apiname.clone(),
@@ -208,7 +208,7 @@ async fn sync_games(
                     );
                 }
 
-                if let Err(e) = achievements::mark_synced(app, Platform::Steam, &game.id, true) {
+                if let Err(e) = achievements::mark_synced(app, Library::Steam, &game.id, true) {
                     warn!(
                         "Steam: falha ao marcar sync de {} ({}): {}",
                         game.name, game.id, e
@@ -218,7 +218,7 @@ async fn sync_games(
             Err(e) => {
                 if e.contains("400") {
                     if let Err(db_err) =
-                        achievements::mark_synced(app, Platform::Steam, &game.id, false)
+                        achievements::mark_synced(app, Library::Steam, &game.id, false)
                     {
                         warn!(
                             "Steam: falha ao marcar {} ({}) como sem conquistas: {}",
@@ -227,7 +227,7 @@ async fn sync_games(
                     }
                 } else {
                     if let Err(db_err) =
-                        achievements::mark_synced(app, Platform::Steam, &game.id, true)
+                        achievements::mark_synced(app, Library::Steam, &game.id, true)
                     {
                         warn!(
                             "Steam: falha ao marcar tentativa de {} ({}): {}",

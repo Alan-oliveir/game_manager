@@ -137,7 +137,7 @@
   "heroic_supported_amazon": "Amazon Games",
   "heroic_supported_sideloaded": "Manually added games (Sideloaded)",
   "heroic_duplicate_warning_title": "Possible game duplication",
-  "heroic_duplicate_warning_text": "If you import games through Heroic and also through the corresponding native launcher (such as Epic Games or GOG), the same titles may appear twice in your library. This is expected: each entry represents a different platform or installation.",
+  "heroic_duplicate_warning_text": "If you import games through Heroic and also through the corresponding native launcher (such as Epic Games or GOG), the same titles may appear twice in your library. This is expected: each entry represents a different library or installation.",
   "heroic_importing": "Importing",
   "heroic_importing_short": "Importing...",
   "heroic_import_button": "Import Heroic Games",

@@ -57,7 +57,7 @@ pub async fn launch_game(
     let should_track = matches!(
         outcome,
         LaunchOutcome::Launched | LaunchOutcome::OpenedLauncher { installed: true }
-    ) && !has_official_playtime_source(&game.platform);
+    ) && !has_official_playtime_source(&game.library);
 
     if should_track {
         if let Some(exe_path) = game.executable_path.as_ref().map(PathBuf::from) {

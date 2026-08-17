@@ -70,7 +70,7 @@ pub fn initialize_databases(app: &AppHandle) -> Result<AppState, String> {
 
     games_conn
         .pragma_update(None, "journal_mode", DB_JOURNAL_MODE)
-        .map_err(|e| format!("Erro ao configurar WAL no library.db: {}", e))?;
+        .map_err(|e| format!("Erro ao configurar WAL no games.db: {}", e))?;
 
     // Conexão para cache.db
     let cache_path = app_data_dir.join(DB_FILENAME_CACHE);
@@ -143,9 +143,9 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             slug TEXT NOT NULL DEFAULT '',
-            platform TEXT NOT NULL,
+            library TEXT NOT NULL,
             source_label TEXT,
-            platform_game_id TEXT NOT NULL,
+            library_game_id TEXT NOT NULL,
             alternative_names TEXT,
             installed BOOLEAN DEFAULT 0,
             import_confidence TEXT,
@@ -206,7 +206,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
             name TEXT NOT NULL,
             cover_url TEXT,
             store_url TEXT,
-            store_platform TEXT,
+            store TEXT,
             current_price REAL,
             normal_price REAL,
             lowest_price REAL,
@@ -347,7 +347,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS achievements (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            platform TEXT NOT NULL,
+            library TEXT NOT NULL,
             game_id TEXT NOT NULL,
             game_name TEXT NOT NULL,
             achievement_key TEXT NOT NULL,
@@ -355,7 +355,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
             achievement_description TEXT,
             unlocked_at INTEGER NOT NULL,
             icon_url TEXT,
-            UNIQUE(platform, game_id, achievement_key)
+            UNIQUE(library, game_id, achievement_key)
         )",
         [],
     )
@@ -369,11 +369,11 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS achievement_sync_state (
-            platform TEXT NOT NULL,
+            library TEXT NOT NULL,
             game_id TEXT NOT NULL,
             last_synced_at INTEGER NOT NULL,
             has_achievements INTEGER NOT NULL DEFAULT 1,
-            PRIMARY KEY (platform, game_id)
+            PRIMARY KEY (library, game_id)
         )",
         [],
     )
@@ -387,7 +387,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_platform ON games(platform)",
+        "CREATE INDEX IF NOT EXISTS idx_library ON games(library)",
         [],
     )
         .map_err(|e| e.to_string())?;

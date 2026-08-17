@@ -53,7 +53,7 @@ pub async fn fetch_missing_covers(app: AppHandle) -> Result<(), AppError> {
                     total_found: count as i32,
                     last_game: format!("Capa: {}", name),
                     status: "running".to_string(),
-                    platform: None,
+                    library: None,
                 },
             );
 
@@ -112,7 +112,7 @@ pub async fn fetch_missing_covers(app: AppHandle) -> Result<(), AppError> {
         let _ = app_handle.emit(
             "enrich_complete",
             EnrichCompletePayload {
-                platform: None,
+                library: None,
                 message: "Busca de capas finalizada.".to_string(),
             },
         );

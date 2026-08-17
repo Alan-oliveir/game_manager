@@ -74,8 +74,8 @@ export function GameLibraryProvider({
     return {
       id: ensureId,
       name: data.name ?? 'Untitled',
-      platform: data.platform ?? 'Manual',
-      platformGameId: data.platformGameId ?? '',
+      library: data.library ?? 'Manual',
+      libraryGameId: data.libraryGameId ?? '',
       coverUrl: data.coverUrl ?? null,
       installed: data.installed ?? false,
       importConfidence: data.importConfidence ?? null,

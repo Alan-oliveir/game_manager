@@ -5,8 +5,8 @@ import { storesService } from '@/services/storesService.ts';
 import { Game } from '@/types';
 import { toast } from '@/utils/toast';
 
-const launcherPathOverrideKey = (platform: string) =>
-  `launcher_path_override:${platform}`;
+const launcherPathOverrideKey = (library: string) =>
+  `launcher_path_override:${library}`;
 
 /**
  * Gerencia o lançamento de jogos, delegando ao backend a escolha da melhor
@@ -27,7 +27,7 @@ export function useLaunchGame() {
 
       try {
         const override =
-          localStorage.getItem(launcherPathOverrideKey(game.platform)) ||
+          localStorage.getItem(launcherPathOverrideKey(game.library)) ||
           undefined;
 
         const outcome = await storesService.launchGame(game.id, override);
@@ -41,11 +41,11 @@ export function useLaunchGame() {
               outcome.installed
                 ? t('launch_opening_launcher', {
                     name: game.name,
-                    platform: game.platform,
+                    library: game.library,
                   })
                 : t('launch_opening_launcher_not_installed', {
                     name: game.name,
-                    platform: game.platform,
+                    library: game.library,
                   })
             );
             break;

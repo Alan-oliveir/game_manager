@@ -10,7 +10,7 @@ interface StandardGameCardProps {
   title: string;
   coverUrl?: string | null;
   subtitle?: string;
-  platform?: string;
+  library?: string;
   sourceLabel?: string;
   badge?: ReactNode;
   rating?: number;
@@ -39,7 +39,7 @@ function StandardGameCard({
   title,
   coverUrl,
   subtitle,
-  platform,
+  library,
   sourceLabel,
   badge,
   rating,
@@ -52,7 +52,7 @@ function StandardGameCard({
   const { t } = useTranslation('library');
   const handleImageError = useCallback(() => setImageError(true), []);
   const label =
-    platform && sourceLabel ? `${platform} • ${sourceLabel}` : platform;
+    library && sourceLabel ? `${library} • ${sourceLabel}` : library;
 
   return (
     <div

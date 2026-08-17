@@ -165,8 +165,8 @@ impl BattleNetSource {
                 .map(|ms| ms / 1000);
 
             games.push(SourceGame {
-                platform: "BattleNet".to_string(),
-                platform_game_id: entry.product_id,
+                library: "BattleNet".to_string(),
+                library_game_id: entry.product_id,
                 name: Some(name),
                 installed: true,
                 executable_path,

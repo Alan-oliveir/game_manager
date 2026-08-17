@@ -5,8 +5,8 @@ import { Game } from '@/types';
 export interface GameFormData {
   name: string;
   coverUrl: string;
-  platform: string;
-  platformGameId: string;
+  library: string;
+  libraryGameId: string;
   installed: boolean;
   importConfidence: string;
   status: string;
@@ -20,8 +20,8 @@ export interface GameFormData {
 const INITIAL_STATE: GameFormData = {
   name: '',
   coverUrl: '',
-  platform: 'Manual',
-  platformGameId: '',
+  library: 'Manual',
+  libraryGameId: '',
   installed: false,
   importConfidence: '',
   status: 'backlog',
@@ -56,8 +56,8 @@ export function useGameForm(isOpen: boolean, gameToEdit?: Game | null) {
         setFormData({
           name: gameToEdit.name,
           coverUrl: gameToEdit.coverUrl || '',
-          platform: gameToEdit.platform || 'Manual',
-          platformGameId: gameToEdit.platformGameId || '',
+          library: gameToEdit.library || 'Manual',
+          libraryGameId: gameToEdit.libraryGameId || '',
           installed: gameToEdit.installed || false,
           importConfidence: gameToEdit.importConfidence || '',
           status: gameToEdit.status || 'backlog',
@@ -94,8 +94,8 @@ export function useGameForm(isOpen: boolean, gameToEdit?: Game | null) {
       id: gameToEdit?.id,
       name: formData.name,
       coverUrl: formData.coverUrl || undefined,
-      platform: formData.platform,
-      platformGameId: formData.platformGameId || '',
+      library: formData.library,
+      libraryGameId: formData.libraryGameId || '',
       installed: formData.installed,
       importConfidence: formData.importConfidence || undefined,
       status: formData.status,

@@ -27,9 +27,9 @@
   "context_game_added": "Jogo adicionado!",
   "context_favorite_error": "Erro ao favoritar jogo",
   "launch_starting": "Iniciando {{name}}...",
-  "launch_opening_launcher": "Abrindo launcher de {{platform}}...",
+  "launch_opening_launcher": "Abrindo launcher de {{library}}...",
   "launch_opening_store": "{{name}} não está instalado. Abrindo página da loja...",
-  "launch_opening_launcher_not_installed": "{{name}} não está instalado. Abrindo launcher de {{platform}}...",
+  "launch_opening_launcher_not_installed": "{{name}} não está instalado. Abrindo launcher de {{library}}...",
   "launch_unavailable": "Não foi possível iniciar {{name}}: launcher não encontrado.",
   "launch_error": "Erro ao iniciar jogo"
 }

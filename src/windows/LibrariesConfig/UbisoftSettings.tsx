@@ -73,7 +73,7 @@ export function UbisoftSettings({
         </SettingsRow>
 
         <LauncherPathSection
-          platform="Ubisoft"
+          library="Ubisoft"
           title={t('ubisoft_launcher_path_title')}
           description={t('launcher_path_description')}
         />

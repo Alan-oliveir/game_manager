@@ -8,7 +8,7 @@ import { Button } from '@/ui/button';
 import { PathPickerField } from './PathPickerField';
 
 interface LauncherPathSectionProps {
-  platform: string;
+  library: string;
   title: string;
   description: string;
 }
@@ -20,7 +20,7 @@ interface LauncherPathSectionProps {
  * dos JOGOS (outro override existente por plataforma).
  */
 export function LauncherPathSection({
-  platform,
+  library,
   title,
   description,
 }: Readonly<LauncherPathSectionProps>) {
@@ -30,7 +30,7 @@ export function LauncherPathSection({
     setLauncherPath,
     chooseLauncherPath,
     clearLauncherPath,
-  } = useLauncherPathOverride(platform);
+  } = useLauncherPathOverride(library);
 
   return (
     <SettingsRow icon={FolderOpen} title={title} description={description}>

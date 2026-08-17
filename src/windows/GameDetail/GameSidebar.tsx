@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { Game, GameDetails, GameStoreLink, GameTag } from '@/types/game';
+import { Game, GameDetails, GameLibraryLink, GameTag } from '@/types/game';
 import { Badge } from '@/ui/badge';
 import { Button } from '@/ui/button';
 import { formatTime } from '@/utils';
@@ -27,7 +27,7 @@ import {
 interface GameSidebarProps {
   game: Game;
   details: GameDetails | null;
-  siblings: GameStoreLink[];
+  siblings: GameLibraryLink[];
   onSwitchGame: (id: string) => void;
 }
 
@@ -271,7 +271,7 @@ export function GameSidebar({
                 onClick={() => onSwitchGame(sib.id)}
                 className="border-border/50 h-7 border text-xs"
               >
-                {sib.store}
+                {sib.library}
               </Button>
             ))}
           </div>

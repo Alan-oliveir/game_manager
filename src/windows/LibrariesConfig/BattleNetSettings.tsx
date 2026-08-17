@@ -56,7 +56,7 @@ export function BattleNetSettings({
         </SettingsRow>
 
         <LauncherPathSection
-          platform="BattleNet"
+          library="BattleNet"
           title={t('battlenet_launcher_path_title')}
           description={t('launcher_path_description')}
         />

@@ -1,9 +1,10 @@
 //! This module contains functions for scraping game catalogs from various libraries.
-//! Each platform has its own submodule that implements the specific scraping logic for that platform.
+//! Each service has its own submodule that implements the specific scraping logic for that service.
 //!
 //! **Módulos:**
 //!
 //! - Amazon Luna
+//! - EA Play
 //! - Game Pass PC
 //! - Ubisoft+
 

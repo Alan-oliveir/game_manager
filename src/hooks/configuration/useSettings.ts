@@ -287,12 +287,12 @@ export function useSettings(onLibraryUpdate: () => void) {
         current: number;
         total_found: number;
         last_game: string;
-        platform: string | null;
+        library: string | null;
       };
     }) => {
       const p = event.payload;
 
-      if (p.platform) return; // pertence ao toast por plataforma, não a esta tela
+      if (p.library) return; // pertence ao toast por plataforma, não a esta tela
 
       setProgress({
         current: p.current,
@@ -304,9 +304,9 @@ export function useSettings(onLibraryUpdate: () => void) {
     };
 
     const handleEnrichComplete = (event: {
-      payload: { platform: string | null; message: string };
+      payload: { library: string | null; message: string };
     }) => {
-      if (event.payload.platform) return; // toast por plataforma já cobre
+      if (event.payload.library) return; // toast por biblioteca já cobre
 
       finishEnrichment();
       setProgress(null);

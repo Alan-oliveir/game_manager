@@ -87,8 +87,8 @@ impl GogSource {
             .into_iter()
             .filter(|p| !is_likely_non_base_game(&p.title))
             .map(|p| SourceGame {
-                platform: "GOG".to_string(),
-                platform_game_id: p.id.to_string(),
+                library: "GOG".to_string(),
+                library_game_id: p.id.to_string(),
                 name: Some(p.title),
                 installed: false,
                 executable_path: None,
@@ -280,7 +280,7 @@ pub fn detect_installed_games(games: &mut [SourceGame], gog_games_dir: &Path) {
         if let Some((_, path)) = matched {
             game.installed = true;
             game.install_path = Some(path.to_string_lossy().to_string());
-            game.executable_path = resolve_gog_executable(path, &game.platform_game_id)
+            game.executable_path = resolve_gog_executable(path, &game.library_game_id)
                 .map(|p| p.to_string_lossy().to_string());
         }
     }

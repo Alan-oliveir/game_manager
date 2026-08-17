@@ -8,7 +8,7 @@ use crate::database;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::models;
-use crate::models::Platform;
+use crate::models::Library;
 use crate::providers::media::steamgriddb;
 use crate::utils::status_logic;
 use crate::utils::text::slugify;
@@ -27,8 +27,8 @@ use uuid::Uuid;
 pub struct GameInput {
     pub id: String,
     pub name: String,
-    pub platform: Platform,
-    pub platform_game_id: String,
+    pub library: Library,
+    pub library_game_id: String,
     pub cover_url: Option<String>,
     pub installed: bool,
     pub import_confidence: Option<String>,
@@ -143,17 +143,17 @@ pub fn add_game(state: State<AppState>, game: GameInput) -> Result<(), AppError>
         .unwrap_or_else(|| status_logic::calculate_status(game.playtime.unwrap_or(0)));
 
     let added_at = Utc::now().to_rfc3339();
-    let platform = game.platform;
+    let library = game.library;
 
-    let platform_game_id = if matches!(platform, Platform::Outra) {
+    let library_game_id = if matches!(library, Library::Outra) {
         format!("manual-{}", Uuid::new_v4())
     } else {
-        game.platform_game_id.clone()
+        game.library_game_id.clone()
     };
 
     conn.execute(
         "INSERT INTO games (
-        id, name, slug, platform, platform_game_id,
+        id, name, slug, library, library_game_id,
         installed, import_confidence, install_path, executable_path, launch_args,
         user_rating, status, playtime, added_at
         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
@@ -161,8 +161,8 @@ pub fn add_game(state: State<AppState>, game: GameInput) -> Result<(), AppError>
             game.id,
             game.name,
             slugify(&game.name),
-            platform.to_string(),
-            platform_game_id,
+            library.to_string(),
+            library_game_id,
             game.installed,
             game.import_confidence,
             game.install_path,
@@ -198,8 +198,8 @@ pub fn update_game(state: State<AppState>, game: GameInput) -> Result<(), AppErr
         "UPDATE games SET
         name = ?1,
         slug = ?2,
-        platform = ?3,
-        platform_game_id = ?4,
+        library = ?3,
+        library_game_id = ?4,
         installed = ?5,
         import_confidence = ?6,
         playtime = ?7,
@@ -212,8 +212,8 @@ pub fn update_game(state: State<AppState>, game: GameInput) -> Result<(), AppErr
         params![
             game.name,
             slugify(&game.name),
-            game.platform.to_string(),
-            game.platform_game_id,
+            game.library.to_string(),
+            game.library_game_id,
             game.installed,
             game.import_confidence,
             game.playtime,
@@ -246,7 +246,7 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
 
     let mut stmt = conn.prepare(
         "SELECT
-            g.id, g.name, g.slug, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
+            g.id, g.name, g.slug, g.library, g.library_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
             g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
             gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label,
             (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url
@@ -264,8 +264,8 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
                 id: row.get(0)?,
                 name: row.get(1)?,
                 slug: row.get(2)?,
-                platform: row.get::<_, String>(3)?.parse().unwrap_or(Platform::Outra),
-                platform_game_id: row.get(4)?,
+                library: row.get::<_, String>(3)?.parse().unwrap_or(Library::Outra),
+                library_game_id: row.get(4)?,
                 installed: row.get(5)?,
                 import_confidence: row
                     .get::<_, Option<String>>(6)?
@@ -397,7 +397,7 @@ pub fn get_game_by_id(
 
     let mut stmt = conn.prepare(
         "SELECT
-            g.id, g.name, g.slug, g.platform, g.platform_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
+            g.id, g.name, g.slug, g.library, g.library_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
             g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
             gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label,
             (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url
@@ -415,8 +415,8 @@ pub fn get_game_by_id(
                 id: row.get(0)?,
                 name: row.get(1)?,
                 slug: row.get(2)?,
-                platform: row.get::<_, String>(3)?.parse().unwrap_or(Platform::Outra),
-                platform_game_id: row.get(4)?,
+                library: row.get::<_, String>(3)?.parse().unwrap_or(Library::Outra),
+                library_game_id: row.get(4)?,
                 installed: row.get(5)?,
                 import_confidence: row
                     .get::<_, Option<String>>(6)?

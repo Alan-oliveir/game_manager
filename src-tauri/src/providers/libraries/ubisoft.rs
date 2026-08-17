@@ -200,8 +200,8 @@ impl UbisoftSource {
             });
 
             games.push(SourceGame {
-                platform: "Ubisoft".to_string(),
-                platform_game_id: game_id,
+                library: "Ubisoft".to_string(),
+                library_game_id: game_id,
                 name: Some(strip_trademark_symbols(&n)),
                 installed,
                 executable_path,

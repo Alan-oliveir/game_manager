@@ -17,8 +17,8 @@ use tauri_plugin_opener::OpenerExt;
 
 #[derive(Debug, Clone)]
 pub struct SourceGame {
-    pub platform: String,
-    pub platform_game_id: String,
+    pub library: String,
+    pub library_game_id: String,
     pub name: Option<String>,
     pub installed: bool,
     pub executable_path: Option<String>,

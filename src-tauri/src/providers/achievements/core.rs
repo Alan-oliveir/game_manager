@@ -18,7 +18,7 @@ const DASHBOARD_LIMIT: usize = 5;
 
 #[derive(Serialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
-pub enum Platform {
+pub enum Library {
     Steam,
     Epic,
     Gog,
@@ -27,7 +27,7 @@ pub enum Platform {
 
 #[derive(Serialize)]
 pub struct DashboardAchievement {
-    pub platform: Platform,
+    pub library: Library,
     pub game_name: String,
     pub achievement_name: String,
     pub unlock_time: i64,
@@ -36,7 +36,7 @@ pub struct DashboardAchievement {
 
 #[async_trait]
 pub(crate) trait AchievementProvider: Send + Sync {
-    fn platform(&self) -> Platform;
+    fn library(&self) -> Library;
 
     /// Deve responder rápido (sem chamada de rede) se há credenciais suficientes para consultar essa plataforma.
     async fn is_configured(&self, app: &AppHandle) -> bool;
@@ -68,7 +68,7 @@ pub async fn sync_all_achievements(app: &AppHandle) -> Result<(), AppError> {
                 // Erro em uma plataforma não derruba as demais.
                 warn!(
                     "Falha ao sincronizar conquistas de {:?}: {err}",
-                    provider.platform()
+                    provider.library()
                 );
             }
         }

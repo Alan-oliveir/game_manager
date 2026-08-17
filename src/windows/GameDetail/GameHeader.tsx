@@ -80,7 +80,7 @@ export function GameHeader({
           {/* BADGES */}
           <div className="flex items-center gap-3">
             <Badge className="border-white/10 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md hover:bg-white/20">
-              {LibraryDisplayNames[game.platform] || 'PC'}
+              {LibraryDisplayNames[game.library] || 'PC'}
             </Badge>
 
             {game.installed && (
