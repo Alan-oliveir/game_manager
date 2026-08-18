@@ -3,7 +3,12 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { LibraryGameGrid } from '@/components';
-import { useLibraryFilter, usePlaylist } from '@/hooks';
+import {
+  SortOption,
+  useLibraryFilter,
+  useLibrarySort,
+  usePlaylist,
+} from '@/hooks';
 import { Game, GameActions } from '@/types';
 import { toast } from '@/utils';
 
@@ -13,7 +18,8 @@ interface LibraryProps extends GameActions {
   hideAdult?: boolean;
   hideDuplicates?: boolean;
   hideNotInstalled?: boolean;
-  groupByPlatform?: boolean;
+  groupByLibrary?: boolean;
+  sort: SortOption;
 }
 
 export default function Libraries({
@@ -22,7 +28,8 @@ export default function Libraries({
   hideAdult,
   hideDuplicates,
   hideNotInstalled,
-  groupByPlatform = false,
+  groupByLibrary = false,
+  sort,
   ...actions
 }: Readonly<LibraryProps>) {
   const { t } = useTranslation('library');
@@ -45,13 +52,15 @@ export default function Libraries({
     [addToPlaylist, t]
   );
 
-  const displayedGames = useLibraryFilter({
+  const filteredGames = useLibraryFilter({
     games,
     searchTerm,
     hideAdult,
     hideDuplicates,
     hideNotInstalled,
   });
+
+  const displayedGames = useLibrarySort(filteredGames, sort);
 
   // Empty state
   if (displayedGames.length === 0) {
@@ -88,7 +97,7 @@ export default function Libraries({
       <div className="min-h-0 flex-1">
         <LibraryGameGrid
           games={displayedGames}
-          groupByPlatform={groupByPlatform}
+          groupByLibrary={groupByLibrary}
           onGameClick={actions.onGameClick}
           onToggleFavorite={actions.onToggleFavorite}
           onAddToPlaylist={handleAddToPlaylist}

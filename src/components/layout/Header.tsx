@@ -10,9 +10,10 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Kofi, ViewFiltersDropdown } from '@/components';
+import { Kofi, SortDropdown, ViewFiltersDropdown } from '@/components';
 import { QuickSettings } from '@/dialogs/QuickSettings';
 import {
+  type SortOption,
   useHeaderState,
   useRecommendationAnalysis,
   useTheme,
@@ -31,8 +32,10 @@ interface HeaderProps {
   activeSection: string;
   viewFilters: ViewFilters;
   onViewFiltersChange: (filters: ViewFilters) => void;
-  groupByPlatform: boolean;
-  onToggleGroupByPlatform: () => void;
+  groupByLibrary: boolean;
+  onToggleGroupByLibrary: () => void;
+  sort: SortOption;
+  onSortChange: (sort: SortOption) => void;
   onCheckUpdates: () => void;
   onLibraryUpdate: () => void;
   userGames: Game[];
@@ -45,8 +48,10 @@ export default function Header({
   activeSection,
   viewFilters,
   onViewFiltersChange,
-  groupByPlatform,
-  onToggleGroupByPlatform,
+  groupByLibrary,
+  onToggleGroupByLibrary,
+  sort,
+  onSortChange,
   onCheckUpdates,
   onLibraryUpdate,
   userGames,
@@ -133,14 +138,16 @@ export default function Header({
           />
         )}
 
+        {isFilterable && <SortDropdown sort={sort} onChange={onSortChange} />}
+
         {/* Toggle de agrupar por plataforma — modo de view, não filtro de conteúdo */}
         {isFilterable && (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={groupByPlatform ? 'secondary' : 'ghost'}
+                variant={groupByLibrary ? 'secondary' : 'ghost'}
                 size="icon"
-                onClick={onToggleGroupByPlatform}
+                onClick={onToggleGroupByLibrary}
                 className="shrink-0"
               >
                 <LayoutGrid size={18} />

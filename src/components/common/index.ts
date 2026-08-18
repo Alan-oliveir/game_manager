@@ -10,5 +10,6 @@ export { GameActionsMenu } from './GameActionsMenu';
 export { default as Hero } from './Hero';
 export { LibraryGameGrid } from './LibraryGameGrid';
 export { SettingsRow } from './SettingsRow';
+export { SortDropdown } from './SortDropdown';
 export { StatusBadge } from './StatusBadge';
 export { ViewFiltersDropdown } from './ViewFiltersDropdown';

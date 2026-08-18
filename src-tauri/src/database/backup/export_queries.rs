@@ -66,6 +66,8 @@ fn fetch_games(conn: &Connection) -> Result<Vec<Game>, AppError> {
             cover_url: row.get(3)?,
             genres: None,
             developer: None,
+            critic_score: None,
+            release_date: None,
             library: row.get::<_, String>(4)?.parse().unwrap_or(Library::Outra),
             library_game_id: row.get(5)?,
             alternative_names,

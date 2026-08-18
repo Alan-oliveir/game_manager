@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Sort control for the Libraries and Favorites: games can now be sorted by name, critic score, or release date, in
+  ascending or descending order, in addition to the default alphabetical order.
 - **`config.db`**: New dedicated SQLite database for application configuration (`app_config`), separated from the API
   response cache.
 - Region-aware pricing: the OS system locale (via `sys-locale`) is now used to detect the user's region independently of

@@ -161,6 +161,8 @@ export interface Game {
   libraryGameId: string;
   genres?: string;
   developer?: string;
+  criticScore?: number;
+  releaseDate?: string;
   alternativeNames?: string;
 
   // Execução

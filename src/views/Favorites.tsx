@@ -3,7 +3,12 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { LibraryGameGrid } from '@/components';
-import { useLibraryFilter, usePlaylist } from '@/hooks';
+import {
+  SortOption,
+  useLibraryFilter,
+  useLibrarySort,
+  usePlaylist,
+} from '@/hooks';
 import { Game, GameActions } from '@/types';
 import { toast } from '@/utils';
 
@@ -13,7 +18,8 @@ interface FavoritesProps extends GameActions {
   hideAdult?: boolean;
   hideDuplicates?: boolean;
   hideNotInstalled?: boolean;
-  groupByPlatform?: boolean;
+  groupByLibrary?: boolean;
+  sort: SortOption;
 }
 
 export default function Favorites({
@@ -22,7 +28,8 @@ export default function Favorites({
   hideAdult,
   hideDuplicates,
   hideNotInstalled,
-  groupByPlatform = false,
+  groupByLibrary = false,
+  sort,
   ...actions
 }: Readonly<FavoritesProps>) {
   const { t } = useTranslation('library');
@@ -47,13 +54,15 @@ export default function Favorites({
 
   // Primeiro filtra apenas favoritos, depois aplica o hook de filtro
   const favoriteGames = useMemo(() => games.filter(g => g.favorite), [games]);
-  const displayedGames = useLibraryFilter({
+  const filteredGames = useLibraryFilter({
     games: favoriteGames,
     searchTerm,
     hideAdult,
     hideDuplicates,
     hideNotInstalled,
   });
+
+  const displayedGames = useLibrarySort(filteredGames, sort);
 
   // Empty state
   if (displayedGames.length === 0) {
@@ -92,7 +101,7 @@ export default function Favorites({
       <div className="min-h-0 flex-1">
         <LibraryGameGrid
           games={displayedGames}
-          groupByPlatform={groupByPlatform}
+          groupByLibrary={groupByLibrary}
           onGameClick={actions.onGameClick}
           onToggleFavorite={actions.onToggleFavorite}
           onAddToPlaylist={handleAddToPlaylist}

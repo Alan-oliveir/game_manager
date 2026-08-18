@@ -193,6 +193,7 @@ fn fetch_all_games_with_details(state: &AppState) -> Result<Vec<GameWithDetails>
                 last_played: row.get(8)?,
                 added_at: row.get(9)?,
                 library: row.get::<_, String>(10)?.parse().unwrap_or(Library::Outra),
+                critic_score: None,
                 alternative_names,
                 installed: false,
                 import_confidence: None,
@@ -207,6 +208,7 @@ fn fetch_all_games_with_details(state: &AppState) -> Result<Vec<GameWithDetails>
                 developer: None,
                 is_adult: false,
                 source_label: None,
+                release_date: None,
             };
 
             let genres_json: Option<String> = row.get(13)?;

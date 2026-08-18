@@ -2,5 +2,6 @@
 export * from './useGroupedLibrary';
 export * from './useLaunchGame';
 export * from './useLibraryFilters';
+export * from './useLibrarySort';
 export * from './useLibraryStats';
 export * from './usePlaylist';

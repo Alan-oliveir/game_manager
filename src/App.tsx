@@ -49,10 +49,14 @@ function AppContent() {
     onLibraryViewFiltersChange,
     favoritesViewFilters,
     onFavoritesViewFiltersChange,
-    libraryGroupByPlatform,
-    libraryToggleGroupByPlatform,
-    favoritesGroupByPlatform,
-    favoritesToggleGroupByPlatform,
+    libraryGroupByLibrary,
+    libraryToggleGroupByLibrary,
+    favoritesGroupByLibrary,
+    favoritesToggleGroupByLibrary,
+    librarySort,
+    onLibrarySortChange,
+    favoritesSort,
+    onFavoritesSortChange,
     trendingCache,
     setTrendingCache,
     trendingKey,
@@ -74,7 +78,13 @@ function AppContent() {
     closeAddModal,
   } = useUI();
 
+  const currentSort =
+    activeSection === 'favorites' ? favoritesSort : librarySort;
+  const currentOnSortChange =
+    activeSection === 'favorites' ? onFavoritesSortChange : onLibrarySortChange;
+
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
   const { confirm } = useConfirm();
 
   // Inicia atualização em background de reviews e preços
@@ -149,14 +159,14 @@ function AppContent() {
       ? onFavoritesViewFiltersChange
       : onLibraryViewFiltersChange;
 
-  const currentGroupByPlatform =
+  const currentGroupByLibrary =
     activeSection === 'favorites'
-      ? favoritesGroupByPlatform
-      : libraryGroupByPlatform;
-  const currentToggleGroupByPlatform =
+      ? favoritesGroupByLibrary
+      : libraryGroupByLibrary;
+  const currentToggleGroupByLibrary =
     activeSection === 'favorites'
-      ? favoritesToggleGroupByPlatform
-      : libraryToggleGroupByPlatform;
+      ? favoritesToggleGroupByLibrary
+      : libraryToggleGroupByLibrary;
 
   // Handlers
   const handleSettingsUpdate = () => {
@@ -242,7 +252,8 @@ function AppContent() {
             hideAdult={libraryViewFilters.hideAdult}
             hideDuplicates={libraryViewFilters.hideDuplicates}
             hideNotInstalled={libraryViewFilters.hideNotInstalled}
-            groupByPlatform={libraryGroupByPlatform}
+            groupByLibrary={libraryGroupByLibrary}
+            sort={librarySort}
             {...commonGameActions}
           />
         );
@@ -254,7 +265,8 @@ function AppContent() {
             hideAdult={favoritesViewFilters.hideAdult}
             hideDuplicates={favoritesViewFilters.hideDuplicates}
             hideNotInstalled={favoritesViewFilters.hideNotInstalled}
-            groupByPlatform={favoritesGroupByPlatform}
+            groupByLibrary={favoritesGroupByLibrary}
+            sort={favoritesSort}
             {...commonGameActions}
           />
         );
@@ -310,11 +322,13 @@ function AppContent() {
           activeSection={activeSection}
           viewFilters={currentViewFilters}
           onViewFiltersChange={currentOnViewFiltersChange}
-          groupByPlatform={currentGroupByPlatform}
-          onToggleGroupByPlatform={currentToggleGroupByPlatform}
+          groupByLibrary={currentGroupByLibrary}
+          onToggleGroupByLibrary={currentToggleGroupByLibrary}
           onCheckUpdates={handleCheckUpdates}
           onLibraryUpdate={refreshGames}
           userGames={games}
+          sort={currentSort}
+          onSortChange={currentOnSortChange}
         />
         <ErrorBoundary>{renderContent()}</ErrorBoundary>
       </main>

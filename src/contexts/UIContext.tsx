@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 
-import { ViewFilters } from '@/hooks';
+import { SortDirection, SortField, SortOption, ViewFilters } from '@/hooks';
 import { Game, Giveaway, RawgGame, UserPreferenceVector } from '@/types';
 
 interface UIContextType {
@@ -30,10 +30,15 @@ interface UIContextType {
   onLibraryViewFiltersChange: (next: ViewFilters) => void;
   favoritesViewFilters: ViewFilters;
   onFavoritesViewFiltersChange: (next: ViewFilters) => void;
-  libraryGroupByPlatform: boolean;
-  libraryToggleGroupByPlatform: () => void;
-  favoritesGroupByPlatform: boolean;
-  favoritesToggleGroupByPlatform: () => void;
+  libraryGroupByLibrary: boolean;
+  libraryToggleGroupByLibrary: () => void;
+  favoritesGroupByLibrary: boolean;
+  favoritesToggleGroupByLibrary: () => void;
+
+  librarySort: SortOption;
+  onLibrarySortChange: (next: SortOption) => void;
+  favoritesSort: SortOption;
+  onFavoritesSortChange: (next: SortOption) => void;
 
   trendingCache: RawgGame[];
   setTrendingCache: (games: RawgGame[]) => void;
@@ -103,17 +108,17 @@ function useSectionFilters(storageKeyPrefix: string) {
     [storageKeyPrefix]
   );
 
-  const [groupByPlatform, setGroupByPlatform] = useState(
+  const [groupByLibrary, setGroupByLibrary] = useState(
     () =>
-      localStorage.getItem(`${storageKeyPrefix}_playlite_group_by_platform`) ===
+      localStorage.getItem(`${storageKeyPrefix}_playlite_group_by_library`) ===
       'true'
   );
 
-  const toggleGroupByPlatform = useCallback(() => {
-    setGroupByPlatform(prev => {
+  const toggleGroupByLibrary = useCallback(() => {
+    setGroupByLibrary(prev => {
       const newValue = !prev;
       localStorage.setItem(
-        `${storageKeyPrefix}_playlite_group_by_platform`,
+        `${storageKeyPrefix}_playlite_group_by_library`,
         String(newValue)
       );
 
@@ -124,9 +129,43 @@ function useSectionFilters(storageKeyPrefix: string) {
   return {
     viewFilters,
     onViewFiltersChange,
-    groupByPlatform,
-    toggleGroupByPlatform,
+    groupByLibrary,
+    toggleGroupByLibrary,
   };
+}
+
+function useSectionSort(storageKeyPrefix: string) {
+  const [field, setField] = useState<SortField>(
+    () =>
+      (localStorage.getItem(`${storageKeyPrefix}_sort_field`) as SortField) ||
+      'name'
+  );
+  const [direction, setDirection] = useState<SortDirection>(
+    () =>
+      (localStorage.getItem(
+        `${storageKeyPrefix}_sort_direction`
+      ) as SortDirection) || 'asc'
+  );
+
+  const sort: SortOption = useMemo(
+    () => ({ field, direction }),
+    [field, direction]
+  );
+
+  const onSortChange = useCallback(
+    (next: SortOption) => {
+      setField(next.field);
+      localStorage.setItem(`${storageKeyPrefix}_sort_field`, next.field);
+      setDirection(next.direction);
+      localStorage.setItem(
+        `${storageKeyPrefix}_sort_direction`,
+        next.direction
+      );
+    },
+    [storageKeyPrefix]
+  );
+
+  return { sort, onSortChange };
 }
 
 export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
@@ -157,6 +196,8 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const library = useSectionFilters('playlite_libraries');
   const favorites = useSectionFilters('playlite_favorites');
+  const librarySort = useSectionSort('playlite_libraries');
+  const favoritesSort = useSectionSort('playlite_favorites');
 
   const openAddModal = useCallback(() => {
     setGameToEdit(null);
@@ -189,10 +230,14 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
       onLibraryViewFiltersChange: library.onViewFiltersChange,
       favoritesViewFilters: favorites.viewFilters,
       onFavoritesViewFiltersChange: favorites.onViewFiltersChange,
-      libraryGroupByPlatform: library.groupByPlatform,
-      libraryToggleGroupByPlatform: library.toggleGroupByPlatform,
-      favoritesGroupByPlatform: favorites.groupByPlatform,
-      favoritesToggleGroupByPlatform: favorites.toggleGroupByPlatform,
+      libraryGroupByLibrary: library.groupByLibrary,
+      libraryToggleGroupByLibrary: library.toggleGroupByLibrary,
+      favoritesGroupByLibrary: favorites.groupByLibrary,
+      favoritesToggleGroupByLibrary: favorites.toggleGroupByLibrary,
+      librarySort: librarySort.sort,
+      onLibrarySortChange: librarySort.onSortChange,
+      favoritesSort: favoritesSort.sort,
+      onFavoritesSortChange: favoritesSort.onSortChange,
       trendingCache,
       setTrendingCache,
       trendingKey,
@@ -225,10 +270,14 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
       library.onViewFiltersChange,
       favorites.viewFilters,
       favorites.onViewFiltersChange,
-      library.groupByPlatform,
-      library.toggleGroupByPlatform,
-      favorites.groupByPlatform,
-      favorites.toggleGroupByPlatform,
+      library.groupByLibrary,
+      library.toggleGroupByLibrary,
+      favorites.groupByLibrary,
+      favorites.toggleGroupByLibrary,
+      librarySort.sort,
+      librarySort.onSortChange,
+      favoritesSort.sort,
+      favoritesSort.onSortChange,
       trendingCache,
       trendingKey,
       profileCache,

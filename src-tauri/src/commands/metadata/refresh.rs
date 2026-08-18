@@ -339,7 +339,7 @@ async fn refresh_wishlist_prices_background(
                             current_price = ?1,
                             currency = ?2,
                             lowest_price = ?3,
-                            store_platform = ?4,
+                            store = ?4,
                             store_url = ?5,
                             on_sale = ?6,
                             normal_price = ?7,

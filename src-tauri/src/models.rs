@@ -227,10 +227,12 @@ impl GameDescription {
 
 // === Modelos de Dados ===
 
-/// Jogo na biblioteca do usuário.
+/// Visão de biblioteca de um jogo (read model).
 ///
-/// Representa um jogo adicionado à biblioteca pessoal, com metadados
-/// importados da plataforma e dados de progresso do usuário.
+/// NÃO é um espelho 1:1 da tabela `games` — combina colunas de `games`,
+/// `game_details` (genres, developer, critic_score, release_date, is_adult)
+/// e `game_images` (cover_url), otimizado para listar/ordenar a biblioteca
+/// sem precisar buscar `GameDetails` completo por jogo.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Game {
@@ -245,6 +247,8 @@ pub struct Game {
     pub genres: Option<String>,
     pub developer: Option<String>,
     pub library: Library,
+    pub critic_score: Option<i32>,
+    pub release_date: Option<String>,
 
     // Mídia
     pub cover_url: Option<String>,

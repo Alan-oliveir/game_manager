@@ -246,13 +246,14 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
 
     let mut stmt = conn.prepare(
         "SELECT
-            g.id, g.name, g.slug, g.library, g.library_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
-            g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
-            gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label,
-            (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url
-        FROM games g
-        LEFT JOIN game_details gd ON g.id = gd.game_id
-        ORDER BY g.name ASC"
+        g.id, g.name, g.slug, g.library, g.library_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
+        g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
+        gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label,
+        (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url,
+        gd.critic_score, gd.release_date
+    FROM games g
+    LEFT JOIN game_details gd ON g.id = gd.game_id
+    ORDER BY g.name ASC"
     )?;
 
     let games = stmt
@@ -288,6 +289,8 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
                 is_adult: row.get(20)?,
                 source_label: row.get(21)?,
                 cover_url: row.get(22)?,
+                critic_score: row.get(23)?,
+                release_date: row.get(24)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
@@ -401,6 +404,7 @@ pub fn get_game_by_id(
             g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
             gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label,
             (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url
+            gd.critic_score, gd.release_date
         FROM games g
         LEFT JOIN game_details gd ON g.id = gd.game_id
         WHERE g.id = ?"
@@ -439,6 +443,8 @@ pub fn get_game_by_id(
                 is_adult: row.get(20)?,
                 source_label: row.get(21)?,
                 cover_url: row.get(22)?,
+                critic_score: row.get(23)?,
+                release_date: row.get(24)?,
             })
         })?
         .next()
