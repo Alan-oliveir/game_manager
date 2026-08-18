@@ -1,3 +1,3 @@
 pub mod models;
-pub mod fetcher;
+pub mod fetch;
 pub mod lookup;

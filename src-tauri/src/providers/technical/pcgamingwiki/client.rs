@@ -74,7 +74,32 @@ pub(crate) async fn cargo_query(
         .await
         .map_err(|e| AppError::ParseError(e.to_string()))?;
 
-    // Extrai o array de resultados; retorna vazio se ausente
+    // A MediaWiki API retorna HTTP 200 mesmo quando o corpo é um erro
+    // (ex.: `{"error": {"code": "permissiondenied", ...}}`). Sem essa checagem,
+    // esse erro cai silenciosamente no `.unwrap_or_default()` abaixo e vira
+    // um Vec vazio — que o `fetch.rs` então interpreta como "jogo não
+    // encontrado na PCGW", persistindo uma linha vazia permanente no cache
+    // (via `AppError::NotFound`) para um jogo que na verdade existe.
+    //
+    // Trata como `NetworkError` (não `ParseError`/`NotFound`) de propósito:
+    // os chamadores (`fetch.rs`/`pcgamingwiki.rs`) já tratam `NetworkError`
+    // como falha transitória — não persistem nada e deixam o frontend mostrar
+    // a seção como indisponível, permitindo nova tentativa depois. É o
+    // comportamento certo para um erro de permissão/API, que pode ser
+    // temporário (ex.: manutenção do lado da PCGW).
+    if let Some(error) = json.get("error") {
+        let code = error.get("code").and_then(|v| v.as_str()).unwrap_or("unknown");
+        let info = error
+            .get("info")
+            .and_then(|v| v.as_str())
+            .unwrap_or("sem detalhes");
+        return Err(AppError::NetworkError(format!(
+            "PCGW API retornou erro ({tables}): code={code}, info={info}"
+        )));
+    }
+
+    // Extrai o array de resultados; retorna vazio se ausente (caso legítimo:
+    // query bem-sucedida mas sem linhas correspondentes ao `where`).
     let rows = json
         .get("cargoquery")
         .and_then(|v| v.as_array())

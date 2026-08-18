@@ -176,6 +176,7 @@ pub fn run() {
             commands::metadata::pcgamingwiki::search_pcgw_games,
             commands::metadata::pcgamingwiki::get_pcgw_scraped_data,
             commands::metadata::protondb::fetch_protondb_data,
+            commands::metadata::winehq::get_winehq_data,
             commands::metadata::anticheat::get_anticheat_info,
             // Comandos de Configuração (Secrets)
             commands::settings::set_secret,

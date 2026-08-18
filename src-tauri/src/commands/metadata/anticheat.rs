@@ -1,7 +1,7 @@
 use crate::commands::games::{get_game_by_id, get_library_game_details};
 use crate::database::AppState;
 use crate::models::Library;
-use crate::providers::technical::anticheat::fetcher::ensure_fresh;
+use crate::providers::technical::anticheat::fetch::ensure_fresh;
 use crate::providers::technical::anticheat::lookup::find_anticheat_info;
 use crate::providers::technical::anticheat::models::AnticheatInfo;
 use crate::utils::http_client::HTTP_CLIENT;
