@@ -95,7 +95,7 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             detail.developer,
             detail.publisher,
             detail.release_date,
-            detail.genres,
+            serialize_vec(&detail.genres),
             serialize_vec(&detail.themes),
             detail.series,
             serialize_vec(&detail.franchise),

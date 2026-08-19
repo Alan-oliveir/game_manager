@@ -48,9 +48,8 @@ export const LibraryGameCard = memo(function LibraryGameCard({
   const { launchGame } = useLaunchGame();
 
   const subtitle =
-    [game.genres?.split(',')[0]?.trim(), game.developer]
-      .filter(Boolean)
-      .join(' • ') || t('no_data_fallback');
+    [game.genres?.[0], game.developer].filter(Boolean).join(' • ') ||
+    t('no_data_fallback');
 
   const handleClick = useCallback(() => onGameClick(game), [onGameClick, game]);
 

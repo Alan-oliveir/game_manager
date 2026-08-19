@@ -14,7 +14,6 @@ aggregated_rating, aggregated_rating_count, \
 alternative_names.name, alternative_names.comment, \
 cover.image_id, cover.url, \
 game_engines.name, \
-language_supports.language.name, language_supports.language_support_type.name, \
 expansions.name, expansions.slug, expansions.cover.image_id, \
 standalone_expansions.name, standalone_expansions.slug, standalone_expansions.cover.image_id, \
 parent_game.name, version_parent.name, version_title, \

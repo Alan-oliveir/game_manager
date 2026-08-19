@@ -78,8 +78,8 @@ export function useLibraryFilter({
     return result.filter(
       game =>
         game.name.toLowerCase().includes(term) ||
-        game.genres?.toLowerCase().includes(term) ||
-        game.library?.toLowerCase().includes(term)
+        game.genres?.some(g => g.toLowerCase().includes(term)) ||
+        game.library.toLowerCase().includes(term)
     );
   }, [games, hideAdult, hideDuplicates, hideNotInstalled, searchTerm]);
 }

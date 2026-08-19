@@ -1,4 +1,11 @@
-import { ArrowDown, ArrowUp, GripVertical, ImageOff, Play, Trash2, } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  GripVertical,
+  ImageOff,
+  Play,
+  Trash2,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Game } from '@/types';
@@ -139,7 +146,7 @@ export function PlaylistCard({
         </h4>
         <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
           <span className="bg-secondary/50 text-secondary-foreground border-border/50 max-w-25 truncate rounded border px-1.5 py-0.5 lg:max-w-none">
-            {game.genres || t('playlist_card_default_genre')}
+            {game.genres?.[0] || t('playlist_card_default_genre')}
           </span>
           <span>•</span>
           <span>

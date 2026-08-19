@@ -159,11 +159,11 @@ export interface Game {
   library: Library;
   sourceLabel?: string;
   libraryGameId: string;
-  genres?: string;
+  genres?: string[];
   developer?: string;
   criticScore?: number;
   releaseDate?: string;
-  alternativeNames?: string;
+  alternativeNames?: string[];
 
   // Execução
   installed: boolean;
@@ -202,9 +202,14 @@ export interface GameDetails {
   releaseDate?: string;
   developer?: string;
   publisher?: string;
-  genres?: string;
-  tags?: GameTag[] | string;
+  genres?: string[];
+  themes?: string[];
   series?: string;
+  franchise?: string[];
+  gameModes?: string[];
+  playerPerspectives?: string[];
+  keywords?: string[];
+  tags?: GameTag[] | string;
 
   // Scores & Reviews
   criticScore?: number; // Metacritic
@@ -235,4 +240,26 @@ export interface GameDlc {
   coverUrl: string | null;
   kind: DlcKind;
   owned: boolean;
+}
+
+/**
+ * Espelha GfnAvailability do backend (providers/cloud_gaming/geforce_now.rs).
+ */
+export interface GfnAvailability {
+  steamAppId: string;
+  title: string;
+  store: string;
+  status: string | null;
+}
+
+/**
+ * Espelha CloudAvailability do backend (services/cloud_gaming.rs).
+ * Retornado pelo comando Tauri `get_cloud_gaming_availability`.
+ *
+ * `xboxCloud` vem como o próprio store_id (não um bool) quando disponível — já pronto pra montar
+ * o link de "jogar via cloud" sem precisar de uma segunda chamada.
+ */
+export interface CloudAvailability {
+  geforceNow: GfnAvailability | null;
+  xboxCloud: string | null;
 }

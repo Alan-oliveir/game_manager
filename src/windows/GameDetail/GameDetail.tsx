@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 
 import { WindowBase } from '@/components/wrappers/WindowBase';
 import { GameEditForm } from '@/dialogs';
-import { Game, GameDetails, GameLibraryLink } from '@/types/game';
+import {
+  CloudAvailability,
+  Game,
+  GameDetails,
+  GameLibraryLink,
+} from '@/types/game';
 import { GameHeader, GameSidebar } from '@/windows';
 import { GameContentTabs } from '@/windows/GameDetail/GameWindowTabs.tsx';
 
@@ -13,6 +18,7 @@ interface GameDetailsModalProps {
   details: GameDetails | null;
   loading: boolean;
   siblings: GameLibraryLink[];
+  cloudAvailability: CloudAvailability | null;
   onSwitchGame: (id: string) => void;
   onRefresh?: () => void;
 }
@@ -21,6 +27,7 @@ export default function GameDetail({
   game,
   details: initialDetails,
   siblings,
+  cloudAvailability,
   isOpen,
   onClose,
   onSwitchGame,
@@ -71,6 +78,7 @@ export default function GameDetail({
               game={game}
               details={currentDetails}
               siblings={siblings}
+              cloudAvailability={cloudAvailability}
               onSwitchGame={onSwitchGame}
             />
           </div>

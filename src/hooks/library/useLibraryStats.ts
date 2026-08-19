@@ -58,15 +58,13 @@ export function useLibraryStats({ games }: UseLibraryStatsProps) {
   const topGenres = useMemo(() => {
     const genreStats = games.reduce(
       (acc, game) => {
-        if (game.genres) {
-          game.genres.split(',').forEach((g: string) => {
-            const clean = g.trim();
+        game.genres?.forEach((g: string) => {
+          const clean = g.trim();
 
-            if (clean !== 'Desconhecido' && clean !== '') {
-              acc[clean] = (acc[clean] || 0) + 1;
-            }
-          });
-        }
+          if (clean !== 'Desconhecido' && clean !== '') {
+            acc[clean] = (acc[clean] || 0) + 1;
+          }
+        });
 
         return acc;
       },

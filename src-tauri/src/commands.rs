@@ -32,3 +32,4 @@ pub mod system;
 pub mod version;
 pub mod wishlist;
 pub mod debug;
+pub mod cloud_gaming;

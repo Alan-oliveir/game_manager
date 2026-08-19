@@ -260,6 +260,8 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
         .query_map([], |row| {
             let alt_names_json: Option<String> = row.get(17)?;
             let alternative_names = alt_names_json.and_then(|s| serde_json::from_str(&s).ok());
+            let genres_json: Option<String> = row.get(18)?;
+            let genres = genres_json.and_then(|s| serde_json::from_str(&s).ok());
 
             Ok(models::Game {
                 id: row.get(0)?,
@@ -284,7 +286,7 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
                 last_played: row.get(15)?,
                 added_at: row.get(16)?,
                 alternative_names,
-                genres: row.get(18)?,
+                genres,
                 developer: row.get(19)?,
                 is_adult: row.get(20)?,
                 source_label: row.get(21)?,
@@ -403,7 +405,7 @@ pub fn get_game_by_id(
             g.id, g.name, g.slug, g.library, g.library_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
             g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
             gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label,
-            (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url
+            (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url,
             gd.critic_score, gd.release_date
         FROM games g
         LEFT JOIN game_details gd ON g.id = gd.game_id
@@ -414,6 +416,8 @@ pub fn get_game_by_id(
         .query_map([&id], |row| {
             let alt_names_json: Option<String> = row.get(17)?;
             let alternative_names = alt_names_json.and_then(|s| serde_json::from_str(&s).ok());
+            let genres_json: Option<String> = row.get(18)?;
+            let genres = genres_json.and_then(|s| serde_json::from_str(&s).ok());
 
             Ok(models::Game {
                 id: row.get(0)?,
@@ -438,7 +442,7 @@ pub fn get_game_by_id(
                 last_played: row.get(15)?,
                 added_at: row.get(16)?,
                 alternative_names,
-                genres: row.get(18)?,
+                genres,
                 developer: row.get(19)?,
                 is_adult: row.get(20)?,
                 source_label: row.get(21)?,

@@ -8,7 +8,13 @@ import {
 } from 'react';
 
 import { SortDirection, SortField, SortOption, ViewFilters } from '@/hooks';
-import { Game, Giveaway, RawgGame, UserPreferenceVector } from '@/types';
+import {
+  Game,
+  Giveaway,
+  TrendingGame,
+  UpcomingGame,
+  UserPreferenceVector,
+} from '@/types';
 
 interface UIContextType {
   activeSection: string;
@@ -40,8 +46,8 @@ interface UIContextType {
   favoritesSort: SortOption;
   onFavoritesSortChange: (next: SortOption) => void;
 
-  trendingCache: RawgGame[];
-  setTrendingCache: (games: RawgGame[]) => void;
+  trendingCache: TrendingGame[];
+  setTrendingCache: (games: TrendingGame[]) => void;
   trendingKey: number;
   setTrendingKey: (key: number | ((prev: number) => number)) => void;
   profileCache: UserPreferenceVector | null;
@@ -49,8 +55,8 @@ interface UIContextType {
 
   trendingFetchedAt: number | null;
   setTrendingFetchedAt: (value: number | null) => void;
-  upcomingCache: RawgGame[];
-  setUpcomingCache: (games: RawgGame[]) => void;
+  upcomingCache: UpcomingGame[];
+  setUpcomingCache: (games: UpcomingGame[]) => void;
   upcomingFetchedAt: number | null;
   setUpcomingFetchedAt: (value: number | null) => void;
   giveawaysCache: Giveaway[];
@@ -174,7 +180,7 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-  const [trendingCache, setTrendingCache] = useState<RawgGame[]>([]);
+  const [trendingCache, setTrendingCache] = useState<TrendingGame[]>([]);
   const [trendingKey, setTrendingKey] = useState(0);
   const [profileCache, setProfileCache] = useState<UserPreferenceVector | null>(
     null
@@ -183,7 +189,7 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [trendingFetchedAt, setTrendingFetchedAt] = useState<number | null>(
     null
   );
-  const [upcomingCache, setUpcomingCache] = useState<RawgGame[]>([]);
+  const [upcomingCache, setUpcomingCache] = useState<UpcomingGame[]>([]);
   const [upcomingFetchedAt, setUpcomingFetchedAt] = useState<number | null>(
     null
   );

@@ -95,19 +95,9 @@ export default function Home(props: Readonly<HomeProps>) {
     ('image' in game ? game.image : null) ||
     '';
 
-  // Helper normalizar gêneros
-  const getGenresList = (game: Game | TrendingGame): string[] => {
-    if (Array.isArray(game.genres)) {
-      return game.genres;
-    }
-
-    // Game (biblioteca local) guarda gêneros como string separada por vírgula
-    if (typeof game.genres === 'string') {
-      return game.genres.split(',').map((g: string) => g.trim());
-    }
-
-    return [];
-  };
+  // Helper obter lista de gêneros
+  const getGenresList = (game: Game | TrendingGame): string[] =>
+    game.genres ?? [];
 
   // Helper isLocalGame
   const isLocalGame = (game: Game | TrendingGame): game is Game =>
@@ -131,7 +121,7 @@ export default function Home(props: Readonly<HomeProps>) {
               key={game.id}
               title={game.name}
               coverUrl={game.coverUrl}
-              subtitle={game.genres?.split(',')[0]}
+              subtitle={game.genres?.[0]}
               onClick={() => props.onGameClick(game)}
               badge={
                 <Recommendation reason={game.reason}>
@@ -366,7 +356,7 @@ export default function Home(props: Readonly<HomeProps>) {
                   key={`cf-${game.id}`}
                   title={game.name}
                   coverUrl={game.coverUrl}
-                  subtitle={game.genres?.split(',')[0]}
+                  subtitle={game.genres?.[0]}
                   onClick={() => props.onGameClick(game)}
                   badge={
                     <Recommendation reason={game.reason}>
@@ -432,7 +422,7 @@ export default function Home(props: Readonly<HomeProps>) {
                     </h4>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="text-muted-foreground max-w-25 truncate text-xs">
-                        {game.genres?.split(',')[0]}
+                        {game.genres?.[0]}
                       </span>
                       <span className="bg-secondary rounded px-1.5 py-0.5 font-mono text-xs">
                         {formatTime(game.playtime)}

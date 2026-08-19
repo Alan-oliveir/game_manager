@@ -244,7 +244,7 @@ pub struct Game {
     pub library_game_id: String,
 
     // Metadados básicos
-    pub genres: Option<String>,
+    pub genres: Option<Vec<String>>,
     pub developer: Option<String>,
     pub library: Library,
     pub critic_score: Option<i32>,
@@ -292,7 +292,7 @@ pub struct GameDetails {
     pub release_date: Option<String>,
 
     // Categorização
-    pub genres: Option<String>,
+    pub genres: Option<Vec<String>>,
     pub themes: Option<Vec<String>>,
     pub series: Option<String>,
     pub franchise: Option<Vec<String>>,

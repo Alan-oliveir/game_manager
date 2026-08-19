@@ -69,6 +69,10 @@ pub fn run() {
 
             app.manage(db_state);
 
+            // === CLOUD GAMING (Geforce Now + Xbox Cloud) ===
+
+            services::cloud_gaming::spawn_cloud_gaming_bootstrap(app_handle);
+
             // === INICIALIZAÇÃO PÓS-UPDATE ===
 
             // Verifica se houve atualização e faz backup/migração se necessário
@@ -222,6 +226,8 @@ pub fn run() {
             commands::subscriptions::get_ubisoft_plus_catalog,
             commands::subscriptions::get_subscription_settings,
             commands::subscriptions::save_subscription_settings,
+            // Comandos de Cloud Gaming
+            commands::cloud_gaming::get_cloud_gaming_availability,
             // Comandos de Debug (apenas para desenvolvimento)
             commands::debug::test_igdb_auth,
             commands::debug::debug_igdb_fetch,

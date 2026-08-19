@@ -147,10 +147,8 @@ function AppContent() {
     [games, selectedGameId]
   );
 
-  const { details, loading, siblings, refresh } = useGameDetails(
-    selectedGame,
-    games
-  );
+  const { details, loading, siblings, cloudAvailability, refresh } =
+    useGameDetails(selectedGame, games);
 
   const currentViewFilters =
     activeSection === 'favorites' ? favoritesViewFilters : libraryViewFilters;
@@ -346,6 +344,7 @@ function AppContent() {
           details={details}
           loading={loading}
           siblings={siblings}
+          cloudAvailability={cloudAvailability}
           onSwitchGame={handleSwitchGame}
           onRefresh={refresh}
         />

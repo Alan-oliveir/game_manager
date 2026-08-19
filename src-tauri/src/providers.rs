@@ -10,3 +10,4 @@ pub mod technical;
 pub mod discovery;
 pub mod media;
 pub mod trending;
+pub mod cloud_gaming;

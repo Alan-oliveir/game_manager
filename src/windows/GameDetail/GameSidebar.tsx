@@ -2,9 +2,12 @@ import {
   Building2,
   Calendar,
   Clock,
+  Cloud,
+  Eye,
   Gamepad2,
   ListCheck,
   type LucideIcon,
+  Sparkles,
   Star,
   Tag,
   TrendingUp,
@@ -13,10 +16,19 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { Game, GameDetails, GameLibraryLink, GameTag } from '@/types/game';
+import {
+  CloudAvailability,
+  Game,
+  GameDetails,
+  GameLibraryLink,
+  GameTag,
+} from '@/types/game';
 import { Badge } from '@/ui/badge';
 import { Button } from '@/ui/button';
 import { formatTime } from '@/utils';
+// ATENÇÃO: assumindo o caminho '@/utils/openLink' pelo padrão de import de '@/utils/toast' no
+// próprio arquivo — ajustar se o caminho real for outro.
+import { openExternalLink } from '@/utils/openLink';
 import {
   AgeRatingBadge,
   GameLinks,
@@ -28,6 +40,7 @@ interface GameSidebarProps {
   game: Game;
   details: GameDetails | null;
   siblings: GameLibraryLink[];
+  cloudAvailability: CloudAvailability | null;
   onSwitchGame: (id: string) => void;
 }
 
@@ -88,12 +101,56 @@ function TagSection({ tags }: Readonly<{ tags: GameTag[] }>) {
   );
 }
 
+// === CloudGamingSection ===
+
+function CloudGamingSection({
+  cloudAvailability,
+}: Readonly<{ cloudAvailability: CloudAvailability }>) {
+  const { t } = useTranslation('game_detail');
+
+  return (
+    <div className="border-border/40 space-y-2 border-t pt-4">
+      <span className="text-muted-foreground text-sm font-medium">
+        {t('sidebar_cloud_gaming')}
+      </span>
+      <div className="flex flex-wrap gap-2">
+        {cloudAvailability.geforceNow && (
+          <Badge
+            variant="outline"
+            className="border-border/50 h-7 gap-1.5 border px-3 text-xs font-normal"
+          >
+            <Cloud size={14} />
+            GeForce NOW
+          </Badge>
+        )}
+
+        {cloudAvailability.xboxCloud && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="border-border/50 h-7 gap-1.5 border text-xs"
+            onClick={() =>
+              openExternalLink(
+                `https://www.xbox.com/play/games/store/_/${cloudAvailability.xboxCloud}`
+              )
+            }
+          >
+            <Cloud size={14} />
+            Xbox Cloud Gaming
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // === Componente Principal (Sidebar) ===
 
 export function GameSidebar({
   game,
   details,
   siblings,
+  cloudAvailability,
   onSwitchGame,
 }: Readonly<GameSidebarProps>) {
   const { t } = useTranslation('game_detail');
@@ -114,6 +171,11 @@ export function GameSidebar({
     (details?.hltbCompletionist && details.hltbCompletionist > 0) ||
     (details?.hltbCoopTime && details.hltbCoopTime > 0)
   );
+
+  const hasCloudAvailability =
+    !!cloudAvailability &&
+    (cloudAvailability.geforceNow !== null ||
+      cloudAvailability.xboxCloud !== null);
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -217,7 +279,13 @@ export function GameSidebar({
         <DetailRow
           icon={Gamepad2}
           label={t('sidebar_genre')}
-          value={game.genres}
+          value={game.genres?.join(', ')}
+        />
+
+        <DetailRow
+          icon={Sparkles}
+          label={t('sidebar_themes')}
+          value={details?.themes?.join(', ')}
         />
 
         <DetailRow
@@ -239,6 +307,12 @@ export function GameSidebar({
           label={t('sidebar_mode')}
           value={gameModes ?? undefined}
         />
+
+        <DetailRow
+          icon={Eye}
+          label={t('sidebar_perspective')}
+          value={details?.playerPerspectives?.join(', ')}
+        />
       </div>
 
       {/* 5. LINKS */}
@@ -256,7 +330,12 @@ export function GameSidebar({
           </div>
         )}
 
-      {/* 7. OUTRAS PLATAFORMAS */}
+      {/* 7. CLOUD GAMING */}
+      {hasCloudAvailability && (
+        <CloudGamingSection cloudAvailability={cloudAvailability} />
+      )}
+
+      {/* 8. OUTRAS PLATAFORMAS */}
       {siblings.length > 0 && (
         <div className="border-border/40 space-y-2 border-t pt-4">
           <span className="text-muted-foreground text-sm font-medium">

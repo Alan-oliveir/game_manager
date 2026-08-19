@@ -131,7 +131,7 @@ fn fetch_game_details(conn: &Connection) -> Result<Vec<GameDetails>, AppError> {
             developer: row.get(3)?,
             publisher: row.get(4)?,
             release_date: row.get(5)?,
-            genres: row.get(6)?,
+            genres: parse_json_vec(row.get(6)?),
             themes: parse_json_vec(row.get(7)?),
             series: row.get(8)?,
             franchise: parse_json_vec(row.get(9)?),

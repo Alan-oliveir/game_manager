@@ -15,6 +15,7 @@ use crate::constants::{
 use crate::errors::AppError;
 use crate::providers::mods::nexus::initialize_nexus_tables;
 use crate::providers::technical::pcgamingwiki::db::initialize_pcgamingwiki_tables;
+use crate::services::cloud_gaming::initialize_cloud_gaming_tables;
 use crate::services::playtime::PlaytimeRegistry;
 use rusqlite::Connection;
 use std::sync::Mutex;
@@ -419,6 +420,7 @@ fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
     // Tabelas extras - PCGamingWiki, Nexus e relacionadas
     initialize_pcgamingwiki_tables(conn).map_err(|e| e.to_string())?;
     initialize_nexus_tables(conn).map_err(|e| e.to_string())?;
+    initialize_cloud_gaming_tables(conn).map_err(|e| e.to_string())?;
 
     // Marca versão do schema
     conn.pragma_update(None, "user_version", schema_version)

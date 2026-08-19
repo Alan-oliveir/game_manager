@@ -201,3 +201,10 @@ pub const CONFIG_KEY_LANGUAGE: &str = "language";
 pub const DEFAULT_LANGUAGE: &str = "pt-BR";
 // lista sincronizada manualmente com SUPPORTED_LANGUAGES em frontend/src/i18n/index.ts
 pub const SUPPORTED_LANGUAGES: [&str; 2] = ["en", "pt-BR"];
+
+// === Cloud Gaming ===
+pub const GFN_GAMES_URL: &str =
+    "https://static.nvidiagrid.net/supported-public-game-list/locales/gfnpc-en-US.json";
+// GFN atualiza o catálogo semanalmente ("GFN Thursday") — TTL mais curto que o dos outros
+// providers (Steam reviews/ITAD/Nexus usam ~30 dias) faz sentido aqui.
+pub const CACHE_GFN_TTL_DAYS: i64 = 7;

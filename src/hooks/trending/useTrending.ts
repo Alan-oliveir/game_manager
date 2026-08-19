@@ -15,12 +15,12 @@ interface UseTrendingProps {
 }
 
 /**
- * Busca jogos em tendência da RAWG e filtra por gênero.
+ * Busca jogos em tendência da IGDB e filtra por gênero.
  * Remove automaticamente jogos que o usuário já possui na biblioteca.
  * Usa cache global para evitar requisições desnecessárias.
  *
  * @param userGames - Biblioteca local para filtrar duplicatas
- * @param cachedGames - Cache de jogos da RAWG
+ * @param cachedGames - Cache de jogos da IGDB
  * @param setCachedGames - Atualiza cache global após busca
  * @param cachedFetchedAt - Timestamp do último fetch do cache
  * @param setCachedFetchedAt - Atualiza timestamp do último fetch

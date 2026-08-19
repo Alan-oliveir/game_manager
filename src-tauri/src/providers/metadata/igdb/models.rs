@@ -43,12 +43,6 @@ pub struct IgdbCover {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct IgdbLanguageSupport {
-    pub language: IgdbNamed,
-    pub language_support_type: IgdbNamed,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct IgdbWebsiteType {
     #[serde(rename = "type")]
     pub name: String, // Ex.: "official", "steam", "wikia", etc.
@@ -104,8 +98,6 @@ pub struct IgdbGame {
     pub alternative_names: Vec<IgdbAlternativeName>,
     #[serde(default)]
     pub game_engines: Vec<IgdbNamed>,
-    #[serde(default)]
-    pub language_supports: Vec<IgdbLanguageSupport>,
     #[serde(default)]
     pub expansions: Vec<IgdbExpansionRef>,
     #[serde(default)]
