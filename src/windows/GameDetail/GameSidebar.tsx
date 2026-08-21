@@ -1,18 +1,17 @@
 import {
+  Blocks,
   Building2,
   Calendar,
   Clock,
   Cloud,
-  Eye,
   Gamepad2,
+  Library,
   ListCheck,
   type LucideIcon,
-  Sparkles,
   Star,
-  Tag,
   TrendingUp,
   Trophy,
-  Users,
+  User,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -21,20 +20,12 @@ import {
   Game,
   GameDetails,
   GameLibraryLink,
-  GameTag,
 } from '@/types/game';
 import { Badge } from '@/ui/badge';
 import { Button } from '@/ui/button';
 import { formatTime } from '@/utils';
-// ATENÇÃO: assumindo o caminho '@/utils/openLink' pelo padrão de import de '@/utils/toast' no
-// próprio arquivo — ajustar se o caminho real for outro.
 import { openExternalLink } from '@/utils/openLink';
-import {
-  AgeRatingBadge,
-  GameLinks,
-  HltbBadge,
-  SteamReviewBadge,
-} from '@/windows';
+import { AgeRatingBadge, HltbBadge, SteamReviewBadge } from '@/windows';
 
 interface GameSidebarProps {
   game: Game;
@@ -42,106 +33,6 @@ interface GameSidebarProps {
   siblings: GameLibraryLink[];
   cloudAvailability: CloudAvailability | null;
   onSwitchGame: (id: string) => void;
-}
-
-// === TagSection ====
-
-const TAG_ORDER = ['mode', 'narrative', 'theme', 'gameplay', 'meta'];
-const TAG_LABEL_KEYS: Record<string, string> = {
-  mode: 'tags_mode',
-  narrative: 'tags_narrative',
-  theme: 'tags_theme',
-  gameplay: 'tags_gameplay',
-  meta: 'tags_meta',
-};
-
-function TagSection({ tags }: Readonly<{ tags: GameTag[] }>) {
-  const { t } = useTranslation('game_detail');
-
-  const grouped = tags.reduce(
-    (acc, tag) => {
-      const cat = tag.category;
-
-      if (!acc[cat]) acc[cat] = [];
-
-      acc[cat].push(tag);
-
-      return acc;
-    },
-    {} as Record<string, GameTag[]>
-  );
-
-  return (
-    <div className="space-y-3">
-      {TAG_ORDER.map(cat => {
-        const catTags = grouped[cat];
-
-        if (!catTags?.length) return null;
-
-        return (
-          <div key={cat} className="space-y-1.5">
-            <span className="text-muted-foreground/70 pl-1 text-[10px] font-bold tracking-widest uppercase">
-              {t(TAG_LABEL_KEYS[cat] || cat)}
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {catTags.map(tag => (
-                <Badge
-                  key={tag.slug}
-                  variant="secondary"
-                  className="bg-secondary/40 hover:bg-secondary hover:border-border/50 border border-transparent px-2 py-0.5 text-xs font-normal transition-all"
-                >
-                  {tag.name}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// === CloudGamingSection ===
-
-function CloudGamingSection({
-  cloudAvailability,
-}: Readonly<{ cloudAvailability: CloudAvailability }>) {
-  const { t } = useTranslation('game_detail');
-
-  return (
-    <div className="border-border/40 space-y-2 border-t pt-4">
-      <span className="text-muted-foreground text-sm font-medium">
-        {t('sidebar_cloud_gaming')}
-      </span>
-      <div className="flex flex-wrap gap-2">
-        {cloudAvailability.geforceNow && (
-          <Badge
-            variant="outline"
-            className="border-border/50 h-7 gap-1.5 border px-3 text-xs font-normal"
-          >
-            <Cloud size={14} />
-            GeForce NOW
-          </Badge>
-        )}
-
-        {cloudAvailability.xboxCloud && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="border-border/50 h-7 gap-1.5 border text-xs"
-            onClick={() =>
-              openExternalLink(
-                `https://www.xbox.com/play/games/store/_/${cloudAvailability.xboxCloud}`
-              )
-            }
-          >
-            <Cloud size={14} />
-            Xbox Cloud Gaming
-          </Button>
-        )}
-      </div>
-    </div>
-  );
 }
 
 // === Componente Principal (Sidebar) ===
@@ -155,15 +46,6 @@ export function GameSidebar({
 }: Readonly<GameSidebarProps>) {
   const { t } = useTranslation('game_detail');
 
-  // Lógica para extrair APENAS os modos de jogo
-  const gameModes =
-    details?.tags && Array.isArray(details.tags)
-      ? details.tags
-          .filter(tag => tag.category === 'mode') // Filtra só categoria 'mode'
-          .map(tag => tag.name) // Pega o nome (Singleplayer, Co-op...)
-          .join(', ') || null // Junta com vírgula
-      : null;
-
   // Verifica se existe pelo menos um dado de HLTB maior que 0
   const hasHltbData = !!(
     (details?.hltbMainStory && details.hltbMainStory > 0) ||
@@ -171,11 +53,6 @@ export function GameSidebar({
     (details?.hltbCompletionist && details.hltbCompletionist > 0) ||
     (details?.hltbCoopTime && details.hltbCoopTime > 0)
   );
-
-  const hasCloudAvailability =
-    !!cloudAvailability &&
-    (cloudAvailability.geforceNow !== null ||
-      cloudAvailability.xboxCloud !== null);
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -255,16 +132,15 @@ export function GameSidebar({
         <h3 className="text-muted-foreground flex items-center gap-2 pb-2 text-sm font-bold tracking-wider uppercase">
           <ListCheck size={18} /> {t('sidebar_details_heading')}
         </h3>
-
         <DetailRow
-          icon={Building2}
-          label={t('sidebar_dev_pub')}
+          icon={Blocks}
+          label={t('sidebar_developer')}
           value={`${details?.developer}`}
         />
 
         <DetailRow
           icon={Building2}
-          label={t('sidebar_dev_pub')}
+          label={t('sidebar_publisher')}
           value={`${details?.publisher}`}
         />
 
@@ -277,21 +153,15 @@ export function GameSidebar({
         )}
 
         <DetailRow
-          icon={Gamepad2}
-          label={t('sidebar_genre')}
-          value={game.genres?.join(', ')}
-        />
-
-        <DetailRow
-          icon={Sparkles}
-          label={t('sidebar_themes')}
-          value={details?.themes?.join(', ')}
-        />
-
-        <DetailRow
           icon={TrendingUp}
           label={t('sidebar_series')}
           value={details?.series}
+        />
+
+        <DetailRow
+          icon={Library}
+          label={t('sidebar_franchise')}
+          value={details?.franchise?.join(', ')}
         />
 
         <DetailRow
@@ -301,41 +171,51 @@ export function GameSidebar({
             details?.criticScore ? details.criticScore.toString() : undefined
           }
         />
-
-        <DetailRow
-          icon={Users}
-          label={t('sidebar_mode')}
-          value={gameModes ?? undefined}
-        />
-
-        <DetailRow
-          icon={Eye}
-          label={t('sidebar_perspective')}
-          value={details?.playerPerspectives?.join(', ')}
-        />
       </div>
 
-      {/* 5. LINKS */}
-      <GameLinks links={details?.externalLinks} />
-
-      {/* 6. TAGS (Com Categorização) */}
-      {details?.tags &&
-        Array.isArray(details.tags) &&
-        details.tags.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-muted-foreground flex items-center gap-1 text-sm font-bold tracking-wider uppercase">
-              <Tag size={18} /> {t('sidebar_features')}
-            </h3>
-            <TagSection tags={details.tags} />
+      {/* 5. CARACTERÍSTICAS */}
+      {details?.gameModes && details.gameModes.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-muted-foreground flex items-center gap-1 text-sm font-bold tracking-wider uppercase">
+            <Gamepad2 size={18} /> {t('sidebar_game_modes')}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {details.gameModes.map(mode => (
+              <Badge
+                key={mode}
+                variant="secondary"
+                className="bg-secondary/40 border-border/50 border px-2 py-0.5 text-xs font-normal"
+              >
+                {mode}
+              </Badge>
+            ))}
           </div>
-        )}
-
-      {/* 7. CLOUD GAMING */}
-      {hasCloudAvailability && (
-        <CloudGamingSection cloudAvailability={cloudAvailability} />
+        </div>
       )}
 
-      {/* 8. OUTRAS PLATAFORMAS */}
+      {details?.playerPerspectives && details.playerPerspectives.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-muted-foreground flex items-center gap-1 text-sm font-bold tracking-wider uppercase">
+            <User size={18} /> {t('sidebar_player_perspectives')}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {details.playerPerspectives.map(perspective => (
+              <Badge
+                key={perspective}
+                variant="secondary"
+                className="bg-secondary/40 border-border/50 border px-2 py-0.5 text-xs font-normal"
+              >
+                {perspective}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 6. CLOUD GAMING */}
+      <CloudGamingSection cloudAvailability={cloudAvailability} />
+
+      {/* 7. OUTRAS PLATAFORMAS */}
       {siblings.length > 0 && (
         <div className="border-border/40 space-y-2 border-t pt-4">
           <span className="text-muted-foreground text-sm font-medium">
@@ -360,7 +240,7 @@ export function GameSidebar({
   );
 }
 
-// === DetailRow ====
+// === DetailRow ===
 
 function DetailRow({
   icon: Icon,
@@ -381,6 +261,54 @@ function DetailRow({
       <span className="text-foreground/90 max-w-[60%] truncate text-right text-sm font-medium">
         {value}
       </span>
+    </div>
+  );
+}
+
+// === CloudGamingSection ===
+
+function CloudGamingSection({
+  cloudAvailability,
+}: Readonly<{ cloudAvailability: CloudAvailability | null }>) {
+  const { t } = useTranslation('game_detail');
+
+  if (!cloudAvailability) return null;
+
+  if (!cloudAvailability.geforceNow && !cloudAvailability.xboxCloud)
+    return null;
+
+  return (
+    <div className="border-border/40 space-y-2 border-t pt-4">
+      <span className="text-muted-foreground text-sm font-medium">
+        {t('sidebar_cloud_gaming')}
+      </span>
+      <div className="flex flex-wrap gap-2">
+        {cloudAvailability.geforceNow && (
+          <Badge
+            variant="outline"
+            className="border-border/50 h-7 gap-1.5 border px-3 text-xs font-normal"
+          >
+            <Cloud size={14} />
+            GeForce NOW
+          </Badge>
+        )}
+
+        {cloudAvailability.xboxCloud && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="border-border/50 h-7 gap-1.5 border text-xs"
+            onClick={() =>
+              openExternalLink(
+                `https://www.xbox.com/play/games/store/_/${cloudAvailability.xboxCloud}`
+              )
+            }
+          >
+            <Cloud size={14} />
+            Xbox Cloud Gaming
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

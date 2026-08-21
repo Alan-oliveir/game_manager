@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import { GameDescriptionData, GameDetails } from '@/types/game';
+import { Badge } from '@/ui/badge';
 import { Button } from '@/ui/button';
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import {
 } from '@/ui/dropdown-menu';
 import { Skeleton } from '@/ui/skeleton';
 import { toast } from '@/utils/toast';
+import { AgeRatings, GameLinks } from '@/windows';
 
 interface DescriptionSection {
   key: 'summary' | 'storyline' | 'shortDescription' | 'description';
@@ -77,6 +79,7 @@ function resolveSections(
 interface GameDescriptionProps {
   gameId: string;
   details: GameDetails | null;
+  gameAlternativeNames?: string[];
   loading: boolean;
   onDescriptionUpdate?: (updated: GameDescriptionData) => void;
 }
@@ -84,6 +87,7 @@ interface GameDescriptionProps {
 export function GameDescription({
   gameId,
   details,
+  gameAlternativeNames,
   loading,
   onDescriptionUpdate,
 }: GameDescriptionProps) {
@@ -184,10 +188,10 @@ export function GameDescription({
   return (
     <div className="pr-4">
       <div className="mb-4 flex items-center justify-between">
+        {/* Título e menu dropdown */}
         <h2 className="text-2xl font-bold tracking-tight">
           {t('description_header_title')}
         </h2>
-
         {hasContent && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -216,7 +220,6 @@ export function GameDescription({
                 <ChevronDown size={12} className="text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
-
             <DropdownMenuContent align="end">
               <DropdownMenuRadioGroup
                 value={view}
@@ -240,6 +243,7 @@ export function GameDescription({
       </div>
 
       <div className="text-foreground/90 pb-8 text-sm leading-relaxed transition-opacity duration-300 lg:text-base">
+        {/* Texto principal da descrição */}
         {sections.map(section => {
           const text =
             view === 'translated' && section.translated
@@ -259,7 +263,72 @@ export function GameDescription({
             </div>
           );
         })}
+
+        {/* Gêneros, temas e nomes alternativos */}
+        {details.genres?.length ||
+        details.themes?.length ||
+        gameAlternativeNames?.length ? (
+          <div className="mb-6 space-y-3">
+            <BadgeRow
+              label={t('description_genres_label')}
+              items={details.genres ?? []}
+            />
+            <BadgeRow
+              label={t('description_themes_label')}
+              items={details.themes ?? []}
+            />
+            <BadgeRow
+              label={t('description_alternative_names_label')}
+              items={gameAlternativeNames ?? []}
+            />
+          </div>
+        ) : null}
+
+        {/* Links */}
+        <GameLinks links={details.externalLinks} />
+
+        {/* Classificação por idade */}
+        {details.ageRatings && Object.keys(details.ageRatings).length > 0 && (
+          <div className="border-border/40 border-t pt-6">
+            <h3 className="text-muted-foreground mb-3 text-xs font-bold tracking-widest uppercase">
+              {t('age_ratings_heading')}
+            </h3>
+            <AgeRatings
+              ratings={details.ageRatings}
+              size={56}
+              className="flex flex-wrap gap-3"
+            />
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+// === BadgeRow ===
+
+interface BadgeRowProps {
+  label: string;
+  items: string[];
+}
+
+function BadgeRow({ label, items }: Readonly<BadgeRowProps>) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+        {label}
+      </span>
+      {items.map(item => (
+        <Badge
+          key={item}
+          variant="secondary"
+          className="bg-secondary/40 border-border/50 border px-2 py-0.5 text-xs font-normal"
+        >
+          {item}
+        </Badge>
+      ))}
     </div>
   );
 }

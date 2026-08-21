@@ -20,11 +20,11 @@ use crate::errors::AppError;
 use crate::providers::metadata::igdb;
 use crate::providers::metadata::steam::detect_adult_content;
 use crate::providers::mods::nexus::{find_best_nexus_match, get_cached_nexus_games, NexusGame};
+use crate::services::cache;
 use rusqlite::Connection;
 use std::collections::{HashMap, HashSet};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tracing::{info, warn};
-
 // === ESTRUTURAS DE DADOS ===
 
 struct MissingMetadataBatchItem {
@@ -272,6 +272,12 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
         info!("Iniciando preenchimento de campos vazios ...");
 
         let state: State<AppState> = app_handle.state();
+
+        // Marca início — se o app fechar/crashar antes do fim, o marcador persiste e o próximo boot detecta a interrupção.
+        if let Ok(cache_conn) = state.cache_db.lock() {
+            let _ = cache::save_cached_api_data(&cache_conn, "app_state", "enrichment_in_progress", "1");
+        }
+
         let mut all_session_tags: HashSet<String> = HashSet::new();
         let mut processed_ids: HashSet<String> = HashSet::new();
 
@@ -386,6 +392,11 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
                 message: "Campos vazios preenchidos!".to_string(),
             },
         );
+
+        // Remove o marcador se terminou sem crash.
+        if let Ok(cache_conn) = state.cache_db.lock() {
+            let _ = cache::delete_cached_api_data(&cache_conn, "app_state", "enrichment_in_progress");
+        }
 
         info!("fill_missing_metadata concluído.");
     });

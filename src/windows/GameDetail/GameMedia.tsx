@@ -1,13 +1,17 @@
-import {invoke} from '@tauri-apps/api/core';
-import {ChevronLeft, ChevronRight, Meh, WifiOff} from 'lucide-react';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {useTranslation} from 'react-i18next';
+import { invoke } from '@tauri-apps/api/core';
+import { ChevronLeft, ChevronRight, Meh, WifiOff } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
-import {ContentError, ContentLoading} from '@/components';
-import {useMediaKeyboard, useMediaThumbnailScroll, useNetworkStatus,} from '@/hooks';
-import {MediaItem} from '@/types';
-import {Game} from '@/types/game';
-import {Lightbox, MediaThumbnail, MediaViewer} from '@/windows';
+import { ContentError, ContentLoading } from '@/components';
+import {
+  useMediaKeyboard,
+  useMediaThumbnailScroll,
+  useNetworkStatus,
+} from '@/hooks';
+import { MediaItem } from '@/types';
+import { Game } from '@/types/game';
+import { Lightbox, MediaThumbnail, MediaViewer } from '@/windows';
 
 // === TIPOS ===
 

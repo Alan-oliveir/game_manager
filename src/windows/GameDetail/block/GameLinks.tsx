@@ -1,38 +1,18 @@
-import {
-  BookOpen,
-  ExternalLink,
-  Globe,
-  type LucideIcon,
-  MessageSquare,
-  ShoppingCart,
-  Star,
-} from 'lucide-react';
+import { ExternalLink as ExternalLinkIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { LINK_CONFIG } from '@/types';
 import { Button } from '@/ui/button';
 
-interface GameLinksProps {
+interface GameExternalLinksProps {
   links?: Record<string, string>;
 }
 
-const LINK_CONFIG: Record<string, { labelKey: string; icon: LucideIcon }> = {
-  website: { labelKey: 'links_website', icon: Globe },
-  steam: { labelKey: 'links_steam', icon: ShoppingCart },
-  epic: { labelKey: 'links_epic', icon: ShoppingCart },
-  gog: { labelKey: 'links_gog', icon: ShoppingCart },
-  reddit: { labelKey: 'links_reddit', icon: MessageSquare },
-  metacritic: { labelKey: 'links_metacritic', icon: Star },
-  rawg: { labelKey: 'links_rawg', icon: BookOpen },
-  pcgamingwiki: { labelKey: 'links_pcgamingwiki', icon: BookOpen },
-};
-
-export function GameLinks({ links }: Readonly<GameLinksProps>) {
+export function GameLinks({ links }: Readonly<GameExternalLinksProps>) {
   const { t } = useTranslation('game_detail');
 
-  // Verifica se o objeto existe e se tem chaves
   if (!links || Object.keys(links).length === 0) return null;
 
-  // Filtra links vazios ANTES de renderizar
   const validLinks = Object.entries(links).filter(
     ([, url]) => url && url.trim().length > 0
   );
@@ -40,15 +20,15 @@ export function GameLinks({ links }: Readonly<GameLinksProps>) {
   if (validLinks.length === 0) return null;
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-muted-foreground text-sm font-bold tracking-widest uppercase">
+    <div className="border-border/40 border-t py-6">
+      <h3 className="text-muted-foreground mb-3 text-xs font-bold tracking-widest uppercase">
         {t('links_heading')}
       </h3>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-4 gap-3 lg:grid-cols-6">
         {validLinks.map(([key, url]) => {
           const config = LINK_CONFIG[key.toLowerCase()] || {
             labelKey: undefined,
-            icon: ExternalLink,
+            icon: ExternalLinkIcon,
           };
           const Icon = config.icon;
 
@@ -57,12 +37,12 @@ export function GameLinks({ links }: Readonly<GameLinksProps>) {
               key={key}
               variant="outline"
               size="sm"
-              className="h-9 w-full justify-start px-3 text-xs font-medium"
+              className="h-8 w-full justify-start gap-2 px-2 text-xs font-medium"
               asChild
             >
               <a href={url} target="_blank" rel="noreferrer">
-                <Icon size={14} className="mr-2 opacity-70" />
-                <span className="truncate capitalize">
+                <Icon size={16} className="shrink-0 opacity-80" />
+                <span className="truncate">
                   {config.labelKey ? t(config.labelKey) : key}
                 </span>
               </a>

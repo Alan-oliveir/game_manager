@@ -1,4 +1,6 @@
 // === TAGS ===
+import { AgeRatings } from '@/types/age_rating.ts';
+
 export interface GameTag {
   slug: string;
   name: string;
@@ -221,6 +223,7 @@ export interface GameDetails {
   // Classificação & Conteúdo
   isAdult?: boolean;
   adultTags?: string;
+  ageRatings?: AgeRatings;
 
   // Links & Tempo
   externalLinks?: Record<string, string>; // { "steam": "url", "website": "url" }

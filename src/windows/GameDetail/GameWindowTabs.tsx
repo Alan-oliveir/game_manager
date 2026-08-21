@@ -42,8 +42,8 @@ export function GameTabs({ activeTab, onTabChange }: GameTabsProps) {
       label: t('window_tabs_tab_discovery'),
       icon: <Compass />,
     },
-    { id: 'addons', label: t('window_tabs_tab_addons'), icon: <Blocks /> },
     { id: 'media', label: t('window_tabs_tab_media'), icon: <Play /> },
+    { id: 'addons', label: t('window_tabs_tab_addons'), icon: <Blocks /> },
     { id: 'extras', label: t('window_tabs_tab_extras'), icon: <Wrench /> },
   ];
 
@@ -111,6 +111,7 @@ export function GameContentTabs({
         {activeTab === 'description' && (
           <GameDescription
             gameId={game.id}
+            gameAlternativeNames={game.alternativeNames}
             details={details}
             loading={loading}
             onDescriptionUpdate={onDescriptionUpdate}
@@ -119,8 +120,8 @@ export function GameContentTabs({
         {activeTab === 'discovery' && !isEditing && (
           <GameDiscovery game={game} />
         )}
-        {activeTab === 'addons' && !isEditing && <GameAddons game={game} />}
         {activeTab === 'media' && !isEditing && <GameMedia game={game} />}
+        {activeTab === 'addons' && !isEditing && <GameAddons game={game} />}
         {activeTab === 'extras' && !isEditing && (
           <GameExtras game={game} details={details} />
         )}

@@ -23,6 +23,7 @@ use crate::providers::media::steamgriddb::{self, SteamGridDbClient};
 use crate::providers::metadata::igdb;
 use crate::providers::metadata::steam::detect_adult_content;
 use crate::providers::mods::nexus::{find_best_nexus_match, get_cached_nexus_games, NexusGame};
+use crate::services::cache;
 use std::collections::{HashMap, HashSet};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tracing::{info, warn};
@@ -49,8 +50,13 @@ struct MissingMetadataBatchItem {
 
 pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>) {
     let library_label = games.first().map(|g| g.library.clone());
-
     let state: State<AppState> = app.state();
+
+    // Marca início — se o app fechar/crashar antes do fim, o marcador persiste e o próximo boot detecta a interrupção.
+    if let Ok(cache_conn) = state.cache_db.lock() {
+        let _ = cache::save_cached_api_data(&cache_conn, "app_state", "enrichment_in_progress", "1");
+    }
+
     let total = games.len();
     let mut all_session_tags: HashSet<String> = HashSet::new();
 
@@ -61,8 +67,7 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
         .and_then(|conn| get_cached_nexus_games(&conn).ok())
         .unwrap_or_default();
 
-    // Client SteamGridDB montado uma vez por batch. Se a key não estiver
-    // configurada, segue sem capas via SGDB — IGDB/Steam cobrem o fallback.
+    // Client SteamGridDB montado uma vez por batch. Se a key não estiver configurada, segue sem capas via SGDB — ainda busca na IGDB/source.
     let sgdb_client = match crate::database::get_secret(&app, "steamgriddb_api_key") {
         Ok(key) if !key.is_empty() => Some(SteamGridDbClient::new(key)),
         _ => {
@@ -205,6 +210,11 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
             message,
         },
     );
+
+    // Remove o marcador se terminou sem crash.
+    if let Ok(cache_conn) = state.cache_db.lock() {
+        let _ = cache::delete_cached_api_data(&cache_conn, "app_state", "enrichment_in_progress");
+    }
 
     info!(
         "enrich_newly_imported: {} ok, {} erros (total processado: {})",

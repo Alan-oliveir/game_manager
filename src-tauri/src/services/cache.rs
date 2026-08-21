@@ -243,6 +243,22 @@ pub fn clear_all_cache(conn: &Connection) -> Result<usize, String> {
         .map_err(|e| format!("Erro ao limpar cache: {}", e))
 }
 
+/// Remove uma entrada específica do cache, independente de estar expirada ou não.
+/// Usado para marcadores de estado (ex: `app_state`/`enrichment_in_progress`) que
+/// precisam ser limpos explicitamente ao final de um processo, não por TTL.
+pub fn delete_cached_api_data(
+    conn: &Connection,
+    source: &str,
+    external_id: &str,
+) -> Result<(), String> {
+    conn.execute(
+        "DELETE FROM api_cache WHERE source = ?1 AND external_id = ?2",
+        params![source, external_id],
+    )
+        .map_err(|e| format!("Erro ao deletar cache: {}", e))?;
+    Ok(())
+}
+
 /// Retorna estatísticas detalhadas, quebradas por tipo de dado em cache.
 pub fn get_detailed_cache_stats(conn: &Connection) -> Result<DetailedCacheStats, String> {
     let count = |sql: &str| -> i32 { conn.query_row(sql, [], |row| row.get(0)).unwrap_or(0) };

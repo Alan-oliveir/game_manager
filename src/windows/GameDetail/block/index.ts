@@ -1,3 +1,4 @@
+export { AgeRatings } from './AgeRatings';
 export { GameLinks } from './GameLinks';
 export { LanguageTable } from './LanguageTable';
 export { Lightbox } from './Lightbox';
