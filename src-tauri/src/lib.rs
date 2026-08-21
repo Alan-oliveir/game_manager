@@ -203,7 +203,7 @@ pub fn run() {
             commands::translation::translate_description,
             // Comandos de Conquistas de Jogos
             commands::achievements::get_recent_achievements,
-            commands::achievements::sync_achievements_now,
+            commands::achievements::get_all_achievements,
             // Comandos de Cache de Metadados
             commands::cache::cleanup_cache,
             commands::cache::clear_all_cache,

@@ -15,7 +15,6 @@
 //! sobre um endpoint privado — vale avaliar risco de ToS antes de ir
 //! por esse caminho.
 
-use crate::errors::AppError;
 use crate::providers::achievements::core::{AchievementProvider, Library};
 use async_trait::async_trait;
 use tauri::AppHandle;
@@ -30,9 +29,5 @@ impl AchievementProvider for EpicProvider {
 
     async fn is_configured(&self, _app: &AppHandle) -> bool {
         false
-    }
-
-    async fn sync_achievements(&self, _app: &AppHandle) -> Result<usize, AppError> {
-        Ok(0)
     }
 }

@@ -7,6 +7,7 @@ import {
   Settings,
   ShoppingCart,
   TrendingUp,
+  Trophy,
 } from 'lucide-react';
 
 /**
@@ -26,6 +27,7 @@ export const MENU_ITEMS: MenuItem[] = [
   { id: 'home', label: 'Início', icon: Home },
   { id: 'libraries', label: 'Biblioteca', icon: Library },
   { id: 'favorites', label: 'Favoritos', icon: Heart },
+  { id: 'achievements', label: 'Conquistas', icon: Trophy },
   { id: 'playlist', label: 'Playlist', icon: Gamepad2 },
   { id: 'trending', label: 'Em Alta', icon: TrendingUp },
   { id: 'wishlist', label: 'Lista de Desejos', icon: ShoppingCart },

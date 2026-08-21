@@ -19,7 +19,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { StandardGameCard, StatCard } from '@/components/cards';
-import { Achievements, ActionButton, Hero } from '@/components/common';
+import { ActionButton, Hero, RecentAchievements } from '@/components/common';
 import {
   EAPlaySection,
   GamePassSection,
@@ -249,7 +249,7 @@ export default function Home(props: Readonly<HomeProps>) {
           />
         </div>
         {/* Achievements Component */}
-        <Achievements />
+        <RecentAchievements />
 
         {/* Seção: Prime Gaming — renderiza somente se habilitado e online */}
         <OfflineAwareSection enabled={enabledServices.includes('prime_gaming')}>

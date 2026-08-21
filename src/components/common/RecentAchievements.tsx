@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Medal, Trophy } from 'lucide-react';
+import { ChevronRight, Medal, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -13,7 +13,7 @@ interface Achievement {
   library: Library;
   game_name: string;
   achievement_name: string;
-  unlock_time: number; // Timestamp Unix
+  unlock_time: number;
   game_id: string;
 }
 
@@ -24,7 +24,15 @@ const PLATFORM_STYLES: Record<Library, { label: string; className: string }> = {
   xbox: { label: 'Xbox', className: 'bg-green-500/10 text-green-500' },
 };
 
-export default function Achievements() {
+const PREVIEW_LIMIT = 3;
+
+interface RecentAchievementsProps {
+  onViewAll?: () => void;
+}
+
+export function RecentAchievements({
+  onViewAll,
+}: Readonly<RecentAchievementsProps>) {
   const { t } = useTranslation('common');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,13 +53,29 @@ export default function Achievements() {
     );
   }
 
+  const header = (
+    <div className="mb-4 flex items-center justify-between">
+      <h3 className="flex items-center gap-2 text-lg font-bold">
+        <Trophy className="text-yellow-500" size={20} />
+        {t('achievements_recent')}
+      </h3>
+      {onViewAll && achievements.length > 0 && (
+        <button
+          type="button"
+          onClick={onViewAll}
+          className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs font-medium transition-colors"
+        >
+          {t('achievements_view_all')}
+          <ChevronRight size={14} />
+        </button>
+      )}
+    </div>
+  );
+
   if (achievements.length === 0) {
     return (
       <div className="space-y-3">
-        <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
-          <Trophy className="text-yellow-500" size={20} />
-          {t('achievements_recent')}
-        </h3>
+        {header}
         <p className="text-muted-foreground text-sm">
           {t('achievements_empty')}
         </p>
@@ -61,13 +85,9 @@ export default function Achievements() {
 
   return (
     <div className="space-y-3">
-      <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
-        <Trophy className="text-yellow-500" size={20} />
-        {t('achievements_recent')}
-      </h3>
-
+      {header}
       <div className="space-y-2">
-        {achievements.map(ach => {
+        {achievements.slice(0, PREVIEW_LIMIT).map(ach => {
           const library = PLATFORM_STYLES[ach.library];
 
           return (

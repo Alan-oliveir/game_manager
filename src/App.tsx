@@ -13,6 +13,7 @@ import {
 import { UpdateProvider } from '@/providers/UpdateProvider';
 import { Game } from '@/types';
 import { initializeToastRouting, toast } from '@/utils/toast';
+import Achievements from '@/views/Achievements';
 import Favorites from '@/views/Favorites';
 import Home from '@/views/Home';
 import Libraries from '@/views/Libraries';
@@ -268,6 +269,8 @@ function AppContent() {
             {...commonGameActions}
           />
         );
+      case 'achievements':
+        return <Achievements />;
       case 'playlist':
         return (
           <Playlist
