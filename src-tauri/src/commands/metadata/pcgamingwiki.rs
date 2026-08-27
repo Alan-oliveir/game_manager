@@ -4,14 +4,14 @@
 //! que disponíveis, e buscados online apenas quando necessário. Falhas de rede são
 //! tratadas graciosamente — o frontend recebe `None` em vez de um erro.
 
+use crate::database::technical::{
+    get_game_data_paths, get_pcgw_data, get_system_requirements, invalidate_pcgw_data,
+    save_pcgw_data, save_scraped_data,
+};
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::models::{GameDataPath, GameExtras, SystemRequirements};
 use crate::providers::technical::pcgamingwiki::client::{search_pcgw_by_name, PcgwSearchResult};
-use crate::providers::technical::pcgamingwiki::db::{
-    get_game_data_paths, get_pcgw_data, get_system_requirements, invalidate_pcgw_data,
-    save_pcgw_data, save_scraped_data,
-};
 use crate::providers::technical::pcgamingwiki::fetch::fetch_pcgw_data;
 use chrono::Utc;
 use tracing::warn;

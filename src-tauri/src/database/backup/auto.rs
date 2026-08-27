@@ -64,6 +64,7 @@ pub fn backup_before_update(app: &AppHandle, previous_version: &str) -> Result<P
     let (
         games,
         game_details,
+        game_descriptions,
         wishlist_game,
         game_extras,
         system_requirements,
@@ -77,6 +78,7 @@ pub fn backup_before_update(app: &AppHandle, previous_version: &str) -> Result<P
         date: chrono::Local::now().to_rfc3339(),
         games,
         game_details,
+        game_descriptions,
         wishlist_game,
         game_extras,
         system_requirements,

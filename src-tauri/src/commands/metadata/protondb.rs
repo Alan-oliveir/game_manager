@@ -1,8 +1,8 @@
+use crate::database::cache;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::providers::technical::protondb;
 use crate::providers::technical::protondb::{is_running_on_linux, ProtonDbSummary};
-use crate::services::cache;
 use tauri::State;
 
 #[tauri::command]

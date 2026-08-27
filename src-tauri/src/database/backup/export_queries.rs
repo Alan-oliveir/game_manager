@@ -2,24 +2,15 @@
 //!
 //! Este módulo concentra as funções responsáveis por ler os dados do SQLite e transformá-los nas estruturas para o backup.
 
+use crate::database::backup::models::BackupDataTuple;
 use crate::database::{current_schema_version, AppState};
 use crate::errors::AppError;
 use crate::models::{
-    Game, GameDataPath, GameDetails, GameExtras, Library, SystemRequirements, WishlistGame,
+    GameDataPath, GameDescription, GameDetailsRecord, GameExtras, GameRecord, Library,
+    SystemRequirements, WishlistGame,
 };
 use rusqlite::Connection;
 use tauri::State;
-
-/// Type alias para dados de backup
-pub type BackupDataTuple = (
-    Vec<Game>,
-    Vec<GameDetails>,
-    Vec<WishlistGame>,
-    Vec<GameExtras>,
-    Vec<SystemRequirements>,
-    Vec<GameDataPath>,
-    u32,
-);
 
 /// Função auxiliar interna para buscar dados do backup com transação ACID
 pub fn fetch_backup_data(state: &State<AppState>) -> Result<BackupDataTuple, AppError> {
@@ -30,6 +21,7 @@ pub fn fetch_backup_data(state: &State<AppState>) -> Result<BackupDataTuple, App
 
     let games = fetch_games(&conn)?;
     let game_details = fetch_game_details(&conn)?;
+    let game_descriptions = fetch_game_descriptions(&conn)?;
     let wishlist_game = fetch_wishlist(&conn)?;
     let game_extras = fetch_game_extras(&conn)?;
     let system_requirements = fetch_system_requirements(&conn)?;
@@ -41,6 +33,7 @@ pub fn fetch_backup_data(state: &State<AppState>) -> Result<BackupDataTuple, App
     Ok((
         games,
         game_details,
+        game_descriptions,
         wishlist_game,
         game_extras,
         system_requirements,
@@ -49,66 +42,61 @@ pub fn fetch_backup_data(state: &State<AppState>) -> Result<BackupDataTuple, App
     ))
 }
 
-/// Busca todos os jogos na biblioteca
-fn fetch_games(conn: &Connection) -> Result<Vec<Game>, AppError> {
+/// Busca todos os jogos na biblioteca — espelha a tabela `games` 1:1.
+fn fetch_games(conn: &Connection) -> Result<Vec<GameRecord>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, slug, cover_url, library, library_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, playtime_source, last_played, added_at, alternative_names, source_label FROM games"
+        "SELECT id, name, slug, library, source_label, library_game_id, alternative_names,
+                installed, import_confidence, install_path, executable_path, launch_args,
+                user_rating, favorite, status, playtime, playtime_source, last_played, added_at
+         FROM games",
     )?;
 
     let game_iter = stmt.query_map([], |row| {
-        let alt_names_json: Option<String> = row.get(18)?;
+        let alt_names_json: Option<String> = row.get(6)?;
         let alternative_names = alt_names_json.and_then(|s| serde_json::from_str(&s).ok());
 
-        Ok(Game {
+        Ok(GameRecord {
             id: row.get(0)?,
             name: row.get(1)?,
             slug: row.get(2)?,
-            cover_url: row.get(3)?,
-            genres: None,
-            developer: None,
-            critic_score: None,
-            release_date: None,
-            library: row.get::<_, String>(4)?.parse().unwrap_or(Library::Outra),
+            library: row.get::<_, String>(3)?.parse().unwrap_or(Library::Outra),
+            source_label: row.get(4)?,
             library_game_id: row.get(5)?,
             alternative_names,
-            installed: row.get(6)?,
+            installed: row.get(7)?,
             import_confidence: row
-                .get::<_, Option<String>>(7)?
+                .get::<_, Option<String>>(8)?
                 .and_then(|s| s.parse().ok()),
-            install_path: row.get(8)?,
-            executable_path: row.get(9)?,
-            launch_args: row.get(10)?,
-            user_rating: row.get(11)?,
-            favorite: row.get(12)?,
-            status: row.get(13)?,
-            playtime: row.get(14)?,
+            install_path: row.get(9)?,
+            executable_path: row.get(10)?,
+            launch_args: row.get(11)?,
+            user_rating: row.get(12)?,
+            favorite: row.get(13)?,
+            status: row.get(14)?,
+            playtime: row.get(15)?,
             playtime_source: row
-                .get::<_, Option<String>>(15)?
+                .get::<_, Option<String>>(16)?
                 .and_then(|s| s.parse().ok()),
-            last_played: row.get(16)?,
-            added_at: row.get(17)?,
-            is_adult: false,
-            source_label: row.get(19)?,
+            last_played: row.get(17)?,
+            added_at: row.get(18)?,
         })
     })?;
 
     Ok(game_iter.collect::<Result<Vec<_>, _>>()?)
 }
 
-/// Busca todos os detalhes dos jogos na biblioteca
-fn fetch_game_details(conn: &Connection) -> Result<Vec<GameDetails>, AppError> {
+/// Busca todos os detalhes dos jogos — espelha a tabela `game_details` 1:1
+/// (sem `description`, que vive em `game_descriptions` — ver `fetch_game_descriptions`).
+fn fetch_game_details(conn: &Connection) -> Result<Vec<GameDetailsRecord>, AppError> {
     let mut stmt = conn.prepare(
         "SELECT
-            gd.game_id, gd.steam_app_id, gd.display_name, gd.developer, gd.publisher, gd.release_date, gd.genres, gd.themes,
-            gd.series, gd.franchise, gd.game_modes, gd.player_perspectives, gd.keywords, gd.tags,
-            gdesc.summary, gdesc.storyline, gdesc.short_description, gdesc.description,
-            gdesc.summary_translated, gdesc.storyline_translated, gdesc.short_description_translated, gdesc.description_translated,
-            gdesc.translated_lang,
-            gd.critic_score, gd.steam_review_label, gd.steam_review_count, gd.steam_review_score, gd.steam_review_updated_at,
-            gd.age_ratings, gd.is_adult, gd.adult_tags, gd.external_links, gd.hltb_main_story,
-            gd.hltb_main_extra, gd.hltb_completionist, gd.hltb_coop_time, gd.updated_at
-         FROM game_details gd
-         LEFT JOIN game_descriptions gdesc ON gdesc.game_id = gd.game_id",
+            gd.game_id, gd.steam_app_id, gd.display_name, gd.developer, gd.publisher, gd.release_date,
+            gd.genres, gd.themes, gd.series, gd.franchise, gd.game_modes, gd.player_perspectives,
+            gd.keywords, gd.tags,
+            gd.critic_score, gd.steam_review_label, gd.steam_review_count, gd.steam_review_score,
+            gd.steam_review_updated_at, gd.age_ratings, gd.is_adult, gd.adult_tags, gd.external_links,
+            gd.hltb_main_story, gd.hltb_main_extra, gd.hltb_completionist, gd.hltb_coop_time, gd.updated_at
+         FROM game_details gd",
     )?;
 
     // Auxiliares para ler JSON do banco e converter para Vec ou HashMap
@@ -124,7 +112,7 @@ fn fetch_game_details(conn: &Connection) -> Result<Vec<GameDetails>, AppError> {
         let tags_json: Option<String> = row.get(13)?;
         let tags = tags_json.map(|s| crate::database::deserialize_tags(&s));
 
-        Ok(GameDetails {
+        Ok(GameDetailsRecord {
             game_id: row.get(0)?,
             steam_app_id: row.get(1)?,
             display_name: row.get(2)?,
@@ -139,35 +127,55 @@ fn fetch_game_details(conn: &Connection) -> Result<Vec<GameDetails>, AppError> {
             player_perspectives: parse_json_vec(row.get(11)?),
             keywords: parse_json_vec(row.get(12)?),
             tags,
-            description: crate::models::GameDescription {
-                summary: row.get(14)?,
-                storyline: row.get(15)?,
-                short_description: row.get(16)?,
-                description: row.get(17)?,
-                summary_translated: row.get(18)?,
-                storyline_translated: row.get(19)?,
-                short_description_translated: row.get(20)?,
-                description_translated: row.get(21)?,
-                translated_lang: row.get(22)?,
-            },
-            critic_score: row.get(23)?,
-            steam_review_label: row.get(24)?,
-            steam_review_count: row.get(25)?,
-            steam_review_score: row.get(26)?,
-            steam_review_updated_at: row.get(27)?,
-            age_ratings: parse_json_map(row.get(36)?),
-            is_adult: row.get(28).unwrap_or(false),
-            adult_tags: row.get(29)?,
-            external_links: parse_json_map(row.get(30)?),
-            hltb_main_story: row.get(31)?,
-            hltb_main_extra: row.get(32)?,
-            hltb_completionist: row.get(33)?,
-            hltb_coop_time: row.get(34)?,
-            updated_at: row.get(35)?,
+            critic_score: row.get(14)?,
+            steam_review_label: row.get(15)?,
+            steam_review_count: row.get(16)?,
+            steam_review_score: row.get(17)?,
+            steam_review_updated_at: row.get(18)?,
+            age_ratings: parse_json_map(row.get(19)?),
+            is_adult: row.get(20).unwrap_or(false),
+            adult_tags: row.get(21)?,
+            external_links: parse_json_map(row.get(22)?),
+            hltb_main_story: row.get(23)?,
+            hltb_main_extra: row.get(24)?,
+            hltb_completionist: row.get(25)?,
+            hltb_coop_time: row.get(26)?,
+            updated_at: row.get(27)?,
         })
     })?;
 
     Ok(details_iter.collect::<Result<Vec<_>, _>>()?)
+}
+
+/// Busca todas as descrições — espelha a tabela `game_descriptions` 1:1. Retorna pares
+/// `(game_id, GameDescription)` para o restore poder recompor a associação sem precisar de um JOIN prévio.
+fn fetch_game_descriptions(conn: &Connection) -> Result<Vec<(String, GameDescription)>, AppError> {
+    let mut stmt = conn.prepare(
+        "SELECT game_id, summary, storyline, short_description, description,
+                summary_translated, storyline_translated, short_description_translated,
+                description_translated, translated_lang
+         FROM game_descriptions",
+    )?;
+
+    let iter = stmt.query_map([], |row| {
+        let game_id: String = row.get(0)?;
+        Ok((
+            game_id,
+            GameDescription {
+                summary: row.get(1)?,
+                storyline: row.get(2)?,
+                short_description: row.get(3)?,
+                description: row.get(4)?,
+                summary_translated: row.get(5)?,
+                storyline_translated: row.get(6)?,
+                short_description_translated: row.get(7)?,
+                description_translated: row.get(8)?,
+                translated_lang: row.get(9)?,
+            },
+        ))
+    })?;
+
+    Ok(iter.collect::<Result<Vec<_>, _>>()?)
 }
 
 /// Busca todos os jogos da wishlist

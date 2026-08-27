@@ -19,6 +19,8 @@ use tauri::State;
 use url::Url;
 use uuid::Uuid;
 
+// === STRUCTS ===
+
 /// Dados de entrada para criar ou atualizar um jogo.
 ///
 /// Reflete os campos da ‘interface’ de adição/edição de jogos.
@@ -51,6 +53,8 @@ pub struct UpdateGameDetailsInput {
     pub publisher: Option<String>,
     pub released: Option<String>,
 }
+
+// === FUNÇÕES AUXILIARES ===
 
 /// Função auxiliar privada para validar dados de entrada.
 ///
@@ -114,6 +118,8 @@ fn validate_input(game: &GameInput) -> Result<(), AppError> {
 
     Ok(())
 }
+
+// === CRUD ===
 
 /// Adiciona um novo jogo à biblioteca.
 ///
@@ -182,60 +188,6 @@ pub fn add_game(state: State<AppState>, game: GameInput) -> Result<(), AppError>
     Ok(())
 }
 
-/// Atualiza informações de um jogo existente.
-///
-/// Atualiza os campos, preservando added_at e favorite, com os novos valores fornecidos.
-/// Realiza as mesmas validações de 'add_game'.
-///
-/// **Nota:** Não retorna erro se 'ID' não existe ('update' silencioso).
-#[tauri::command]
-pub fn update_game(state: State<AppState>, game: GameInput) -> Result<(), AppError> {
-    validate_input(&game)?;
-
-    let conn = state.games_db.lock()?;
-
-    conn.execute(
-        "UPDATE games SET
-        name = ?1,
-        slug = ?2,
-        library = ?3,
-        library_game_id = ?4,
-        installed = ?5,
-        import_confidence = ?6,
-        playtime = ?7,
-        user_rating = ?8,
-        status = ?9,
-        install_path = ?10,
-        executable_path = ?11,
-        launch_args = ?12
-    WHERE id = ?13",
-        params![
-            game.name,
-            slugify(&game.name),
-            game.library.to_string(),
-            game.library_game_id,
-            game.installed,
-            game.import_confidence,
-            game.playtime,
-            game.user_rating,
-            game.status,
-            game.install_path,
-            game.executable_path,
-            game.launch_args,
-            game.id
-        ],
-    )?;
-
-    match &game.cover_url {
-        Some(url) => steamgriddb::db::upsert_game_image(
-            &conn, &game.id, "manual", url, None, None, None, -1,
-        )?,
-        None => steamgriddb::db::delete_game_image(&conn, &game.id, "cover", "manual")?,
-    }
-
-    Ok(())
-}
-
 /// Recupera todos os jogos da biblioteca.
 ///
 /// Retorna a lista completa de jogos ordenada conforme armazenada no banco.
@@ -250,7 +202,7 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
         g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
         gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label,
         (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url,
-        gd.critic_score, gd.release_date
+        gd.critic_score, gd.release_date, gd.display_name
     FROM games g
     LEFT JOIN game_details gd ON g.id = gd.game_id
     ORDER BY g.name ASC"
@@ -293,6 +245,7 @@ pub fn get_games(state: State<AppState>) -> Result<Vec<models::Game>, AppError> 
                 cover_url: row.get(22)?,
                 critic_score: row.get(23)?,
                 release_date: row.get(24)?,
+                display_name: row.get(25)?,
             })
         })?
         .collect::<Result<Vec<_>, _>>()?;
@@ -402,14 +355,14 @@ pub fn get_game_by_id(
 
     let mut stmt = conn.prepare(
         "SELECT
-            g.id, g.name, g.slug, g.library, g.library_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
-            g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
-            gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label,
-            (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url,
-            gd.critic_score, gd.release_date
-        FROM games g
-        LEFT JOIN game_details gd ON g.id = gd.game_id
-        WHERE g.id = ?"
+        g.id, g.name, g.slug, g.library, g.library_game_id, g.installed, g.import_confidence, g.install_path, g.executable_path,
+        g.launch_args, g.user_rating, g.favorite, g.status, g.playtime, g.playtime_source, g.last_played, g.added_at, g.alternative_names,
+        gd.genres, gd.developer, COALESCE(gd.is_adult, 0) as is_adult, g.source_label,
+        (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url,
+        gd.critic_score, gd.release_date, gd.display_name
+    FROM games g
+    LEFT JOIN game_details gd ON g.id = gd.game_id
+    WHERE g.id = ?"
     )?;
 
     let game = stmt
@@ -449,6 +402,7 @@ pub fn get_game_by_id(
                 cover_url: row.get(22)?,
                 critic_score: row.get(23)?,
                 release_date: row.get(24)?,
+                display_name: row.get(25)?,
             })
         })?
         .next()
@@ -457,71 +411,56 @@ pub fn get_game_by_id(
     Ok(game)
 }
 
-/// Alterna o status de favorito de um jogo.
+/// Atualiza informações de um jogo existente.
 ///
-/// Inverte o valor booleano do campo 'favorite' usando NOT lógico.
-/// Se era favorito, deixa de ser; se não era, passa a ser.
+/// Atualiza os campos, preservando added_at e favorite, com os novos valores fornecidos.
+/// Realiza as mesmas validações de 'add_game'.
 ///
-/// **Nota:** Esta operação é idempotente e não retorna erro se o ‘ID’ não existir.
+/// **Nota:** Não retorna erro se 'ID' não existe ('update' silencioso).
 #[tauri::command]
-pub fn toggle_favorite(state: State<AppState>, id: String) -> Result<(), AppError> {
+pub fn update_game(state: State<AppState>, game: GameInput) -> Result<(), AppError> {
+    validate_input(&game)?;
+
     let conn = state.games_db.lock()?;
 
     conn.execute(
-        "UPDATE games SET favorite = NOT favorite WHERE id = ?1",
-        params![id],
+        "UPDATE games SET
+        name = ?1,
+        slug = ?2,
+        library = ?3,
+        library_game_id = ?4,
+        installed = ?5,
+        import_confidence = ?6,
+        playtime = ?7,
+        user_rating = ?8,
+        status = ?9,
+        install_path = ?10,
+        executable_path = ?11,
+        launch_args = ?12
+    WHERE id = ?13",
+        params![
+            game.name,
+            slugify(&game.name),
+            game.library.to_string(),
+            game.library_game_id,
+            game.installed,
+            game.import_confidence,
+            game.playtime,
+            game.user_rating,
+            game.status,
+            game.install_path,
+            game.executable_path,
+            game.launch_args,
+            game.id
+        ],
     )?;
 
-    Ok(())
-}
-
-/// Define o status de um jogo na biblioteca.
-///
-/// Altera o campo 'status' para a condição fornecida para o jogo.
-/// Não há validação do valor; espera-se que o frontend envie valores válidos.
-/// A lista de status possíveis inclui "completed", "playing", "backlog" e "abandoned".
-#[tauri::command]
-pub fn set_game_status(state: State<AppState>, id: String, status: String) -> Result<(), AppError> {
-    let conn = state.games_db.lock()?;
-    conn.execute(
-        "UPDATE games SET status = ?1 WHERE id = ?2",
-        params![status, id],
-    )?;
-    Ok(())
-}
-
-/// Define a avaliação pessoal de um jogo.
-///
-/// Atualiza o campo 'user_rating' com o valor fornecido.
-/// Aceita valores de 0 a 5, onde 0 remove a avaliação (define como NULL).
-#[tauri::command]
-pub fn set_game_rating(state: State<AppState>, id: String, rating: i32) -> Result<(), AppError> {
-    // Validação rápida
-    if !(0..=5).contains(&rating) {
-        return Err(AppError::ValidationError("Rating inválido".to_string()));
+    match &game.cover_url {
+        Some(url) => steamgriddb::db::upsert_game_image(
+            &conn, &game.id, "manual", url, None, None, None, -1,
+        )?,
+        None => steamgriddb::db::delete_game_image(&conn, &game.id, "cover", "manual")?,
     }
-
-    let conn = state.games_db.lock()?;
-
-    // Se rating for 0, remove a avaliação (NULL)
-    let val = if rating == 0 { None } else { Some(rating) };
-
-    conn.execute(
-        "UPDATE games SET user_rating = ?1 WHERE id = ?2",
-        params![val, id],
-    )?;
-    Ok(())
-}
-
-/// Remove permanentemente um jogo da biblioteca.
-///
-/// **Nota:** Esta ação é irreversível e exclui todos os dados relacionados ao jogo.
-#[tauri::command]
-pub fn delete_game(state: State<AppState>, id: String) -> Result<(), AppError> {
-    let conn = state.games_db.lock()?;
-
-    conn.execute("DELETE FROM games WHERE id = ?1", params![id])?;
-    conn.execute("DELETE FROM game_details WHERE game_id = ?1", params![id])?;
 
     Ok(())
 }
@@ -615,5 +554,76 @@ pub fn update_game_details(
         }
     }
 
+    Ok(())
+}
+
+/// Remove permanentemente um jogo da biblioteca.
+///
+/// **Nota:** Esta ação é irreversível e exclui todos os dados relacionados ao jogo.
+#[tauri::command]
+pub fn delete_game(state: State<AppState>, id: String) -> Result<(), AppError> {
+    let conn = state.games_db.lock()?;
+
+    conn.execute("DELETE FROM games WHERE id = ?1", params![id])?;
+    conn.execute("DELETE FROM game_details WHERE game_id = ?1", params![id])?;
+
+    Ok(())
+}
+
+// === OPERAÇÕES DOS USUÁRIOS ===
+
+/// Alterna o status de favorito de um jogo.
+///
+/// Inverte o valor booleano do campo 'favorite' usando NOT lógico.
+/// Se era favorito, deixa de ser; se não era, passa a ser.
+///
+/// **Nota:** Esta operação é idempotente e não retorna erro se o ‘ID’ não existir.
+#[tauri::command]
+pub fn toggle_favorite(state: State<AppState>, id: String) -> Result<(), AppError> {
+    let conn = state.games_db.lock()?;
+
+    conn.execute(
+        "UPDATE games SET favorite = NOT favorite WHERE id = ?1",
+        params![id],
+    )?;
+
+    Ok(())
+}
+
+/// Define o status de um jogo na biblioteca.
+///
+/// Altera o campo 'status' para a condição fornecida para o jogo.
+/// Não há validação do valor; espera-se que o frontend envie valores válidos.
+/// A lista de status possíveis inclui "completed", "playing", "backlog" e "abandoned".
+#[tauri::command]
+pub fn set_game_status(state: State<AppState>, id: String, status: String) -> Result<(), AppError> {
+    let conn = state.games_db.lock()?;
+    conn.execute(
+        "UPDATE games SET status = ?1 WHERE id = ?2",
+        params![status, id],
+    )?;
+    Ok(())
+}
+
+/// Define a avaliação pessoal de um jogo.
+///
+/// Atualiza o campo 'user_rating' com o valor fornecido.
+/// Aceita valores de 0 a 5, onde 0 remove a avaliação (define como NULL).
+#[tauri::command]
+pub fn set_game_rating(state: State<AppState>, id: String, rating: i32) -> Result<(), AppError> {
+    // Validação rápida
+    if !(0..=5).contains(&rating) {
+        return Err(AppError::ValidationError("Rating inválido".to_string()));
+    }
+
+    let conn = state.games_db.lock()?;
+
+    // Se rating for 0, remove a avaliação (NULL)
+    let val = if rating == 0 { None } else { Some(rating) };
+
+    conn.execute(
+        "UPDATE games SET user_rating = ?1 WHERE id = ?2",
+        params![val, id],
+    )?;
     Ok(())
 }

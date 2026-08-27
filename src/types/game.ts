@@ -161,6 +161,7 @@ export interface Game {
   library: Library;
   sourceLabel?: string;
   libraryGameId: string;
+  displayName?: string;
   genres?: string[];
   developer?: string;
   criticScore?: number;
@@ -198,6 +199,7 @@ export interface Game {
 export interface GameDetails {
   gameId: string;
   steamAppId?: string;
+  displayName?: string;
 
   // Metadados
   description?: GameDescriptionData;

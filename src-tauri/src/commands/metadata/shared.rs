@@ -4,12 +4,12 @@
 
 use crate::constants::NOT_FOUND_MARKER;
 use crate::database;
+use crate::database::cache;
 use crate::models::{GameDescription, ImportConfidence};
 use crate::providers::metadata::hltb;
 use crate::providers::metadata::steam::{
     get_app_details, get_app_reviews, search_app_by_name, SteamReviewSummary, SteamStoreData,
 };
-use crate::services::cache;
 use crate::utils::text::{is_likely_non_base_game, normalize_for_matching, strip_edition_suffix};
 use rusqlite::params;
 use std::collections::HashMap;

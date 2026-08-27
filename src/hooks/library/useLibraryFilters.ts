@@ -78,6 +78,7 @@ export function useLibraryFilter({
     return result.filter(
       game =>
         game.name.toLowerCase().includes(term) ||
+        game.displayName?.toLowerCase().includes(term) ||
         game.genres?.some(g => g.toLowerCase().includes(term)) ||
         game.library.toLowerCase().includes(term)
     );

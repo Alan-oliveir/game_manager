@@ -46,7 +46,9 @@ export default function Libraries({
       addToPlaylist(gameId);
 
       if (game) {
-        toast.success(t('game_added_to_playlist', { name: game.name }));
+        toast.success(
+          t('game_added_to_playlist', { name: game.displayName ?? game.name })
+        );
       }
     },
     [addToPlaylist, t]

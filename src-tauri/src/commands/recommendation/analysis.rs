@@ -6,7 +6,7 @@
 use crate::constants::MINUTES_PER_HOUR_F32;
 use crate::database::AppState;
 use crate::errors::AppError;
-use crate::models::Library;
+use crate::models::{Game, Library};
 use crate::services::recommendation::{
     calculate_user_profile, export_games_csv, export_report_json, export_report_txt,
     generate_analysis_report, parse_release_year, GameWithDetails, RecommendationConfig,
@@ -156,9 +156,9 @@ fn fetch_games_with_details(
 
     let mut stmt = conn.prepare(
         "SELECT g.id, g.name, g.slug, g.playtime, g.favorite, g.user_rating,
-                (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url,
-                g.library_game_id, g.last_played, g.added_at, g.library, g.playtime_source, g.alternative_names,
-                gd.genres, gd.steam_app_id, gd.release_date, gd.series, gd.tags
+            (SELECT url FROM game_images WHERE game_id = g.id AND image_type = 'cover' ORDER BY priority ASC LIMIT 1) AS cover_url,
+            g.library_game_id, g.last_played, g.added_at, g.library, g.playtime_source, g.alternative_names,
+            gd.genres, gd.steam_app_id, gd.release_date, gd.series, gd.tags, gd.display_name
         FROM games g
         LEFT JOIN game_details gd ON g.id = gd.game_id
         ORDER BY g.name ASC",
@@ -169,7 +169,7 @@ fn fetch_games_with_details(
             let alt_names_json: Option<String> = row.get(12)?;
             let alternative_names = alt_names_json.and_then(|s| serde_json::from_str(&s).ok());
 
-            let game = crate::models::Game {
+            let game = Game {
                 id: row.get(0)?,
                 name: row.get(1)?,
                 slug: row.get(2)?,
@@ -197,6 +197,7 @@ fn fetch_games_with_details(
                 is_adult: false,
                 source_label: None,
                 release_date: None,
+                display_name: row.get(18)?,
             };
 
             let genres_json: Option<String> = row.get(13)?;

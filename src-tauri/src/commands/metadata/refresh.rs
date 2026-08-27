@@ -6,13 +6,13 @@ use crate::constants::{
     BACKGROUND_TASK_INTERVAL_SECS, GAMERPOWER_CACHE_SOURCE, GAMERPOWER_LIST_ACTIVE_CACHE_KEY,
     STARTUP_DELAY_SECS,
 };
+use crate::database::cache;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::providers::giveaways::gamerpower;
 use crate::providers::metadata::steam::get_app_reviews;
 use crate::providers::mods::nexus::refresh_nexus_games_if_stale;
 use crate::providers::pricing::itad;
-use crate::services::cache;
 use crate::services::locale::get_or_detect_region;
 use lazy_static::lazy_static;
 use rusqlite::params;

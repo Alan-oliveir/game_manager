@@ -89,15 +89,14 @@ export default function Home(props: Readonly<HomeProps>) {
   });
   const currentHero = heroSlides[currentIndex] || mostPlayed[0];
 
-  // Helper para imagens
-  const getHeroImage = (game: Game | TrendingGame) =>
-    ('coverUrl' in game ? game.coverUrl : null) ||
-    ('image' in game ? game.image : null) ||
-    '';
-
   // Helper obter lista de gêneros
   const getGenresList = (game: Game | TrendingGame): string[] =>
     game.genres ?? [];
+
+  // Helper obter nome de exibição — prioriza o nome canônico do IGDB (display_name) quando disponível;
+  // cai para o nome importado da loja (Game.name) ou o nome nativo do TrendingGame quando não há.
+  const getDisplayName = (game: Game | TrendingGame): string =>
+    ('displayName' in game && game.displayName) || game.name;
 
   // Helper isLocalGame
   const isLocalGame = (game: Game | TrendingGame): game is Game =>
@@ -119,7 +118,7 @@ export default function Home(props: Readonly<HomeProps>) {
             <StandardGameCard
               id={game.id.toString()}
               key={game.id}
-              title={game.name}
+              title={getDisplayName(game)}
               coverUrl={game.coverUrl}
               subtitle={game.genres?.[0]}
               onClick={() => props.onGameClick(game)}
@@ -163,9 +162,8 @@ export default function Home(props: Readonly<HomeProps>) {
       {currentHero && (
         <Hero
           gameId={currentHero.id.toString()}
-          title={currentHero.name}
-          backgroundUrl={getHeroImage(currentHero)}
-          coverUrl={getHeroImage(currentHero)}
+          title={getDisplayName(currentHero)}
+          coverUrl={currentHero.coverUrl}
           genres={getGenresList(currentHero)}
           rating={isLocalGame(currentHero) ? currentHero.userRating : undefined}
           showNavigation={heroSlides.length > 1}
@@ -299,7 +297,7 @@ export default function Home(props: Readonly<HomeProps>) {
                 <StandardGameCard
                   id={game.id.toString()}
                   key={game.id}
-                  title={game.name}
+                  title={getDisplayName(game)}
                   coverUrl={game.coverUrl}
                   subtitle={`${formatTime(game.playtime)} ${t('played_suffix')}`}
                   onClick={() => props.onGameClick(game)}
@@ -354,7 +352,7 @@ export default function Home(props: Readonly<HomeProps>) {
                 <StandardGameCard
                   id={game.id.toString()}
                   key={`cf-${game.id}`}
-                  title={game.name}
+                  title={getDisplayName(game)}
                   coverUrl={game.coverUrl}
                   subtitle={game.genres?.[0]}
                   onClick={() => props.onGameClick(game)}
@@ -418,7 +416,7 @@ export default function Home(props: Readonly<HomeProps>) {
                   )}
                   <div className="min-w-0 flex-1">
                     <h4 className="group-hover:text-primary truncate text-sm font-medium transition-colors">
-                      {game.name}
+                      {getDisplayName(game)}
                     </h4>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="text-muted-foreground max-w-25 truncate text-xs">

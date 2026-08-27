@@ -5,12 +5,12 @@ use crate::constants::{
     GAME_PASS_CACHE_SOURCE, GAME_PASS_FULL_CACHE_KEY, UBISOFT_PLUS_CACHE_KEY,
     UBISOFT_PLUS_CACHE_SOURCE,
 };
+use crate::database::cache;
 use crate::database::AppState;
 use crate::providers::subscriptions::amazon_luna::{fetch_amazon_luna_catalog, LunaGame};
 use crate::providers::subscriptions::game_pass::{fetch_game_pass_pc_catalog, GamePassGame};
 use crate::providers::subscriptions::ubisoft_plus::{fetch_ubisoft_plus_catalog, UbisoftGame};
 use crate::providers::subscriptions::{fetch_ea_play_catalog, EAPlayGame};
-use crate::services::cache;
 use rusqlite::params;
 use tauri::State;
 

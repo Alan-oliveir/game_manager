@@ -4,6 +4,7 @@
 //! usando APIs externas como RAWG e GamerPower.
 
 use crate::database;
+use crate::database::cache;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::integrations::gamebrain::models::{GameMedia, SimilarGame};
@@ -16,7 +17,6 @@ use crate::providers::mods::nexus::TrendingMod;
 use crate::providers::trending::igdb::{
     fetch_trending_inner, fetch_upcoming_games, TrendingGame, UpcomingGame,
 };
-use crate::services::cache;
 use crate::services::recommendation::core::calculate_game_weight;
 use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};

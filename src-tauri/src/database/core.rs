@@ -12,9 +12,9 @@
 use crate::constants::{
     DB_FILENAME_CACHE, DB_FILENAME_CONFIG, DB_FILENAME_GAMES, DB_FILENAME_SECRETS, DB_JOURNAL_MODE,
 };
+use crate::database::game_mods::initialize_nexus_tables;
+use crate::database::technical::initialize_pcgamingwiki_tables;
 use crate::errors::AppError;
-use crate::providers::mods::nexus::initialize_nexus_tables;
-use crate::providers::technical::pcgamingwiki::db::initialize_pcgamingwiki_tables;
 use crate::services::cloud_gaming::initialize_cloud_gaming_tables;
 use crate::services::playtime::PlaytimeRegistry;
 use rusqlite::Connection;
@@ -85,7 +85,7 @@ pub fn initialize_databases(app: &AppHandle) -> Result<AppState, String> {
         })?;
 
     // Inicializa schema do cache
-    crate::services::cache::initialize_cache_db(&cache_conn)?;
+    crate::database::cache::initialize_cache_db(&cache_conn)?;
 
     // Conexão para secrets.db
     let secrets_path = app_data_dir.join(DB_FILENAME_SECRETS);

@@ -4,9 +4,9 @@
 //! e agregação vive em `services::cache` — este módulo só traduz
 //! Result<_, String> em AppError e formata mensagens de retorno.
 
+use crate::database::cache::{self, DetailedCacheStats};
 use crate::database::AppState;
 use crate::errors::AppError;
-use crate::services::cache::{self, DetailedCacheStats};
 use tauri::State;
 
 /// Remove entradas expiradas do cache

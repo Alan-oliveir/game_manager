@@ -1,3 +1,5 @@
+//! Módulo principal com comandos de backup
+
 use crate::database::backup::export_queries::fetch_backup_data;
 use crate::database::backup::import_queries::restore_backup_data;
 use crate::database::backup::models::BackupData;
@@ -16,6 +18,7 @@ pub async fn export_database(
     let (
         games,
         game_details,
+        game_descriptions,
         wishlist_game,
         game_extras,
         system_requirements,
@@ -29,6 +32,7 @@ pub async fn export_database(
         date: chrono::Local::now().to_rfc3339(),
         games,
         game_details,
+        game_descriptions,
         wishlist_game,
         game_extras,
         system_requirements,

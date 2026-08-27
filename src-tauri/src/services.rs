@@ -11,7 +11,6 @@
 //! - `tags`: Serviço para classificação e gerenciamento de tags de jogos.
 //! - `tools`: Gerenciamento de uso e atualização de ferramentas de externas.
 
-pub mod cache;
 pub mod images;
 pub mod playtime;
 pub mod rate_limiter;

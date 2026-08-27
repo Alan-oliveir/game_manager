@@ -12,6 +12,10 @@ pub mod core;
 pub mod migrations;
 pub mod achievements;
 pub mod secrets;
+pub mod cache;
+pub mod game_mods;
+pub mod cloud_gaming;
+pub mod technical;
 
 // Reexporta o módulo core para fácil acesso
 pub use core::*;

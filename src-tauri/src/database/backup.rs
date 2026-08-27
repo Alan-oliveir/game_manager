@@ -12,10 +12,8 @@
 //! - export_queries
 //! - import_queries
 //! - auto
-//! - core
 
 pub mod models;
 pub mod export_queries;
 pub mod import_queries;
 pub mod auto;
-pub mod core;

@@ -74,7 +74,7 @@ export function GameHeader({
         <div className="flex min-h-32 flex-1 flex-col justify-center gap-3">
           {/* TÍTULO */}
           <h1 className="line-clamp-2 text-5xl leading-tight font-black tracking-tight text-white drop-shadow-xl">
-            {game.name}
+            {game.displayName ?? game.name}
           </h1>
 
           {/* BADGES */}

@@ -100,7 +100,7 @@ export const LibraryGameCard = memo(function LibraryGameCard({
     <div className="group relative">
       <StandardGameCard
         id={game.id.toString()}
-        title={game.name}
+        title={game.displayName ?? game.name}
         coverUrl={game.coverUrl}
         library={LibraryDisplayNames[game.library]}
         sourceLabel={game.sourceLabel}

@@ -15,12 +15,13 @@ use crate::commands::metadata::shared::{
     ProcessedGameDetails,
 };
 use crate::constants::REQUISITIONS_PER_BATCH;
+use crate::database::cache;
+use crate::database::game_mods::get_cached_nexus_games;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::providers::metadata::igdb;
 use crate::providers::metadata::steam::detect_adult_content;
-use crate::providers::mods::nexus::{find_best_nexus_match, get_cached_nexus_games, NexusGame};
-use crate::services::cache;
+use crate::providers::mods::nexus::{find_best_nexus_match, NexusGame};
 use rusqlite::Connection;
 use std::collections::{HashMap, HashSet};
 use tauri::{AppHandle, Emitter, Manager, State};

@@ -1,8 +1,7 @@
-//! Persistência dos dados do PCGamingWiki no banco SQLite local.
+//! Persistência dos dados técnicos do PCGamingWiki no banco SQLite local.
 //!
-//! Os dados são armazenados na tabela `game_extras` sem TTL — tratados como
-//! características fixas do jogo e atualizados apenas por invalidação explícita
-//! via [`invalidate_pcgw_data`].
+//! Os dados são armazenados na tabela `game_extras` sem TTL — tratados como características fixas
+//! do jogo e atualizados apenas por invalidação explícita via [`invalidate_pcgw_data`].
 
 use crate::models::{GameDataPath, GameExtras, PcgwScrapedData, SystemRequirements};
 use rusqlite::{params, Connection};
@@ -98,7 +97,7 @@ pub fn initialize_pcgamingwiki_tables(conn: &Connection) -> Result<(), String> {
         CREATE INDEX IF NOT EXISTS idx_gamedata_app_id
             ON game_data_paths(steam_app_id);",
     )
-    .map_err(|e| format!("Erro ao criar tabelas do PCGamingWiki: {}", e))?;
+        .map_err(|e| format!("Erro ao criar tabelas do PCGamingWiki: {}", e))?;
 
     Ok(())
 }
@@ -329,7 +328,7 @@ pub fn save_pcgw_data(conn: &Connection, data: &GameExtras) -> Result<(), String
             data.fetched_at,
         ],
     )
-    .map_err(|e| format!("Erro ao salvar game_extras: {}", e))?;
+        .map_err(|e| format!("Erro ao salvar game_extras: {}", e))?;
 
     Ok(())
 }
@@ -343,7 +342,7 @@ pub fn invalidate_pcgw_data(conn: &Connection, steam_app_id: &str) -> Result<(),
         "UPDATE game_extras SET fetched_at = NULL WHERE steam_app_id = ?1",
         params![steam_app_id],
     )
-    .map_err(|e| format!("Erro ao invalidar game_extras: {}", e))?;
+        .map_err(|e| format!("Erro ao invalidar game_extras: {}", e))?;
 
     info!("game_extras invalidado para steam_app_id={}", steam_app_id);
     Ok(())
@@ -370,13 +369,13 @@ pub fn save_scraped_data(
         "DELETE FROM system_requirements WHERE steam_app_id = ?1",
         params![steam_app_id],
     )
-    .map_err(|e| format!("Erro ao limpar system_requirements: {}", e))?;
+        .map_err(|e| format!("Erro ao limpar system_requirements: {}", e))?;
 
     conn.execute(
         "DELETE FROM game_data_paths WHERE steam_app_id = ?1",
         params![steam_app_id],
     )
-    .map_err(|e| format!("Erro ao limpar game_data_paths: {}", e))?;
+        .map_err(|e| format!("Erro ao limpar game_data_paths: {}", e))?;
 
     // Insere requisitos de sistema
     let mut sysreq_stmt = conn

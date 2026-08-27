@@ -1,7 +1,7 @@
+use crate::database::cache;
 use crate::database::AppState;
 use crate::errors::AppError;
 use crate::providers::technical::winehq::{fetch_winehq_data, WineHqSummary};
-use crate::services::cache;
 use tauri::State;
 
 #[tauri::command]

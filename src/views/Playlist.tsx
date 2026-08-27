@@ -72,14 +72,20 @@ export default function Playlist({
   const handleRemoveFromPlaylist = async (game: Game) => {
     const confirmed = await confirm({
       title: t('remove_from_playlist_title'),
-      description: t('remove_from_playlist_description', { name: game.name }),
+      description: t('remove_from_playlist_description', {
+        name: game.displayName ?? game.name,
+      }),
       confirmText: t('remove_from_playlist_confirm_button'),
       cancelText: t('remove_from_playlist_cancel_button'),
     });
 
     if (confirmed) {
       removeFromPlaylist(game.id);
-      toast.info(t('playlist_item_removed_toast', { name: game.name }));
+      toast.info(
+        t('playlist_item_removed_toast', {
+          name: game.displayName ?? game.name,
+        })
+      );
     }
   };
 
@@ -216,7 +222,7 @@ export default function Playlist({
               <div key={game.id} className="group relative">
                 <StandardGameCard
                   id={game.id.toString()}
-                  title={game.name}
+                  title={game.displayName ?? game.name}
                   coverUrl={game.coverUrl}
                   className="text-xs"
                   badge={
@@ -234,7 +240,9 @@ export default function Playlist({
                           e.stopPropagation();
                           addToPlaylist(game.id);
                           toast.success(
-                            t('added_to_playlist_toast', { name: game.name })
+                            t('added_to_playlist_toast', {
+                              name: game.displayName ?? game.name,
+                            })
                           );
                         }}
                         title={t('add_to_playlist_button_title')}

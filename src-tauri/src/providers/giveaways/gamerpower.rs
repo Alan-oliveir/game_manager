@@ -4,8 +4,8 @@
 //! A GamerPower é uma plataforma que agrega ofertas de jogos gratuitos de várias fontes.
 
 use crate::constants::{GAMERPOWER_CACHE_SOURCE, GAMERPOWER_LIST_ACTIVE_CACHE_KEY};
+use crate::database::cache;
 use crate::database::AppState;
-use crate::services::cache;
 use crate::utils::http_client::HTTP_CLIENT;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};

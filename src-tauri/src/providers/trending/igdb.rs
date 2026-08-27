@@ -1,8 +1,8 @@
 //! Jogos com lançamento futuro e em alta via IGDB.
 
+use crate::database::cache;
 use crate::database::AppState;
 use crate::providers::metadata::igdb::client::igdb_request;
-use crate::services::cache;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;

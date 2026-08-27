@@ -1,4 +1,3 @@
-// src/views/AchievementsView.tsx
 import { invoke } from '@tauri-apps/api/core';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -6,10 +5,10 @@ import { Loader2, Medal, Trophy } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-type Library = 'steam' | 'epic' | 'gog' | 'xbox';
+type AchievementPlatform = 'steam' | 'epic' | 'gog' | 'xbox';
 
 interface AchievementDetail {
-  library: Library;
+  source: AchievementPlatform;
   game_id: string;
   game_name: string;
   achievement_name: string;
@@ -21,7 +20,10 @@ interface AchievementDetail {
   unlock_time: number;
 }
 
-const PLATFORM_STYLES: Record<Library, { label: string; className: string }> = {
+const PLATFORM_STYLES: Record<
+  AchievementPlatform,
+  { label: string; className: string }
+> = {
   steam: { label: 'Steam', className: 'bg-sky-500/10 text-sky-500' },
   epic: { label: 'Epic', className: 'bg-neutral-500/10 text-neutral-400' },
   gog: { label: 'GOG', className: 'bg-purple-500/10 text-purple-400' },
@@ -32,7 +34,9 @@ export default function Achievements() {
   const { t } = useTranslation('common');
   const [achievements, setAchievements] = useState<AchievementDetail[]>([]);
   const [loading, setLoading] = useState(true);
-  const [libraryFilter, setLibraryFilter] = useState<Library | 'all'>('all');
+  const [libraryFilter, setLibraryFilter] = useState<
+    AchievementPlatform | 'all'
+  >('all');
 
   useEffect(() => {
     invoke<AchievementDetail[]>('get_all_achievements')
@@ -45,12 +49,12 @@ export default function Achievements() {
     () =>
       libraryFilter === 'all'
         ? achievements
-        : achievements.filter(a => a.library === libraryFilter),
+        : achievements.filter(a => a.source === libraryFilter),
     [achievements, libraryFilter]
   );
 
   const availableLibraries = useMemo(
-    () => Array.from(new Set(achievements.map(a => a.library))),
+    () => Array.from(new Set(achievements.map(a => a.source))),
     [achievements]
   );
 
@@ -95,11 +99,11 @@ export default function Achievements() {
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {filtered.map(ach => {
-              const library = PLATFORM_STYLES[ach.library];
+              const library = PLATFORM_STYLES[ach.source];
 
               return (
                 <div
-                  key={`${ach.library}-${ach.game_id}-${ach.achievement_name}`}
+                  key={`${ach.source}-${ach.game_id}-${ach.achievement_name}`}
                   className="bg-card hover:bg-accent/5 flex items-start gap-3 rounded-lg border p-4 transition-colors"
                 >
                   {ach.icon_url ? (

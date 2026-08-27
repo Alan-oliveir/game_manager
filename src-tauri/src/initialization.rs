@@ -8,8 +8,8 @@
 
 use crate::commands::metadata::get_metadata::fill_missing_metadata;
 use crate::database;
+use crate::database::cache;
 use crate::errors::AppError;
-use crate::services::cache;
 use chrono::Utc;
 use tauri::{AppHandle, Emitter, Manager};
 

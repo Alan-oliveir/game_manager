@@ -7,17 +7,20 @@ import { useTranslation } from 'react-i18next';
 
 import { Skeleton } from '@/ui/skeleton';
 
-type Library = 'steam' | 'epic' | 'gog' | 'xbox';
+type AchievementPlatform = 'steam' | 'epic' | 'gog' | 'xbox';
 
 interface Achievement {
-  library: Library;
+  source: AchievementPlatform;
   game_name: string;
   achievement_name: string;
   unlock_time: number;
   game_id: string;
 }
 
-const PLATFORM_STYLES: Record<Library, { label: string; className: string }> = {
+const PLATFORM_STYLES: Record<
+  AchievementPlatform,
+  { label: string; className: string }
+> = {
   steam: { label: 'Steam', className: 'bg-sky-500/10 text-sky-500' },
   epic: { label: 'Epic', className: 'bg-neutral-500/10 text-neutral-400' },
   gog: { label: 'GOG', className: 'bg-purple-500/10 text-purple-400' },
@@ -88,11 +91,11 @@ export function RecentAchievements({
       {header}
       <div className="space-y-2">
         {achievements.slice(0, PREVIEW_LIMIT).map(ach => {
-          const library = PLATFORM_STYLES[ach.library];
+          const library = PLATFORM_STYLES[ach.source];
 
           return (
             <div
-              key={`${ach.library}-${ach.game_id}-${ach.achievement_name}`}
+              key={`${ach.source}-${ach.game_id}-${ach.achievement_name}`}
               className="bg-card hover:bg-accent/5 flex items-center justify-between rounded-lg border p-3 transition-colors"
             >
               <div className="flex items-center gap-3 overflow-hidden">

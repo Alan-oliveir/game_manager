@@ -19,7 +19,7 @@ const DASHBOARD_LIMIT: usize = 3;
 
 #[derive(Serialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
-pub enum Library {
+pub enum AchievementPlatform {
     Steam,
     Epic,
     Gog,
@@ -28,7 +28,7 @@ pub enum Library {
 
 #[derive(Serialize)]
 pub struct DashboardAchievement {
-    pub library: Library,
+    pub source: AchievementPlatform,
     pub game_name: String,
     pub achievement_name: String,
     pub unlock_time: i64,
@@ -37,7 +37,7 @@ pub struct DashboardAchievement {
 
 #[derive(Serialize)]
 pub struct AchievementDetail {
-    pub library: Library,
+    pub source: AchievementPlatform,
     pub game_id: String,
     pub game_name: String,
     pub achievement_name: String,
@@ -51,7 +51,7 @@ pub struct AchievementDetail {
 
 #[async_trait]
 pub(crate) trait AchievementProvider: Send + Sync {
-    fn library(&self) -> Library;
+    fn library(&self) -> AchievementPlatform;
 
     async fn is_configured(&self, app: &AppHandle) -> bool;
 

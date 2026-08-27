@@ -23,8 +23,8 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
 
     // Prepared statements para melhor desempenho
     let mut game_stmt = conn.prepare(
-        "INSERT OR REPLACE INTO games (id, name, cover_url, library, library_game_id, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, last_played, added_at, alternative_names, source_label)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)"
+        "INSERT OR REPLACE INTO games (id, name, slug, library, source_label, library_game_id, alternative_names, installed, import_confidence, install_path, executable_path, launch_args, user_rating, favorite, status, playtime, playtime_source, last_played, added_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)"
     )?;
 
     let mut details_stmt = conn.prepare(
@@ -63,9 +63,11 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
         game_stmt.execute(params![
             game.id,
             game.name,
-            game.cover_url,
+            game.slug,
             game.library.to_string(),
+            game.source_label,
             game.library_game_id,
+            alt_names_json,
             game.installed,
             game.import_confidence.as_ref().map(|ic| ic.to_string()),
             game.install_path,
@@ -75,10 +77,9 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             game.favorite,
             game.status,
             game.playtime,
+            game.playtime_source.as_ref().map(|ps| ps.as_db_str()),
             game.last_played,
             game.added_at,
-            alt_names_json,
-            game.source_label,
         ])?;
     }
 
@@ -118,18 +119,20 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
             detail.hltb_coop_time,
             detail.updated_at
         ])?;
+    }
 
+    for (game_id, description) in &backup.game_descriptions {
         descriptions_stmt.execute(params![
-            detail.game_id,
-            detail.description.summary,
-            detail.description.storyline,
-            detail.description.short_description,
-            detail.description.description,
-            detail.description.summary_translated,
-            detail.description.storyline_translated,
-            detail.description.short_description_translated,
-            detail.description.description_translated,
-            detail.description.translated_lang,
+            game_id,
+            description.summary,
+            description.storyline,
+            description.short_description,
+            description.description,
+            description.summary_translated,
+            description.storyline_translated,
+            description.short_description_translated,
+            description.description_translated,
+            description.translated_lang,
         ])?;
     }
 
@@ -285,9 +288,10 @@ pub fn restore_backup_data(conn: &Connection, backup: &BackupData) -> Result<Str
     conn.execute("COMMIT", [])?;
 
     Ok(format!(
-        "Backup restaurado! {} jogos, {} detalhes, {} itens da wishlist, {} dados técnicos, {} requisitos de sistema e {} caminhos.",
+        "Backup restaurado! {} jogos, {} detalhes, {} descrições, {} itens da wishlist, {} dados técnicos, {} requisitos de sistema e {} caminhos.",
         backup.games.len(),
         backup.game_details.len(),
+        backup.game_descriptions.len(),
         backup.wishlist_game.len(),
         backup.game_extras.len(),
         backup.system_requirements.len(),

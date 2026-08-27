@@ -1,8 +1,8 @@
 //! Caminho: src/services/integration/gamebrain/cache.rs
 
 use super::models::SimilarGame;
+use crate::database::cache;
 use crate::database::AppState;
-use crate::services::cache;
 use rusqlite::Connection;
 use serde::de::DeserializeOwned;
 use serde::Serialize;

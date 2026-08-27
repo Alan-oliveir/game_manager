@@ -97,7 +97,9 @@ pub fn run() {
                 tauri::async_runtime::spawn(async move {
                     tokio::time::sleep(std::time::Duration::from_secs(20)).await;
 
-                    if let Err(e) = providers::achievements::core::sync_all_achievements(&app_handle).await {
+                    if let Err(e) =
+                        providers::achievements::core::sync_all_achievements(&app_handle).await
+                    {
                         tracing::warn!("Sync de conquistas falhou: {e}");
                     }
                 });
@@ -112,8 +114,8 @@ pub fn run() {
             // Comando de Inicialização do Banco de Dados
             database::init_db,
             // Comandos de Backup e Restauração
-            database::backup::core::export_database,
-            database::backup::core::import_database,
+            commands::backup::export_database,
+            commands::backup::import_database,
             // Comandos de Jogos (CRUD)
             commands::games::add_game,
             commands::games::get_games,

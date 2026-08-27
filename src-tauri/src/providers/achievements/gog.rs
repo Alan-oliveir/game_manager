@@ -17,7 +17,7 @@
 
 use crate::database::AppState;
 use crate::errors::AppError;
-use crate::providers::achievements::core::{AchievementDetail, AchievementProvider, DashboardAchievement, Library};
+use crate::providers::achievements::core::{AchievementDetail, AchievementPlatform, AchievementProvider, DashboardAchievement};
 use async_trait::async_trait;
 use tauri::{AppHandle, Manager};
 
@@ -25,8 +25,8 @@ pub struct GogProvider;
 
 #[async_trait]
 impl AchievementProvider for GogProvider {
-    fn library(&self) -> Library {
-        Library::Gog
+    fn library(&self) -> AchievementPlatform {
+        AchievementPlatform::Gog
     }
 
     async fn is_configured(&self, _app: &AppHandle) -> bool {
@@ -115,7 +115,7 @@ impl AchievementProvider for GogProvider {
                 .unwrap_or_else(|| row.gog_id.clone());
 
             achievements.push(DashboardAchievement {
-                library: Library::Gog,
+                source: AchievementPlatform::Gog,
                 game_name,
                 achievement_name: row.achievement_name,
                 unlock_time,
@@ -212,7 +212,7 @@ impl AchievementProvider for GogProvider {
                 .unwrap_or_else(|| row.gog_id.clone());
 
             achievements.push(AchievementDetail {
-                library: Library::Gog,
+                source: AchievementPlatform::Gog,
                 game_id: row.gog_id,
                 game_name,
                 achievement_name: row.achievement_name,

@@ -1,11 +1,14 @@
 //! Modelos de dados do banco de dados.
 //!
-//! Define as structs que representam as tabelas do banco:
-//! - Game: tabela `games`
-//! - GameDetails: tabela `game_details`
-//! - WishlistGame: tabela `wishlist`
-//! - Subscriptions: tabela `subscriptions`
-//! - PcgwData: tabela `pcgw_data`
+//! Este arquivo é organizado em três camadas com responsabilidades distintas:
+//!
+//! 1. **Records** — espelham 1:1 as colunas de cada tabela SQL. Usados internamente
+//!    pelo backend (queries diretas, backup/restore). Nunca devem ganhar campos que
+//!    não existem na tabela correspondente.
+//! 2. **API models** — o que é retornado aos comandos Tauri / frontend. Podem ser
+//!    "views" que combinam múltiplos Records via JOIN (ex: `Game` combina `games`
+//!    + `game_details` + `game_images`). Não espelham nenhuma tabela específica.
+//! 3. **Structs auxiliares** — enums e tipos compartilhados pelas duas camadas acima.
 
 // Reexportar GameTag do utils para consistência
 pub use crate::utils::tag_utils::GameTag;
@@ -13,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
 
-// === ENUMS ===
+// === ENUMS E TIPOS COMPARTILHADOS ===
 
 /// Nível de confiança da importação do jogo
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -111,7 +114,7 @@ impl std::fmt::Display for Library {
 #[serde(rename_all = "camelCase")]
 pub enum PlaytimeSource {
     Store(Library), // API oficial (Steam, Itch, Indiegala)
-    Local,              // tracker local via processo
+    Local,          // tracker local via processo
 }
 
 impl PlaytimeSource {
@@ -159,6 +162,7 @@ pub enum ToolSource {
     Managed,
 }
 
+/// Espelha a tabela `game_descriptions`.
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct GameDescription {
@@ -176,7 +180,8 @@ pub struct GameDescription {
 impl GameDescription {
     /// Usado em contextos de preview — texto único.
     pub fn primary(&self) -> Option<&str> {
-        self.summary.as_deref()
+        self.summary
+            .as_deref()
             .or(self.description.as_deref())
             .or(self.short_description.as_deref())
             .or(self.storyline.as_deref())
@@ -225,14 +230,81 @@ impl GameDescription {
     }
 }
 
-// === Modelos de Dados ===
+// === RECORDS — espelham as tabelas 1:1 ===
 
-/// Visão de biblioteca de um jogo (read model).
+/// Espelha exatamente as colunas da tabela `games`.
 ///
-/// NÃO é um espelho 1:1 da tabela `games` — combina colunas de `games`,
-/// `game_details` (genres, developer, critic_score, release_date, is_adult)
-/// e `game_images` (cover_url), otimizado para listar/ordenar a biblioteca
-/// sem precisar buscar `GameDetails` completo por jogo.
+/// Usado apenas em contextos que leem/escrevem a tabela diretamente sem JOIN:
+/// backup (export/restore) e outras rotinas internas.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GameRecord {
+    pub id: String,
+    pub name: String,
+    pub slug: String,
+    pub library: Library,
+    pub source_label: Option<String>,
+    pub library_game_id: String,
+    pub alternative_names: Option<Vec<String>>,
+    pub installed: bool,
+    pub import_confidence: Option<ImportConfidence>,
+    pub install_path: Option<String>,
+    pub executable_path: Option<String>,
+    pub launch_args: Option<String>,
+    pub user_rating: Option<i32>,
+    pub favorite: bool,
+    pub status: Option<String>,
+    pub playtime: Option<i32>,
+    pub playtime_source: Option<PlaytimeSource>,
+    pub last_played: Option<String>,
+    pub added_at: String,
+}
+
+/// Espelha exatamente as colunas da tabela `game_details`.
+///
+/// NÃO inclui `description` — esse dado mora na tabela própria `game_descriptions`
+/// Usado apenas em backup (export/restore).
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GameDetailsRecord {
+    pub game_id: String,
+    pub steam_app_id: Option<String>,
+    pub display_name: Option<String>,
+    pub developer: Option<String>,
+    pub publisher: Option<String>,
+    pub release_date: Option<String>,
+    pub genres: Option<Vec<String>>,
+    pub themes: Option<Vec<String>>,
+    pub series: Option<String>,
+    pub franchise: Option<Vec<String>>,
+    pub game_modes: Option<Vec<String>>,
+    pub player_perspectives: Option<Vec<String>>,
+    pub keywords: Option<Vec<String>>,
+    pub tags: Option<Vec<GameTag>>, // OLD — herdado da classificação RAWG
+    pub critic_score: Option<i32>,
+    pub steam_review_label: Option<String>,
+    pub steam_review_count: Option<i32>,
+    pub steam_review_score: Option<f32>,
+    pub steam_review_updated_at: Option<String>,
+    pub age_ratings: Option<HashMap<String, String>>,
+    pub is_adult: bool,
+    pub adult_tags: Option<String>,
+    pub external_links: Option<HashMap<String, String>>,
+    pub hltb_main_story: Option<f64>,
+    pub hltb_main_extra: Option<f64>,
+    pub hltb_completionist: Option<f64>,
+    pub hltb_coop_time: Option<f64>,
+    pub updated_at: Option<String>,
+}
+
+// === API MODELS — retorno de comandos Tauri / frontend ===
+
+/// Visão de biblioteca de um jogo (read model), retornada por `get_games`/`get_game_by_id`.
+///
+/// NÃO é um espelho 1:1 de nenhuma tabela — combina colunas de `games`, um subconjunto de
+/// `game_details` (genres, developer, critic_score, release_date, is_adult, display_name) e
+/// `game_images` (cover_url), otimizado para listar/ordenar a biblioteca sem precisar buscar
+/// `GameDetails` completo por jogo.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Game {
@@ -243,14 +315,18 @@ pub struct Game {
     pub source_label: Option<String>,
     pub library_game_id: String,
 
-    // Metadados básicos
+    // Nome canônico do IGDB (game_details.display_name). Quando presente, é usado ao invés de `name`
+    // na exibição — `name` é o nome cru importado da loja, útil como fallback para jogos sem match no IGDB.
+    pub display_name: Option<String>,
+
+    // Metadados básicos (joined de game_details)
     pub genres: Option<Vec<String>>,
     pub developer: Option<String>,
     pub library: Library,
     pub critic_score: Option<i32>,
     pub release_date: Option<String>,
 
-    // Mídia
+    // Mídia (joined de game_images)
     pub cover_url: Option<String>,
 
     // Execução
@@ -271,14 +347,15 @@ pub struct Game {
     pub last_played: Option<String>,
     pub added_at: String,
 
-    // Conteúdo Adulto
+    // Conteúdo Adulto (joined de game_details)
     #[serde(default)]
     pub is_adult: bool,
 }
 
-/// Detalhes adicionais do jogo (Schema v4).
+/// Detalhes adicionais do jogo, retornados por `get_library_game_details`.
 ///
-/// Contém metadados enriquecidos obtidos de APIs externas como RAWG, substituindo e expandindo os dados anteriores.
+/// Combina `GameDetailsRecord` (tabela `game_details`) + `GameDescription`
+/// (tabela `game_descriptions`) num único objeto conveniente para a tela de detalhes.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GameDetails {
@@ -301,7 +378,7 @@ pub struct GameDetails {
     pub keywords: Option<Vec<String>>,
     pub tags: Option<Vec<GameTag>>, // OLD
 
-    // Descrição
+    // Descrição (joined de game_descriptions)
     pub description: GameDescription,
 
     // Scores e Avaliações
@@ -333,8 +410,8 @@ pub struct GameDetails {
 
 /// Jogo na lista de desejos (wishlist) com tracking de preços.
 ///
-/// Representa um jogo adicionado à wishlist do usuário,
-/// incluindo informações de preço, disponibilidade e vouchers.
+/// Espelha a tabela `wishlist` 1:1 — usada tanto como API model quanto
+/// diretamente no backup, já que não há JOIN nem campos calculados aqui.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WishlistGame {
@@ -368,8 +445,8 @@ pub struct Subscription {
 
 /// Dados técnicos do jogo obtidos do PCGamingWiki.
 ///
-/// Tratados como dados estáticos do jogo — não expiram automaticamente.
-/// Atualizados apenas por invalidação explícita.
+/// Espelha a tabela `game_extras` 1:1. Tratados como dados estáticos do jogo —
+/// não expiram automaticamente. Atualizados apenas por invalidação explícita.
 ///
 /// Tabelas Cargo consultadas: Infobox_game, API, Video, Input, Audio, L10n, Tags.
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -433,7 +510,7 @@ pub struct GameExtras {
     pub fetched_at: Option<String>,
 }
 
-/// Requisitos de sistema para um único OS/tier.
+/// Requisitos de sistema para um único OS/tier. Espelha `system_requirements` 1:1.
 ///
 /// Campos `cpu2` e `gpu2` capturam alternativas AMD/Intel quando presentes.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -467,7 +544,9 @@ pub struct SystemRequirements {
     pub rec_storage: Option<String>,
 }
 
-/// Caminho de dado do jogo (save ou config) para um OS específico.
+/// Caminho de dado do jogo (save ou config) para um OS específico. Espelha
+/// `game_data_paths`, exceto `expanded_path`, que é calculado no frontend
+/// (nunca persistido — por isso não existe coluna correspondente).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GameDataPath {

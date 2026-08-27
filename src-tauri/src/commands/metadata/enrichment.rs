@@ -18,12 +18,13 @@ use super::shared::{
     ProcessedGameDetails,
 };
 use crate::commands::libraries::core::NewlyImportedGame;
+use crate::database::cache;
+use crate::database::game_mods::get_cached_nexus_games;
 use crate::database::AppState;
 use crate::providers::media::steamgriddb::{self, SteamGridDbClient};
 use crate::providers::metadata::igdb;
 use crate::providers::metadata::steam::detect_adult_content;
-use crate::providers::mods::nexus::{find_best_nexus_match, get_cached_nexus_games, NexusGame};
-use crate::services::cache;
+use crate::providers::mods::nexus::{find_best_nexus_match, NexusGame};
 use std::collections::{HashMap, HashSet};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tracing::{info, warn};

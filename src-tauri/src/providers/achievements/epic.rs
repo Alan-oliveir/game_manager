@@ -15,7 +15,7 @@
 //! sobre um endpoint privado — vale avaliar risco de ToS antes de ir
 //! por esse caminho.
 
-use crate::providers::achievements::core::{AchievementProvider, Library};
+use crate::providers::achievements::core::{AchievementPlatform, AchievementProvider};
 use async_trait::async_trait;
 use tauri::AppHandle;
 
@@ -23,8 +23,8 @@ pub struct EpicProvider;
 
 #[async_trait]
 impl AchievementProvider for EpicProvider {
-    fn library(&self) -> Library {
-        Library::Epic
+    fn library(&self) -> AchievementPlatform {
+        AchievementPlatform::Epic
     }
 
     async fn is_configured(&self, _app: &AppHandle) -> bool {

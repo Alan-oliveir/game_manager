@@ -9,7 +9,6 @@
 //! - `subscriptions` - Obtem informações de requisitos do sistemas e paths que não são obtidos direto pela API do PCGamingWiki.
 
 pub mod client;
-pub mod db;
 pub mod fetch;
 pub mod parsers;
 pub mod scraper;

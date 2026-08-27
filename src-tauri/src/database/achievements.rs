@@ -8,12 +8,12 @@
 
 use crate::database::AppState;
 use crate::errors::AppError;
-use crate::providers::achievements::core::{DashboardAchievement, Library};
+use crate::providers::achievements::core::{AchievementPlatform, DashboardAchievement};
 use rusqlite::params;
 use tauri::{AppHandle, Manager};
 
 pub struct AchievementRecord {
-    pub library: Library,
+    pub library: AchievementPlatform,
     pub game_id: String,
     pub game_name: String,
     pub achievement_key: String,
@@ -23,21 +23,21 @@ pub struct AchievementRecord {
     pub icon_url: Option<String>,
 }
 
-fn library_str(p: Library) -> &'static str {
+fn library_str(p: AchievementPlatform) -> &'static str {
     match p {
-        Library::Steam => "steam",
-        Library::Epic => "epic",
-        Library::Gog => "gog",
-        Library::Xbox => "xbox",
+        AchievementPlatform::Steam => "steam",
+        AchievementPlatform::Epic => "epic",
+        AchievementPlatform::Gog => "gog",
+        AchievementPlatform::Xbox => "xbox",
     }
 }
 
-fn parse_library(raw: &str) -> Library {
+fn parse_library(raw: &str) -> AchievementPlatform {
     match raw {
-        "epic" => Library::Epic,
-        "gog" => Library::Gog,
-        "xbox" => Library::Xbox,
-        _ => Library::Steam,
+        "epic" => AchievementPlatform::Epic,
+        "gog" => AchievementPlatform::Gog,
+        "xbox" => AchievementPlatform::Xbox,
+        _ => AchievementPlatform::Steam,
     }
 }
 
@@ -124,7 +124,7 @@ pub fn get_dashboard_achievements(
         .query_map(params![limit as i64], |row| {
             let library_raw: String = row.get(0)?;
             Ok(DashboardAchievement {
-                library: parse_library(&library_raw),
+                source: parse_library(&library_raw),
                 game_name: row.get(1)?,
                 achievement_name: row.get(2)?,
                 unlock_time: row.get(3)?,
@@ -149,7 +149,7 @@ struct SyncState {
 
 fn get_sync_state(
     app: &AppHandle,
-    library: Library,
+    library: AchievementPlatform,
     game_id: &str,
 ) -> Result<Option<SyncState>, AppError> {
     let state: tauri::State<AppState> = app.state();
@@ -180,7 +180,7 @@ fn get_sync_state(
 /// significa "confirmamos, via 400 da API, que esse jogo não tem stats de conquista" — não muda.
 pub fn mark_synced(
     app: &AppHandle,
-    library: Library,
+    library: AchievementPlatform,
     game_id: &str,
     has_achievements: bool,
 ) -> Result<(), AppError> {
@@ -215,7 +215,7 @@ pub fn mark_synced(
 /// - já foi sincronizado há menos de `ttl_secs`.
 ///
 /// Em caso de erro de leitura no banco, NÃO pula (mais seguro tentar de novo do que perder uma conquista).
-pub fn should_skip(app: &AppHandle, library: Library, game_id: &str, ttl_secs: i64) -> bool {
+pub fn should_skip(app: &AppHandle, library: AchievementPlatform, game_id: &str, ttl_secs: i64) -> bool {
     match get_sync_state(app, library, game_id) {
         Ok(Some(s)) => {
             if !s.has_achievements {

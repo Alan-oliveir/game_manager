@@ -142,7 +142,7 @@ export function PlaylistCard({
       {/* Info Principal */}
       <div className="min-w-0 flex-1 cursor-pointer select-none">
         <h4 className="group-hover:text-primary truncate text-sm font-semibold transition-colors">
-          {game.name}
+          {game.displayName ?? game.name}
         </h4>
         <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
           <span className="bg-secondary/50 text-secondary-foreground border-border/50 max-w-25 truncate rounded border px-1.5 py-0.5 lg:max-w-none">

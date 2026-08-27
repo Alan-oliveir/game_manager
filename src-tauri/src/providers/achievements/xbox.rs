@@ -24,7 +24,7 @@ use crate::constants::{
 use crate::database;
 use crate::database::achievements::AchievementRecord;
 use crate::errors::AppError;
-use crate::providers::achievements::core::{AchievementProvider, Library};
+use crate::providers::achievements::core::{AchievementPlatform, AchievementProvider};
 use crate::utils::http_client::HTTP_CLIENT;
 use crate::utils::oauth::config::{now_unix, OAuthToken};
 use crate::utils::oauth::core::wait_for_auth_code;
@@ -302,8 +302,8 @@ pub struct XboxProvider;
 
 #[async_trait]
 impl AchievementProvider for XboxProvider {
-    fn library(&self) -> Library {
-        Library::Xbox
+    fn library(&self) -> AchievementPlatform {
+        AchievementPlatform::Xbox
     }
 
     async fn is_configured(&self, app: &AppHandle) -> bool {
@@ -353,7 +353,7 @@ impl AchievementProvider for XboxProvider {
                 let unlock_time = parse_unlock_time(a.progression.time_unlocked.as_deref()?)?;
 
                 Some(AchievementRecord {
-                    library: Library::Xbox,
+                    library: AchievementPlatform::Xbox,
                     game_id: title.id.to_string(),
                     game_name: title.name.clone(),
                     // Xbox não expõe aqui um id estável separado do nome da conquista.
