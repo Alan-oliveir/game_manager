@@ -64,9 +64,9 @@ pub async fn import_database(
         current_schema_version(&conn)?
     };
 
-    if backup.version != current_version {
+    if backup.version > current_version {
         return Err(AppError::ValidationError(format!(
-            "Backup incompatível. Backup v{}, app espera v{}",
+            "Backup incompatível: foi feito numa versão mais nova do schema (v{}) do que o app atual suporta (v{}). Atualize o Playlite antes de restaurar este backup.",
             backup.version, current_version
         )));
     }

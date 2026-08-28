@@ -4,7 +4,6 @@
 //! providers — o padrão certo pra lookup pontual por jogo (tela de detalhes), não pra exibição de
 //! catálogo completo.
 
-use crate::database::cloud_gaming::{initialize_gfn_tables, initialize_xbox_cloud_tables};
 use crate::database::AppState;
 use crate::providers::cloud_gaming::geforce_now::{self, GfnAvailability};
 use crate::providers::cloud_gaming::xbox_cloud_gaming;
@@ -27,15 +26,6 @@ fn xbox_language_tag(app_language: &str) -> &'static str {
     } else {
         "en-US"
     }
-}
-
-// === INICIALIZAÇÃO ===
-
-/// Cria as tabelas dos dois providers.
-pub fn initialize_cloud_gaming_tables(conn: &rusqlite::Connection) -> Result<(), String> {
-    initialize_gfn_tables(conn)?;
-    initialize_xbox_cloud_tables(conn)?;
-    Ok(())
 }
 
 // === REFRESH ===

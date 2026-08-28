@@ -60,6 +60,7 @@ strsim = "0.11.1"
 sysinfo = "0.38.4"
 serde_path_to_error = "0.1.20"
 sys-locale = "0.3.2"
+rusqlite_migration = "2.5.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 glib = "0.22.7"

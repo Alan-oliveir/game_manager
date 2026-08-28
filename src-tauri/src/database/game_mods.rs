@@ -10,38 +10,6 @@ use crate::constants::NEXUS_CACHE_TTL_DAYS;
 use crate::providers::mods::nexus::NexusGame;
 use rusqlite::{params, Connection, OptionalExtension};
 
-/// Cria as tabelas de catálogo do Nexus (domínio games, não cache de API).
-pub fn initialize_nexus_tables(conn: &Connection) -> Result<(), String> {
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS nexus_games (
-            domain_name TEXT PRIMARY KEY,
-            nexus_id    INTEGER NOT NULL,
-            name        TEXT NOT NULL,
-            genre       TEXT,
-            approved_date INTEGER
-        )",
-        [],
-    )
-        .map_err(|e| format!("Erro ao criar tabela nexus_games: {}", e))?;
-
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_nexus_games_name ON nexus_games(name)",
-        [],
-    )
-        .map_err(|e| format!("Erro ao criar índice: {}", e))?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS nexus_games_cache_meta (
-            id         INTEGER PRIMARY KEY CHECK (id = 1),
-            fetched_at INTEGER NOT NULL
-        )",
-        [],
-    )
-        .map_err(|e| format!("Erro ao criar tabela nexus_games_cache_meta: {}", e))?;
-
-    Ok(())
-}
-
 pub fn save_nexus_games_cache(
     conn: &Connection,
     games: &[NexusGame],

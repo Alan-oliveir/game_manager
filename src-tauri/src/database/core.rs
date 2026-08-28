@@ -12,14 +12,10 @@
 use crate::constants::{
     DB_FILENAME_CACHE, DB_FILENAME_CONFIG, DB_FILENAME_GAMES, DB_FILENAME_SECRETS, DB_JOURNAL_MODE,
 };
-use crate::database::game_mods::initialize_nexus_tables;
-use crate::database::technical::initialize_pcgamingwiki_tables;
 use crate::errors::AppError;
-use crate::services::cloud_gaming::initialize_cloud_gaming_tables;
 use crate::services::playtime::PlaytimeRegistry;
 use rusqlite::Connection;
 use std::sync::Mutex;
-use tauri::State;
 use tauri::{AppHandle, Manager};
 
 /// Define o estado global da aplicação com ambas as conexões
@@ -29,22 +25,6 @@ pub struct AppState {
     pub cache_db: Mutex<Connection>,
     pub config_db: Mutex<Connection>,
     pub playtime_registry: PlaytimeRegistry,
-}
-
-/// Retorna a versão atual do schema armazenada no banco
-pub fn current_schema_version(conn: &Connection) -> Result<u32, AppError> {
-    let version: i32 = conn
-        .query_row("PRAGMA user_version", [], |row| row.get(0))
-        .unwrap_or(0);
-
-    Ok(version.max(0) as u32)
-}
-
-/// Retorna a versão do schema esperada para esta versão do app
-pub fn expected_schema_version(app: &AppHandle) -> u32 {
-    // Usa o MAJOR da versão do app
-    let version = app.package_info().version.clone();
-    version.major as u32
 }
 
 // === INICIALIZAÇÃO CENTRALIZADA ===
@@ -64,14 +44,36 @@ pub fn initialize_databases(app: &AppHandle) -> Result<AppState, String> {
     std::fs::create_dir_all(&app_data_dir)
         .map_err(|e| format!("Falha ao criar diretório: {}", e))?;
 
+    // Conexão para config.db
+    let config_path = app_data_dir.join(DB_FILENAME_CONFIG);
+    let config_conn = Connection::open(&config_path)
+        .map_err(|e| format!("Erro ao abrir {}: {}", DB_FILENAME_CONFIG, e))?;
+
+    config_conn
+        .pragma_update(None, "journal_mode", DB_JOURNAL_MODE)
+        .map_err(|e| {
+            AppError::DatabaseWalConfigError("config.db".to_string(), e.to_string()).to_string()
+        })?;
+
+    crate::database::configs::ensure_config_table(&config_conn)?;
+
     // Conexão para games.db
     let games_path = app_data_dir.join(DB_FILENAME_GAMES);
-    let games_conn = Connection::open(&games_path)
+    let mut games_conn = Connection::open(&games_path)
         .map_err(|e| format!("Erro ao abrir {}: {}", DB_FILENAME_GAMES, e))?;
 
     games_conn
         .pragma_update(None, "journal_mode", DB_JOURNAL_MODE)
         .map_err(|e| format!("Erro ao configurar WAL no games.db: {}", e))?;
+
+    // Conexão para secrets.db
+    let secrets_path = app_data_dir.join(DB_FILENAME_SECRETS);
+    let secrets_conn = Connection::open(&secrets_path)
+        .map_err(|e| format!("Erro ao abrir {}: {}", DB_FILENAME_SECRETS, e))?;
+
+    secrets_conn
+        .pragma_update(None, "journal_mode", DB_JOURNAL_MODE)
+        .map_err(|e| format!("Erro ao configurar WAL no secrets.db: {}", e))?;
 
     // Conexão para cache.db
     let cache_path = app_data_dir.join(DB_FILENAME_CACHE);
@@ -87,380 +89,36 @@ pub fn initialize_databases(app: &AppHandle) -> Result<AppState, String> {
     // Inicializa schema do cache
     crate::database::cache::initialize_cache_db(&cache_conn)?;
 
-    // Conexão para secrets.db
-    let secrets_path = app_data_dir.join(DB_FILENAME_SECRETS);
-    let secrets_conn = Connection::open(&secrets_path)
-        .map_err(|e| format!("Erro ao abrir {}: {}", DB_FILENAME_SECRETS, e))?;
-
-    secrets_conn
-        .pragma_update(None, "journal_mode", DB_JOURNAL_MODE)
-        .map_err(|e| format!("Erro ao configurar WAL no secrets.db: {}", e))?;
-
-    // Conexão para config.db
-    let config_path = app_data_dir.join(DB_FILENAME_CONFIG);
-    let config_conn = Connection::open(&config_path)
-        .map_err(|e| format!("Erro ao abrir {}: {}", DB_FILENAME_CONFIG, e))?;
-
-    config_conn
-        .pragma_update(None, "journal_mode", DB_JOURNAL_MODE)
-        .map_err(|e| {
-            AppError::DatabaseWalConfigError("config.db".to_string(), e.to_string()).to_string()
-        })?;
-
-    crate::database::configs::ensure_config_table(&config_conn)?;
-
     // Executa migrations
-    crate::database::migrations::run_migrations(app, &games_conn)?;
-
-    // Cria schema completo
-    let schema_version = app.package_info().version.major as u32;
-    create_schema(&games_conn, schema_version)?;
+    crate::database::migrations::run_migrations(&config_conn, &mut games_conn)?;
 
     Ok(AppState {
+        config_db: Mutex::new(config_conn),
         games_db: Mutex::new(games_conn),
         secrets_db: Mutex::new(secrets_conn),
         cache_db: Mutex::new(cache_conn),
-        config_db: Mutex::new(config_conn),
         playtime_registry: PlaytimeRegistry::default(),
     })
 }
 
-// === BANCO DE DADOS DE GERENCIAMENTO DE BIBLIOTECAS E WISHLIST  ===
+// === HELPERS ===
 
-/// Cria o schema completo do banco de dados (versão v4)
-///
-/// **Schema v4:**
-/// - Campos HLTB removidos
-/// - URLs legadas removidas (agora em external_links JSON)
-/// - users_score removido (substituído por steam_review_*)
-/// - Adicionadas as tabelas:
-///     - subscriptions
-///     - game_extras (detalhes técnicos)
-///     - game_data_paths
-///     - system_requirements
-fn create_schema(conn: &Connection, schema_version: u32) -> Result<(), String> {
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS games (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            slug TEXT NOT NULL DEFAULT '',
-            library TEXT NOT NULL,
-            source_label TEXT,
-            library_game_id TEXT NOT NULL,
-            alternative_names TEXT,
-            installed BOOLEAN DEFAULT 0,
-            import_confidence TEXT,
-            install_path TEXT,
-            executable_path TEXT,
-            launch_args TEXT,
-            user_rating INTEGER,
-            favorite BOOLEAN DEFAULT 0,
-            status TEXT,
-            playtime INTEGER,
-            playtime_source TEXT,
-            last_played TEXT,
-            added_at TEXT NOT NULL
-        )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS game_details (
-            game_id TEXT PRIMARY KEY,
-            steam_app_id TEXT,
-            developer TEXT,
-            publisher TEXT,
-            release_date TEXT,
-            genres TEXT,
-            tags TEXT,
-            series TEXT,
-            critic_score INTEGER,
-            steam_review_label TEXT,
-            steam_review_count INTEGER,
-            steam_review_score REAL,
-            steam_review_updated_at TEXT,
-            is_adult BOOLEAN DEFAULT 0,
-            adult_tags TEXT,
-            external_links TEXT,
-            hltb_main_story REAL,
-            hltb_main_extra REAL,
-            hltb_completionist REAL,
-            hltb_coop_time REAL,
-            franchise TEXT,
-            game_modes TEXT,
-            player_perspectives TEXT,
-            themes TEXT,
-            keywords TEXT,
-            age_ratings TEXT,
-            display_name TEXT,
-            updated_at TEXT,
-            FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
-        )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS wishlist (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            cover_url TEXT,
-            store_url TEXT,
-            store TEXT,
-            current_price REAL,
-            normal_price REAL,
-            lowest_price REAL,
-            currency TEXT,
-            on_sale BOOLEAN DEFAULT 0,
-            voucher TEXT,
-            added_at TEXT,
-            itad_id TEXT
-        )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS game_images (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        game_id TEXT NOT NULL,
-        image_type TEXT NOT NULL CHECK (image_type IN ('cover', 'background')),
-        source TEXT NOT NULL CHECK (source IN ('manual', 'steamgriddb', 'igdb', 'steam', 'steam_cdn', 'itch', 'legacy')),
-        url TEXT NOT NULL,
-        thumb_url TEXT,
-        width INTEGER,
-        height INTEGER,
-        priority INTEGER NOT NULL DEFAULT 0,
-        fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
-        UNIQUE(game_id, image_type, source),
-        FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
-    )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_game_images_lookup ON game_images(game_id, image_type, priority)",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    // Controla se já tentamos resolver a capa deste jogo na SteamGridDB — evita
-    // reconsultar a cada enrichment. TTL de 30 dias é checado no lado do covers.rs.
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS steamgriddb_cache_meta (
-        game_id TEXT PRIMARY KEY,
-        checked_at TEXT NOT NULL,
-        found INTEGER NOT NULL,
-        FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
-    )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS subscriptions (
-        service TEXT PRIMARY KEY,   -- 'prime_gaming', 'game_pass', etc.
-        enabled BOOLEAN DEFAULT 0,
-        last_synced TEXT            -- ISO timestamp do último fetch
-    )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS game_dlcs (
-        game_id TEXT NOT NULL,     -- FK para games.id (jogo base na biblioteca)
-        igdb_id INTEGER NOT NULL,  -- id do DLC/expansion no IGDB
-        name TEXT NOT NULL,
-        slug TEXT,
-        cover_image_id TEXT,
-        kind TEXT NOT NULL,        -- 'expansion' | 'standalone_expansion'
-        owned INTEGER NOT NULL DEFAULT 0, -- se o standalone já foi importado como jogo próprio
-        PRIMARY KEY (game_id, igdb_id)
-    )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS game_descriptions (
-        game_id TEXT PRIMARY KEY,
-        summary TEXT,
-        storyline TEXT,
-        short_description TEXT,
-        description TEXT,
-        summary_translated TEXT,
-        storyline_translated TEXT,
-        short_description_translated TEXT,
-        description_translated TEXT,
-        translated_lang TEXT,
-        FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
-    )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS scan_sources (
-        id TEXT PRIMARY KEY,
-        folder_path TEXT NOT NULL UNIQUE,
-        label TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        last_scanned_at TEXT
-    )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    // Metadados do dataset inteiro (controla o TTL global, não por jogo). Ex: etag, última atualização, contagem de jogos
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS anticheat_meta (
-        id INTEGER PRIMARY KEY CHECK (id = 1), -- singleton row
-        etag TEXT,
-        last_fetched TEXT NOT NULL,
-        game_count INTEGER NOT NULL DEFAULT 0
-    )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    // Snapshot local do games.json do AWACY
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS anticheat_games (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        slug TEXT NOT NULL,
-        name TEXT NOT NULL,
-        status TEXT NOT NULL,
-        anticheats TEXT NOT NULL,
-        steam_id TEXT,
-        epic_namespace TEXT,
-        epic_slug TEXT,
-        native INTEGER NOT NULL DEFAULT 0,
-        reference TEXT,
-        date_changed TEXT
-    )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS achievements (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            library TEXT NOT NULL,
-            game_id TEXT NOT NULL,
-            game_name TEXT NOT NULL,
-            achievement_key TEXT NOT NULL,
-            achievement_name TEXT NOT NULL,
-            achievement_description TEXT,
-            unlocked_at INTEGER NOT NULL,
-            icon_url TEXT,
-            UNIQUE(library, game_id, achievement_key)
-        )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_achievements_unlocked_at ON achievements(unlocked_at DESC)",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS achievement_sync_state (
-            library TEXT NOT NULL,
-            game_id TEXT NOT NULL,
-            last_synced_at INTEGER NOT NULL,
-            has_achievements INTEGER NOT NULL DEFAULT 1,
-            PRIMARY KEY (library, game_id)
-        )",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    // Índices
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_name ON games(name COLLATE NOCASE)",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_library ON games(library)",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_favorite ON games(favorite)",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_status ON games(status)", [])
-        .map_err(|e| e.to_string())?;
-
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_slug ON games(slug)", [])
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_anticheat_slug ON anticheat_games(slug)",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_anticheat_steam ON anticheat_games(steam_id)",
-        [],
-    )
-        .map_err(|e| e.to_string())?;
-
-    // Tabelas extras - PCGamingWiki, Nexus e relacionadas
-    initialize_pcgamingwiki_tables(conn).map_err(|e| e.to_string())?;
-    initialize_nexus_tables(conn).map_err(|e| e.to_string())?;
-    initialize_cloud_gaming_tables(conn).map_err(|e| e.to_string())?;
-
-    // Marca versão do schema
-    conn.pragma_update(None, "user_version", schema_version)
-        .map_err(|e| format!("Erro ao definir versão do schema: {}", e))?;
-
-    Ok(())
+/// Versão atual do schema de games.db (nº de migrations aplicadas).
+pub fn current_schema_version(conn: &Connection) -> Result<u32, AppError> {
+    let version: i32 = conn
+        .query_row("PRAGMA user_version", [], |row| row.get(0))
+        .unwrap_or(0);
+    Ok(version.max(0) as u32)
 }
 
-/// Inicializa o banco de dados e verifica a versão do schema.
-///
-/// Se o banco estiver desatualizado, retorna erro com instruções para o usuário.
-#[tauri::command]
-pub fn init_db(app: AppHandle, state: State<AppState>) -> Result<String, String> {
-    let conn = state
-        .games_db
-        .lock()
-        .map_err(|_| "Falha ao bloquear mutex do games_db")?;
-
-    let current_version = current_schema_version(&conn).unwrap_or(0) as i32;
-    let expected_version = expected_schema_version(&app) as i32;
-
-    if current_version == 0 {
-        let schema_version = expected_schema_version(&app);
-        return Ok(format!("Banco de dados novo criado (v{})", schema_version));
-    }
-
-    if current_version != expected_version {
-        let app_data_dir = app
-            .path()
-            .app_data_dir()
-            .map_err(|e| format!("Falha ao obter app_data_dir: {}", e))?;
-
-        return Err(format!(
-            "Banco desatualizado: Schema atual: v{}, esperado: v{}. Faça backup, exclua o diretório da aplicação em: {:?} e reinicie para recriar o banco.",
-            current_version, expected_version, app_data_dir
-        ));
-    }
-
-    Ok(format!("Banco de dados OK (v{})", current_version))
+/// Retorna uma mensagem de status com a versão atual do schema.
+pub fn db_status(conn: &Connection) -> String {
+    format!("Banco de dados OK (schema v{})", current_schema_version(conn).unwrap_or(0))
 }
+
+// === TAGS ===
+
+// TODO: Alterar serialização/deserialização de tags (keywords) para novo formato da IGDB e colocar essas funções em util/services
 
 /// Serializa tags para salvar no banco
 pub fn serialize_tags(tags: &[crate::models::GameTag]) -> Result<String, String> {

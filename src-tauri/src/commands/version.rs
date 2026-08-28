@@ -32,9 +32,14 @@ pub fn get_app_version(app: AppHandle) -> String {
 pub fn get_app_version_info(app: AppHandle) -> Result<AppSystemInfo, AppError> {
     let current_version = app.package_info().version.to_string();
     let previous_version = database::configs::get_stored_app_version(&app)?;
-    let schema_version = database::configs::get_stored_schema_version(&app)?;
 
     let state: State<AppState> = app.state();
+
+    let schema_version = {
+        let games_conn = state.games_db.lock().map_err(|_| AppError::MutexError)?;
+        database::current_schema_version(&games_conn)?
+    };
+
     let conn = state.cache_db.lock().map_err(|_| AppError::MutexError)?;
 
     // Busca configurações genéricas

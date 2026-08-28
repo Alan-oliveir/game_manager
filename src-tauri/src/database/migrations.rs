@@ -1,47 +1,68 @@
-//! Sistema de migração de schema do banco de dados.
+//! Sistema de migração de schema do banco `games.db`, baseado em `rusqlite_migration`.
 //!
 //! Regras:
-//! - Migrações só ocorrem entre MAJOR versions
-//! - Sempre assume backup automático antes de migrar
-//! - Falha de migração nunca destrói dados existentes
+//! - Cada arquivo em `migrations/` é uma etapa numerada e IMUTÁVEL — nunca edite
+//!   uma migration já lançada, sempre crie uma nova (m0002, m0003...).
+//! - `PRAGMA user_version` passa a significar "quantas migrations foram aplicadas",
+//!   não mais a MAJOR version do app (esquema antigo).
 //!
-//! **Nota:** Durante a fase de testes, as migrações estão desabilitadas.
-//! O banco deve ser deletado e recriado manualmente para aplicar mudanças de schema.
+//! ## Transição do esquema antigo
+//!
+//! Bancos criados antes desta mudança têm `user_version` == MAJOR version do app
+//! (ex: 1), não a contagem de migrations. Como `m0001_baseline.sql` usa
+//! `CREATE TABLE IF NOT EXISTS` para tudo, é seguro reaplicá-lo num banco já populado
+//! — nenhuma tabela existente é tocada, só o que faltar é criado.
+//!
+//! Fazemos essa transição (zerar `user_version` antes de rodar as migrations) uma
+//! única vez, controlada por uma flag em `app_config` (config.db). Depois da primeira vez,
+//! o boot normal do `rusqlite_migration` assume o controle e passa a aplicar só o que for novo.
 
-use crate::database::{current_schema_version, expected_schema_version};
+use crate::database::configs::{get_config, set_config};
 use crate::errors::AppError;
 use rusqlite::Connection;
-use tauri::AppHandle;
+use rusqlite_migration::{Migrations, M};
 
-/// Executa migrações de schema se necessário.
+const MIGRATION_BOOTSTRAP_FLAG: &str = "schema_migration_system";
+const MIGRATION_BOOTSTRAP_VALUE: &str = "v2";
+
+fn migrations() -> Migrations<'static> {
+    Migrations::new(vec![
+        M::up(include_str!("../../migrations/m0001_baseline.sql")),
+        // Próxima mudança de schema, exemplo:
+        // M::up(include_str!("../../migrations/m0002_xxx.sql")),
+    ])
+}
+
+/// Executa as migrations pendentes em `games.db`.
 ///
-/// Deve ser chamada logo após abrir o banco e ANTES de usar qualquer tabela.
-pub fn run_migrations(app: &AppHandle, conn: &Connection) -> Result<(), AppError> {
-    let current = current_schema_version(conn)?;
-    let expected = expected_schema_version(app);
+/// Deve ser chamada logo após abrir a conexão do `games.db` e ANTES de qualquer query nas tabelas
+/// do domínio. Recebe `config_conn` porque a flag de transição vive em `config.db`, não em `games.db`.
+pub fn run_migrations(
+    config_conn: &Connection,
+    games_conn: &mut Connection,
+) -> Result<(), AppError> {
+    let already_bootstrapped = get_config(config_conn, MIGRATION_BOOTSTRAP_FLAG)
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?
+        .as_deref()
+        == Some(MIGRATION_BOOTSTRAP_VALUE);
 
-    // Banco novo (schema já foi criado em initialize_databases)
-    if current == 0 {
-        return Ok(());
+    if !already_bootstrapped {
+        // Transição única — zera a versão do esquema antigo (major do app) antes do
+        // rusqlite_migration assumir a contagem real de migrations.
+        // Seguro mesmo em banco recém-criado (idempotente).
+        games_conn
+            .pragma_update(None, "user_version", 0u32)
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
     }
 
-    // Nada a fazer
-    if current == expected {
-        return Ok(());
+    migrations()
+        .to_latest(games_conn)
+        .map_err(|e| AppError::DatabaseError(format!("Erro ao aplicar migrations: {e}")))?;
+
+    if !already_bootstrapped {
+        set_config(config_conn, MIGRATION_BOOTSTRAP_FLAG, MIGRATION_BOOTSTRAP_VALUE)
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
     }
 
-    // Downgrade não suportado
-    if current > expected {
-        return Err(AppError::ValidationError(format!(
-            "Downgrade não suportado. Banco v{}, app espera v{}",
-            current, expected
-        )));
-    }
-
-    // Durante fase de testes, migrações estão desabilitadas
-    // O usuário deve deletar e recriar o banco manualmente
-    Err(AppError::ValidationError(format!(
-        "Migração necessária de v{} para v{}. Durante a fase de testes, delete o banco e deixe o app recriá-lo.",
-        current, expected
-    )))
+    Ok(())
 }

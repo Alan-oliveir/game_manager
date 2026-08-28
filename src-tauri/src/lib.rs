@@ -112,7 +112,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             // Comando de Inicialização do Banco de Dados
-            database::init_db,
+            commands::database::init_db,
             // Comandos de Backup e Restauração
             commands::backup::export_database,
             commands::backup::import_database,

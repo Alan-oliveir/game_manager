@@ -16,7 +16,7 @@ use tauri::{AppHandle, Emitter, Manager};
 /// Inicializa a aplicação após uma atualização
 ///
 /// Verifica se houve mudança de versão e executa:
-/// 1. Backup automático se versão major mudou
+/// 1. Backup automático
 /// 2. Migração de schema se necessário
 /// 3. Atualiza versão armazenada
 /// 4. Retomada automática de enrichment se houve interrupção ou dados muito antigos
@@ -103,26 +103,14 @@ fn handle_version_update(
         database::backup::auto::backup_if_major_update(app, previous_version, current_version)?
     {
         tracing::info!("Backup automático criado em: {:?}", backup_path);
-
-        // Emite evento para o frontend
         let backup_path_str = backup_path.to_string_lossy().to_string();
         let _ = app.emit("backup-created", backup_path_str);
     }
 
-    // 2. Migração de schema
-    let state: tauri::State<database::AppState> = app.state();
-    let lib_conn = state.games_db.lock().map_err(|_| AppError::MutexError)?;
-    database::migrations::run_migrations(app, &lib_conn)?;
-    drop(lib_conn);
-
-    // 3. Atualiza versão armazenada
+    // 2. Atualiza versão armazenada
     database::configs::store_app_version(app, current_version)?;
 
-    // 4. Armazena versão do schema
-    let schema_version = app.package_info().version.major as u32;
-    database::configs::store_schema_version(app, schema_version)?;
-
-    // 5. Atualiza timestamp
+    // 3. Atualiza timestamp
     update_last_updated_timestamp(app)?;
 
     tracing::info!("App inicializado com sucesso na versão {}", current_version);

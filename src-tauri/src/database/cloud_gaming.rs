@@ -9,30 +9,6 @@ use std::collections::HashSet;
 
 // === GEFORCE NOW ===
 
-pub fn initialize_gfn_tables(conn: &Connection) -> Result<(), String> {
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS gfn_games (
-            steam_app_id TEXT PRIMARY KEY,
-            title        TEXT NOT NULL,
-            store        TEXT NOT NULL,
-            status       TEXT
-        )",
-        [],
-    )
-        .map_err(|e| format!("Erro ao criar tabela gfn_games: {e}"))?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS gfn_games_meta (
-            id         INTEGER PRIMARY KEY CHECK (id = 1),
-            fetched_at INTEGER NOT NULL
-        )",
-        [],
-    )
-        .map_err(|e| format!("Erro ao criar tabela gfn_games_meta: {e}"))?;
-
-    Ok(())
-}
-
 pub fn get_gfn_last_fetched(conn: &Connection) -> anyhow::Result<Option<DateTime<Utc>>> {
     let ts: Option<i64> = conn
         .query_row(
@@ -90,25 +66,6 @@ pub fn find_gfn_availability(
 
 // === XBOX CLOUD GAMING ===
 
-pub fn initialize_xbox_cloud_tables(conn: &Connection) -> Result<(), String> {
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS xbox_cloud_ids (store_id TEXT PRIMARY KEY)",
-        [],
-    )
-        .map_err(|e| format!("Erro ao criar tabela xbox_cloud_ids: {e}"))?;
-
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS xbox_cloud_meta (
-            id         INTEGER PRIMARY KEY CHECK (id = 1),
-            fetched_at INTEGER NOT NULL
-        )",
-        [],
-    )
-        .map_err(|e| format!("Erro ao criar tabela xbox_cloud_meta: {e}"))?;
-
-    Ok(())
-}
-
 pub fn save_xbox_cloud_ids_cache(conn: &Connection, ids: &HashSet<String>) -> Result<(), String> {
     let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
 
@@ -161,12 +118,4 @@ pub fn is_available_on_xbox_cloud(conn: &Connection, store_id: &str) -> Result<b
         .optional()
         .map(|r| r.is_some())
         .map_err(|e| e.to_string())
-}
-
-/// Chamada única a partir de `database::core` — cria as tabelas de todos os
-/// catálogos de cloud gaming de uma vez.
-pub fn initialize_cloud_gaming_tables(conn: &Connection) -> Result<(), String> {
-    initialize_gfn_tables(conn)?;
-    initialize_xbox_cloud_tables(conn)?;
-    Ok(())
 }

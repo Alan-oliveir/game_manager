@@ -34,3 +34,4 @@ pub mod wishlist;
 pub mod debug;
 pub mod cloud_gaming;
 pub mod backup;
+pub mod database;
