@@ -236,6 +236,36 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
           </div>
         </SettingsRow>
 
+        {/* Configurações de API para imagens - SteamGridDB */}
+        <SettingsRow
+          icon={Search}
+          title={t('itad_title')}
+          description={t('itad_description')}
+        >
+          <div className="grid gap-2">
+            <Input
+              type="password"
+              placeholder={t('itad_api_key_placeholder')}
+              value={keys.itadApiKey}
+              onChange={e => setKeys({ ...keys, itadApiKey: e.target.value })}
+              className="bg-background/50"
+            />
+
+            <div className="text-muted-foreground flex items-center gap-1 text-xs">
+              <span>{t('no_key_question')}</span>
+
+              <a
+                href="https://isthereanydeal.com/apps/"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-0.5 text-blue-400 hover:underline"
+              >
+                {t('get_api_key_button_itad')} <ExternalLink size={10} />
+              </a>
+            </div>
+          </div>
+        </SettingsRow>
+
         {/* Configurações de API Xbox Live para Conquistas */}
         <SettingsRow
           icon={Globe}

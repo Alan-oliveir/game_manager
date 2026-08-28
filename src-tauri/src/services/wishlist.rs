@@ -53,16 +53,17 @@ fn fetch_wishlist_games(
 /// Resolve o ID ITAD de cada jogo (usa o cache local se existir, senão
 /// busca na API e persiste pra não repetir a busca da próxima vez).
 async fn resolve_itad_ids(
+    app: &AppHandle,
     state: &State<'_, AppState>,
     games: Vec<(String, String, Option<String>)>,
 ) -> Result<(Vec<String>, HashMap<String, (String, String)>), AppError> {
     let mut itad_ids = Vec::new();
-    let mut game_map = HashMap::new(); // itad_id -> (local_id, name)
+    let mut game_map = HashMap::new();
 
     for (local_id, name, current_itad_id) in games {
         let final_itad_id = match current_itad_id {
             Some(id) if !id.is_empty() => id,
-            _ => match itad::find_game_id(&name).await {
+            _ => match itad::find_game_id(app, &name).await {
                 Ok(found_id) => {
                     let conn = state.games_db.lock()?;
                     let _ = conn.execute(
@@ -152,13 +153,13 @@ pub async fn refresh_prices(app: &AppHandle) -> Result<String, AppError> {
         return Ok("Lista de desejos vazia.".to_string());
     }
 
-    let (itad_ids, game_map) = resolve_itad_ids(&state, games_to_check).await?;
+    let (itad_ids, game_map) = resolve_itad_ids(app, &state, games_to_check).await?;
     if itad_ids.is_empty() {
         return Ok("Nenhum jogo correspondente encontrado na ITAD.".to_string());
     }
 
     let region = get_or_detect_region(app)?;
-    let overviews = itad::get_prices(itad_ids, &region)
+    let overviews = itad::get_prices(app, itad_ids, &region)
         .await
         .map_err(AppError::NetworkError)?;
 

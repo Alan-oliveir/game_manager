@@ -254,9 +254,8 @@ async fn refresh_wishlist_prices_background(
             Some(id) if !id.is_empty() => id,
             _ => {
                 // Se não tem ITAD ID, tenta buscar
-                match itad::find_game_id(&name).await {
+                match itad::find_game_id(app, &name).await {
                     Ok(found_id) => {
-                        // Salva no banco para cachear
                         let conn = state.games_db.lock().unwrap();
                         let _ = conn.execute(
                             "UPDATE wishlist SET itad_id = ?1 WHERE id = ?2",
@@ -265,7 +264,7 @@ async fn refresh_wishlist_prices_background(
                         found_id
                     }
                     Err(_) => {
-                        continue; // Pula se não encontrou
+                        continue;
                     }
                 }
             }
@@ -290,8 +289,8 @@ async fn refresh_wishlist_prices_background(
     }
 
     // C. Busca preços em lote da ITAD
-    let region = get_or_detect_region(&app)?;
-    let overviews = match itad::get_prices(itad_ids_to_fetch, &region).await {
+    let region = get_or_detect_region(app)?;
+    let overviews = match itad::get_prices(app, itad_ids_to_fetch, &region).await {
         Ok(data) => data,
         Err(e) => {
             error!("Erro ao buscar preços da ITAD: {}", e);

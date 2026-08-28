@@ -27,6 +27,7 @@ pub struct KeysBatch {
     pub igdb_client_secret: String,
     pub xbox_live_client_id: String,
     pub xbox_live_client_secret: String,
+    pub itad_api_key: String,
 }
 
 /// Recupera todos os secrets configurados em lote.
@@ -46,6 +47,7 @@ pub fn get_secrets(app: AppHandle) -> Result<KeysBatch, AppError> {
         igdb_client_secret: database::get_secret(&app, "igdb_client_secret")?,
         xbox_live_client_id: database::get_secret(&app, "xbox_live_client_id")?,
         xbox_live_client_secret: database::get_secret(&app, "xbox_live_client_secret")?,
+        itad_api_key: database::get_secret(&app, "itad_api_key")?,
     })
 }
 
@@ -66,6 +68,7 @@ pub fn set_secrets(
     xbox_live_client_id: Option<String>,
     xbox_live_client_secret: Option<String>,
     nexus_api_key: Option<String>,
+    itad_api_key: Option<String>,
 ) -> Result<(), AppError> {
     // Helper para salvar ou deletar baseado no valor
     let save_or_delete = |key: &str, value: Option<String>| -> Result<(), AppError> {
@@ -89,6 +92,7 @@ pub fn set_secrets(
     save_or_delete("igdb_client_secret", igdb_client_secret)?;
     save_or_delete("xbox_live_client_id", xbox_live_client_id)?;
     save_or_delete("xbox_live_client_secret", xbox_live_client_secret)?;
+    save_or_delete("itad_api_key", itad_api_key)?;
 
     let nexus_key_provided = nexus_api_key
         .as_ref()

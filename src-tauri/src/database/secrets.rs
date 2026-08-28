@@ -96,5 +96,6 @@ pub fn list_supported_keys() -> Vec<&'static str> {
         "igdb_client_secret",
         "xbox_live_client_id",
         "xbox_live_client_secret",
+        "itad_api_key",
     ]
 }

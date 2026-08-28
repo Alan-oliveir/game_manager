@@ -4,9 +4,10 @@
 //! A ITAD é uma plataforma que agrega ofertas de jogos de várias lojas digitais.
 
 use crate::constants::ITAD_API_URL;
-use crate::security;
 use crate::utils::http_client::HTTP_CLIENT;
+use crate::database;
 use serde::{Deserialize, Serialize};
+use tauri::AppHandle;
 
 // === ESTRUTURAS PÚBLICAS ===
 
@@ -74,10 +75,11 @@ struct RawPriceValue {
 // === IMPLEMENTAÇÃO ===
 
 /// Busca o ID do jogo na ITAD pelo título
-pub async fn find_game_id(title: &str) -> Result<String, String> {
-    let key = security::get_itad_api_key();
+pub async fn find_game_id(app: &AppHandle, title: &str) -> Result<String, String> {
+    let key = database::get_secret(app, "itad_api_key").map_err(|e| e.to_string())?;
+
     if key.is_empty() {
-        return Err("API Key da ITAD não configurada".into());
+        return Err("Configure sua chave da API do ITAD nas configurações".into());
     }
 
     let url = format!(
@@ -121,13 +123,16 @@ pub async fn find_game_id(title: &str) -> Result<String, String> {
 
 /// Busca informações de preço para uma lista de IDs da ITAD
 pub async fn get_prices(
+    app: &AppHandle,
     itad_ids: Vec<String>,
     country: &str,
 ) -> Result<Vec<ItadGameOverview>, String> {
-    let key = security::get_itad_api_key();
+    let key = database::get_secret(app, "itad_api_key").map_err(|e| e.to_string())?;
+
     if key.is_empty() {
-        return Err("API Key ausente".into());
+        return Err("Configure sua chave da API do ITAD nas configurações".into());
     }
+
     if itad_ids.is_empty() {
         return Ok(vec![]);
     }

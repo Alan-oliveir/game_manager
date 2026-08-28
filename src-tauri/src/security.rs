@@ -60,8 +60,3 @@ pub fn decrypt(app: &AppHandle, encrypted: &str) -> Result<String, AppError> {
         crypto::decrypt(master_key, &encrypted_bytes).map_err(AppError::DatabaseError)?;
     String::from_utf8(decrypted_bytes).map_err(|e| AppError::DatabaseError(e.to_string()))
 }
-
-/// Retorna a API Key da IsThereAnyDeal embutida no binário.
-pub fn get_itad_api_key() -> &'static str {
-    secrets::itad_api_key()
-}

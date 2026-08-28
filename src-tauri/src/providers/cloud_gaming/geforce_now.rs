@@ -70,6 +70,8 @@ async fn refresh_dataset(conn: &Mutex<Connection>, client: &reqwest::Client) -> 
 
     let raw_games: Vec<GfnGameRaw> = resp.json().await?;
 
+    tracing::info!("GFN raw_games recebidos: {}", raw_games.len());
+
     let normalized: Vec<GfnAvailability> = raw_games
         .iter()
         .filter_map(|g| {

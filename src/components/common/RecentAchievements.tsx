@@ -5,6 +5,7 @@ import { ChevronRight, Medal, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '@/ui/button';
 import { Skeleton } from '@/ui/skeleton';
 
 type AchievementPlatform = 'steam' | 'epic' | 'gog' | 'xbox';
@@ -57,21 +58,29 @@ export function RecentAchievements({
   }
 
   const header = (
-    <div className="mb-4 flex items-center justify-between">
-      <h3 className="flex items-center gap-2 text-lg font-bold">
-        <Trophy className="text-yellow-500" size={20} />
-        {t('achievements_recent')}
-      </h3>
-      {onViewAll && achievements.length > 0 && (
-        <button
-          type="button"
-          onClick={onViewAll}
-          className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs font-medium transition-colors"
-        >
-          {t('achievements_view_all')}
-          <ChevronRight size={14} />
-        </button>
-      )}
+    <div className="mb-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="rounded-lg bg-purple-500/10 p-2 text-purple-400">
+            <Trophy size={24} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold">{t('achievements_recent')}</h2>
+          </div>
+        </div>
+
+        {onViewAll && achievements.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={onViewAll}
+          >
+            <ChevronRight size={14} />
+            {t('achievements_view_all')}
+          </Button>
+        )}
+      </div>
     </div>
   );
 

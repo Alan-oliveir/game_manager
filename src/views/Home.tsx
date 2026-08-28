@@ -214,7 +214,7 @@ export default function Home(props: Readonly<HomeProps>) {
       <Separator className={'mb-3'} />
 
       <div className="relative z-20 mx-auto max-w-7xl space-y-10 p-8">
-        {/* Stats Cards e Achievements */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* StatCards */}
           <StatCard
@@ -246,8 +246,11 @@ export default function Home(props: Readonly<HomeProps>) {
             bg="bg-yellow-500/10"
           />
         </div>
+
         {/* Achievements Component */}
-        <RecentAchievements />
+        <RecentAchievements
+          onViewAll={() => props.onChangeTab('achievements')}
+        />
 
         {/* Seção: Prime Gaming — renderiza somente se habilitado e online */}
         <OfflineAwareSection enabled={enabledServices.includes('prime_gaming')}>

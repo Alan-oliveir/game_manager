@@ -23,10 +23,3 @@ pub fn master_key(app: &AppHandle) -> Result<&'static [u8; 32], String> {
         Ok(key)
     })
 }
-
-const ITAD_API_KEY_RAW: &str = env!("ITAD_API_KEY", "ITAD_API_KEY env var not set");
-
-// Retorna a API Key da ITAD embutida no binário.
-pub fn itad_api_key() -> &'static str {
-    ITAD_API_KEY_RAW
-}

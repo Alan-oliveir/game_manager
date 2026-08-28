@@ -32,6 +32,7 @@ export const settingsService = {
     igdbClientSecret: string | null;
     xboxLiveClientId: string | null;
     xboxLiveClientSecret: string | null;
+    itadApiKey: string | null;
   }): Promise<void> => {
     await invoke('set_secrets', keys);
   },

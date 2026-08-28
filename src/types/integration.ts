@@ -28,6 +28,7 @@ export interface KeysBatch {
   nexusApiKey?: string;
   xboxLiveClientId?: string;
   xboxLiveClientSecret?: string;
+  itadApiKey: string;
 }
 
 export interface ImportSummary {

@@ -27,6 +27,7 @@ export function useSettings(onLibraryUpdate: () => void) {
     xboxLiveClientId: '',
     xboxLiveClientSecret: '',
     steamgriddbApiKey: '',
+    itadApiKey: '',
   });
 
   const [loading, setLoading] = useState({
@@ -82,6 +83,7 @@ export function useSettings(onLibraryUpdate: () => void) {
           xboxLiveClientId: data.xboxLiveClientId || '',
           xboxLiveClientSecret: data.xboxLiveClientSecret || '',
           steamgriddbApiKey: data.steamgriddbApiKey || '',
+          itadApiKey: data.itadApiKey || '',
         });
       })
       .catch(e => console.error('Erro ao carregar settings', e))
@@ -108,6 +110,7 @@ export function useSettings(onLibraryUpdate: () => void) {
         xboxLiveClientId: keys.xboxLiveClientId.trim() || null,
         xboxLiveClientSecret: keys.xboxLiveClientSecret.trim() || null,
         steamgriddbApiKey: keys.steamgriddbApiKey.trim() || null,
+        itadApiKey: keys.itadApiKey.trim() || null,
       });
       setStatus({
         type: 'success',
