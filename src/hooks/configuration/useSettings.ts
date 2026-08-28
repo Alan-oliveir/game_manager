@@ -24,8 +24,6 @@ export function useSettings(onLibraryUpdate: () => void) {
     nexusApiKey: '',
     igdbClientId: '',
     igdbClientSecret: '',
-    xboxLiveClientId: '',
-    xboxLiveClientSecret: '',
     steamgriddbApiKey: '',
     itadApiKey: '',
   });
@@ -80,8 +78,6 @@ export function useSettings(onLibraryUpdate: () => void) {
           nexusApiKey: data.nexusApiKey || '',
           igdbClientId: data.igdbClientId || '',
           igdbClientSecret: data.igdbClientSecret || '',
-          xboxLiveClientId: data.xboxLiveClientId || '',
-          xboxLiveClientSecret: data.xboxLiveClientSecret || '',
           steamgriddbApiKey: data.steamgriddbApiKey || '',
           itadApiKey: data.itadApiKey || '',
         });
@@ -107,9 +103,9 @@ export function useSettings(onLibraryUpdate: () => void) {
         nexusApiKey: keys.nexusApiKey.trim() || null,
         igdbClientId: keys.igdbClientId.trim() || null,
         igdbClientSecret: keys.igdbClientSecret.trim() || null,
-        xboxLiveClientId: keys.xboxLiveClientId.trim() || null,
-        xboxLiveClientSecret: keys.xboxLiveClientSecret.trim() || null,
         steamgriddbApiKey: keys.steamgriddbApiKey.trim() || null,
+        xboxLiveClientId: currentSecrets.xboxLiveClientId || null,
+        xboxLiveClientSecret: currentSecrets.xboxLiveClientSecret || null,
         itadApiKey: keys.itadApiKey.trim() || null,
       });
       setStatus({

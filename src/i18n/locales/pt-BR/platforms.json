@@ -252,6 +252,8 @@
   "steam_save_and_import": "Salvar e Importar",
   "steam_id_aria_label": "ID da Steam (SteamID64)",
   "steam_api_key_aria_label": "Chave da API Steam",
+  "steam_id_label": "Seu SteamID64 (17 dígitos)",
+  "steam_api_key_label": "Chave da Web API da Steam",
 
   "ubisoft_title": "Ubisoft",
   "ubisoft_description": "Importe jogos instalados e a biblioteca da Ubisoft.",
@@ -291,6 +293,14 @@
   "xbox_import_note": "Apenas jogos instalados são detectados. Xbox App e Microsoft Store não oferecem endpoint público para listar a biblioteca completa.",
   "xbox_warning_gamepass_title": "Atenção: Game Pass",
   "xbox_gamepass_note": "Jogos instalados via Game Pass permanecem na biblioteca mesmo que saiam do catálogo do Game Pass ou a assinatura seja cancelada. Só a remoção manual do jogo instalado tira ele da biblioteca.",
+  "xbox_live_title": "Credenciais do Xbox Live",
+  "xbox_live_description": "Usadas para buscar suas conquistas no Xbox Live.",
+  "xbox_live_client_id_placeholder": "Client ID",
+  "xbox_live_api_key_placeholder": "Client Secret",
+  "xbox_live_save_credentials": "Salvar Credenciais",
+  "xbox_live_credentials_saved": "Credenciais do Xbox Live salvas com sucesso!",
+  "xbox_live_client_id_label": "Client ID do app Azure AD",
+  "xbox_live_client_secret_label": "Client Secret do app Azure AD",
 
   "wine_title": "Wine (Linux)",
   "wine_description": "Configure o Wine prefix para executar jogos Windows no Linux.",

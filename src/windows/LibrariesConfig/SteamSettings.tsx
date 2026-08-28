@@ -54,7 +54,7 @@ export function SteamSettings({
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
               <Input
-                type="text"
+                type="password"
                 value={steamConfig.steamId}
                 onChange={e =>
                   setSteamConfig(prev => ({ ...prev, steamId: e.target.value }))
@@ -64,6 +64,9 @@ export function SteamSettings({
                 disabled={isLoadingSecrets}
                 className="bg-background/50"
               />
+              <span className="text-muted-foreground text-xs">
+                {t('steam_id_label')}
+              </span>
               <Input
                 type="password"
                 value={steamConfig.steamApiKey}
@@ -78,6 +81,9 @@ export function SteamSettings({
                 disabled={isLoadingSecrets}
                 className="bg-background/50"
               />
+              <span className="text-muted-foreground text-xs">
+                {t('steam_api_key_label')}
+              </span>
             </div>
           </div>
         </SettingsRow>

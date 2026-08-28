@@ -6,15 +6,17 @@ import {
   FileJson,
   Gamepad2,
   GamepadDirectional,
-  Globe,
   HardDrive,
   History,
   ImageIcon,
+  Images,
+  Languages,
   Loader2,
   RefreshCcw,
   Save,
   Search,
   ShieldAlert,
+  ShoppingBag,
   Sparkles,
   Trash2,
   Upload,
@@ -111,9 +113,9 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
       <section className="space-y-4">
         <h3 className="text-lg font-semibold">{t('metadata_section')}</h3>
 
-        {/* Configurações de API para tradução de descrições */}
+        {/* Configurações de API para tradução de descrições - GEMINI */}
         <SettingsRow
-          icon={Sparkles}
+          icon={Languages}
           title={t('gemini_title')}
           description={t('gemini_description')}
         >
@@ -139,9 +141,9 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
           </div>
         </SettingsRow>
 
-        {/* Configurações de API para descoberta e busca semântica */}
+        {/* Configurações de API para descoberta e busca semântica - GAMEBRAIN */}
         <SettingsRow
-          icon={Gamepad2}
+          icon={BrainCircuit}
           title="GameBrain"
           description={t('gamebrain_description')}
         >
@@ -161,7 +163,6 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
 
             <div className="text-muted-foreground flex items-center gap-1 text-xs">
               <span>{t('no_key_question')}</span>
-
               <a
                 href="https://gamebrain.co/api"
                 target="_blank"
@@ -176,7 +177,7 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
 
         {/* Configurações de API para imagens - SteamGridDB */}
         <SettingsRow
-          icon={Search}
+          icon={Images}
           title={t('steamgriddb_title')}
           description={t('steamgriddb_description')}
         >
@@ -206,39 +207,9 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
           </div>
         </SettingsRow>
 
-        {/* Configurações de API para metadados - IGBD */}
+        {/* Configurações de API para preços - ITAD */}
         <SettingsRow
-          icon={Globe}
-          title={t('igdb_title')}
-          description={t('igdb_description')}
-        >
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2">
-              <Input
-                type="text"
-                value={keys.igdbClientId}
-                onChange={e =>
-                  setKeys({ ...keys, igdbClientId: e.target.value })
-                }
-                placeholder={t('igdb_client_id_placeholder')}
-                className="bg-background/50"
-              />
-              <Input
-                type="password"
-                placeholder={t('igdb_api_key_placeholder')}
-                value={keys.igdbClientSecret}
-                onChange={e =>
-                  setKeys({ ...keys, igdbClientSecret: e.target.value })
-                }
-                className="bg-background/50"
-              />
-            </div>
-          </div>
-        </SettingsRow>
-
-        {/* Configurações de API para imagens - SteamGridDB */}
-        <SettingsRow
-          icon={Search}
+          icon={ShoppingBag}
           title={t('itad_title')}
           description={t('itad_description')}
         >
@@ -266,37 +237,7 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
           </div>
         </SettingsRow>
 
-        {/* Configurações de API Xbox Live para Conquistas */}
-        <SettingsRow
-          icon={Globe}
-          title={t('xbox_live_title')}
-          description={t('xbox_live_description')}
-        >
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2">
-              <Input
-                type="text"
-                value={keys.xboxLiveClientId}
-                onChange={e =>
-                  setKeys({ ...keys, xboxLiveClientId: e.target.value })
-                }
-                placeholder={t('xbox_live_client_id_placeholder')}
-                className="bg-background/50"
-              />
-              <Input
-                type="password"
-                placeholder={t('xbox_live_api_key_placeholder')}
-                value={keys.xboxLiveClientSecret}
-                onChange={e =>
-                  setKeys({ ...keys, xboxLiveClientSecret: e.target.value })
-                }
-                className="bg-background/50"
-              />
-            </div>
-          </div>
-        </SettingsRow>
-
-        {/* Configurações de API para mods na Nexus */}
+        {/* Configurações de API para mods - Nexus Mods */}
         <SettingsRow
           icon={GamepadDirectional}
           title={t('nexus_title')}
@@ -322,6 +263,42 @@ export default function Settings({ onLibraryUpdate }: Readonly<SettingsProps>) {
               >
                 {t('get_api_key_button_nexus')} <ExternalLink size={10} />
               </a>
+            </div>
+          </div>
+        </SettingsRow>
+
+        {/* Configurações de API para metadados - IGBD */}
+        <SettingsRow
+          icon={Gamepad2}
+          title={t('igdb_title')}
+          description={t('igdb_description')}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              <Input
+                type="password"
+                value={keys.igdbClientId}
+                onChange={e =>
+                  setKeys({ ...keys, igdbClientId: e.target.value })
+                }
+                placeholder={t('igdb_client_id_placeholder')}
+                className="bg-background/50"
+              />
+              <span className="text-muted-foreground text-xs">
+                {t('igdb_client_id_label')}
+              </span>
+              <Input
+                type="password"
+                placeholder={t('igdb_api_key_placeholder')}
+                value={keys.igdbClientSecret}
+                onChange={e =>
+                  setKeys({ ...keys, igdbClientSecret: e.target.value })
+                }
+                className="bg-background/50"
+              />
+              <span className="text-muted-foreground text-xs">
+                {t('igdb_client_secret_label')}
+              </span>
             </div>
           </div>
         </SettingsRow>

@@ -65,10 +65,16 @@ export function useSteamConfig(onLibraryUpdate?: () => void) {
       await settingsService.setSecrets({
         steamId: steamConfig.steamId.trim() || null,
         steamApiKey: steamConfig.steamApiKey.trim() || null,
+        steamgriddbApiKey: currentSecrets.steamgriddbApiKey || null,
         rawgApiKey: currentSecrets.rawgApiKey || null,
         geminiApiKey: currentSecrets.geminiApiKey || null,
         gamebrainApiKey: currentSecrets.gamebrainApiKey || null,
         nexusApiKey: currentSecrets.nexusApiKey || null,
+        igdbClientId: currentSecrets.igdbClientId || null,
+        igdbClientSecret: currentSecrets.igdbClientSecret || null,
+        xboxLiveClientId: currentSecrets.xboxLiveClientId || null,
+        xboxLiveClientSecret: currentSecrets.xboxLiveClientSecret || null,
+        itadApiKey: currentSecrets.itadApiKey || null,
       });
 
       const successMsg = t('steam_credentials_saved');

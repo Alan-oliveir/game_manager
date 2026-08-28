@@ -252,6 +252,8 @@
   "steam_save_and_import": "Save and Import",
   "steam_id_aria_label": "Steam ID (SteamID64)",
   "steam_api_key_aria_label": "Steam API Key",
+  "steam_id_label": "Your 17-digit SteamID64",
+  "steam_api_key_label": "Steam Web API Key",
 
   "ubisoft_title": "Ubisoft Connect",
   "ubisoft_description": "Import installed games and your Ubisoft Connect library.",
@@ -291,6 +293,14 @@
   "xbox_import_note": "Only installed games are detected. Xbox App and Microsoft Store do not offer a public endpoint to list the complete library.",
   "xbox_warning_gamepass_title": "Attention: Game Pass",
   "xbox_gamepass_note": "Games installed via Game Pass stay in your library even if they leave the Game Pass catalog or the subscription is cancelled. Only manually uninstalling the game removes it.",
+  "xbox_live_title": "Xbox Live Credentials",
+  "xbox_live_description": "Used to fetch your achievements from Xbox Live.",
+  "xbox_live_client_id_placeholder": "Client ID",
+  "xbox_live_api_key_placeholder": "Client Secret",
+  "xbox_live_save_credentials": "Save Credentials",
+  "xbox_live_credentials_saved": "Xbox Live credentials saved successfully!",
+  "xbox_live_client_id_label": "Azure AD app Client ID",
+  "xbox_live_client_secret_label": "Azure AD app Client Secret",
 
   "wine_title": "Wine (Linux)",
   "wine_description": "Configure the Wine prefix to run Windows games on Linux.",
