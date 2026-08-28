@@ -16,6 +16,7 @@ pub mod cache;
 pub mod game_mods;
 pub mod cloud_gaming;
 pub mod technical;
+pub mod libraries;
 
 // Reexporta o módulo core para fácil acesso
 pub use core::*;

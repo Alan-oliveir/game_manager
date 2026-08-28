@@ -1,6 +1,6 @@
-use crate::commands::libraries::core::spawn_import;
 use crate::errors::AppError;
 use crate::providers::achievements::xbox::XboxLiveSource;
+use crate::services::libraries::spawn_import;
 use tauri::AppHandle;
 
 #[tauri::command]

@@ -1,7 +1,7 @@
-use crate::commands::libraries::core::{format_login_success, spawn_import};
 use crate::errors::AppError;
 use crate::providers::libraries::gog::GogSource;
 use crate::providers::libraries::providers::OAuthGameSource;
+use crate::services::libraries::{format_login_success, spawn_import};
 use tauri::AppHandle;
 use tracing::warn;
 

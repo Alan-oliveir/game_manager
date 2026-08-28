@@ -14,7 +14,6 @@
 
 pub mod amazon;
 pub mod battle_net;
-pub mod core;
 pub mod ea;
 pub mod epic;
 pub mod gog;

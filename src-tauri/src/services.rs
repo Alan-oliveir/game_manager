@@ -22,3 +22,4 @@ pub mod translation;
 pub mod wishlist;
 pub mod locale;
 pub mod cloud_gaming;
+pub mod libraries;

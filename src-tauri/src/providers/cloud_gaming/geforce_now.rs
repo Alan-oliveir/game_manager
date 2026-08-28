@@ -9,7 +9,7 @@ use std::sync::Mutex;
 pub struct GfnGameRaw {
     pub title: String,
     pub store: String,
-    #[serde(default)]
+    #[serde(default, rename = "steamUrl")]
     pub steam_url: Option<String>,
     #[serde(default)]
     pub status: Option<String>,
@@ -69,8 +69,6 @@ async fn refresh_dataset(conn: &Mutex<Connection>, client: &reqwest::Client) -> 
     }
 
     let raw_games: Vec<GfnGameRaw> = resp.json().await?;
-
-    tracing::info!("GFN raw_games recebidos: {}", raw_games.len());
 
     let normalized: Vec<GfnAvailability> = raw_games
         .iter()

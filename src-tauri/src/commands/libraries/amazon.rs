@@ -1,6 +1,6 @@
-use crate::commands::libraries::core::{format_login_success, spawn_import};
 use crate::errors::AppError;
 use crate::providers::libraries::amazon::AmazonSource;
+use crate::services::libraries::{format_login_success, spawn_import};
 use tauri::AppHandle;
 
 #[tauri::command]

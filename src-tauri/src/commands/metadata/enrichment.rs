@@ -17,9 +17,9 @@ use super::shared::{
     resolve_steam_app_id, save_game_details, CoverCandidate, EnrichCompletePayload, EnrichProgress,
     ProcessedGameDetails,
 };
-use crate::commands::libraries::core::NewlyImportedGame;
 use crate::database::cache;
 use crate::database::game_mods::get_cached_nexus_games;
+use crate::database::libraries::NewlyImportedGame;
 use crate::database::AppState;
 use crate::providers::media::steamgriddb::{self, SteamGridDbClient};
 use crate::providers::metadata::igdb;
@@ -28,6 +28,7 @@ use crate::providers::mods::nexus::{find_best_nexus_match, NexusGame};
 use std::collections::{HashMap, HashSet};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tracing::{info, warn};
+
 // === ESTRUTURAS DE DADOS ===
 
 #[derive(serde::Serialize)]
@@ -55,7 +56,8 @@ pub async fn enrich_newly_imported(app: AppHandle, games: Vec<NewlyImportedGame>
 
     // Marca início — se o app fechar/crashar antes do fim, o marcador persiste e o próximo boot detecta a interrupção.
     if let Ok(cache_conn) = state.cache_db.lock() {
-        let _ = cache::save_cached_api_data(&cache_conn, "app_state", "enrichment_in_progress", "1");
+        let _ =
+            cache::save_cached_api_data(&cache_conn, "app_state", "enrichment_in_progress", "1");
     }
 
     let total = games.len();

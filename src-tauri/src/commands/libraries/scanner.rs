@@ -2,19 +2,34 @@
 //!
 //! Retorna uma lista de descobertas encontradas.
 
-use crate::commands::libraries::core::{
-    format_import_summary, persist_source_games, trigger_enrichment_if_needed, ScanGameInput,
-    ScanResult,
-};
+use crate::database::libraries::persist_source_games;
+use crate::database::AppState;
 use crate::errors::AppError;
-use crate::providers::libraries::scanner::scan_folder;
+use crate::providers::libraries::scanner::{scan_folder, GameDiscovery};
+use crate::services::libraries::{format_import_summary, trigger_enrichment_if_needed};
 use rusqlite::{params, OptionalExtension};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::path::Path;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, State};
 use tracing::info;
 
 // === STRUCTS ===
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ScanResult {
+    pub success: bool,
+    pub message: String,
+    pub discoveries: Vec<GameDiscovery>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanGameInput {
+    pub name: String,
+    pub executable_path: String,
+    pub base_path: String,
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -27,10 +42,6 @@ pub struct ScanSourceInfo {
     pub game_count: i64, // quantos jogos na biblioteca têm esse label
 }
 
-use crate::database::AppState;
-use std::collections::HashSet;
-use tauri::State;
-
 #[tauri::command]
 pub async fn scan_games_folder(
     state: State<'_, AppState>,
@@ -38,7 +49,6 @@ pub async fn scan_games_folder(
 ) -> Result<ScanResult, String> {
     let path = Path::new(&folder_path);
 
-    // Validações básicas
     if !path.exists() {
         return Ok(ScanResult {
             success: false,
@@ -55,10 +65,8 @@ pub async fn scan_games_folder(
         });
     }
 
-    // Executar scan
     let mut discoveries = scan_folder(path).map_err(|e| e.to_string())?;
 
-    // Marca quem já está na biblioteca (compara pela pasta base do jogo, não pelo executável escolhido)
     if let Ok(conn) = state.games_db.lock() {
         if let Ok(mut stmt) = conn.prepare(
             "SELECT install_path FROM games WHERE library = 'Outra' AND install_path IS NOT NULL",
@@ -113,7 +121,10 @@ fn register_scan_source(state: &State<'_, AppState>, folder_path: &str) -> Resul
     Ok(())
 }
 
-fn get_scan_source_label(state: &State<'_, AppState>, folder_path: &str) -> Result<String, AppError> {
+fn get_scan_source_label(
+    state: &State<'_, AppState>,
+    folder_path: &str,
+) -> Result<String, AppError> {
     let conn = state.games_db.lock().map_err(|_| AppError::MutexError)?;
     let label: Option<String> = conn
         .query_row(
@@ -158,7 +169,10 @@ pub async fn add_game_from_scan(
         source_label: Some(label),
     };
 
-    let (inserted, _, newly_imported) = persist_source_games(&state, vec![game]).await?;
+    let (inserted, _, newly_imported) = {
+        let mut conn = state.games_db.lock().map_err(|_| AppError::MutexError)?;
+        persist_source_games(&mut conn, vec![game]).map_err(AppError::DatabaseError)?
+    };
 
     if inserted == 0 {
         return Err(AppError::ValidationError(
@@ -197,7 +211,10 @@ pub async fn add_games_from_scan(
         })
         .collect();
 
-    let (inserted, updated, newly_imported) = persist_source_games(&state, source_games).await?;
+    let (inserted, updated, newly_imported) = {
+        let mut conn = state.games_db.lock().map_err(|_| AppError::MutexError)?;
+        persist_source_games(&mut conn, source_games).map_err(AppError::DatabaseError)?
+    };
     let message = format_import_summary("Local", inserted, updated);
     info!("{}", message);
 
@@ -253,7 +270,6 @@ pub fn rename_scan_source(
         .transaction()
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-    // Pega o label atual pra saber o que atualizar nos jogos
     let old_label: Option<String> = tx
         .query_row(
             "SELECT label FROM scan_sources WHERE id = ?1",
