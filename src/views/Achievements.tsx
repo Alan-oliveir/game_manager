@@ -1,186 +1,185 @@
 import { invoke } from '@tauri-apps/api/core';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { Loader2, Medal, Trophy } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { ChartBar, Clock, Loader2, Trophy } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-type AchievementPlatform = 'steam' | 'epic' | 'gog' | 'xbox';
+import {
+  AchievementCard,
+  AchievementLeaderboard,
+  AchievementSortDropdown,
+  AchievementStatsGrid,
+  PlatformBreakdown,
+  PlatformFilterDropdown,
+} from '@/components/achievements';
+import { useAchievementFilters } from '@/hooks/achievements';
+import { AchievementDetail } from '@/types';
+import { Button } from '@/ui/button';
+import { Separator } from '@/ui/separator';
 
-interface AchievementDetail {
-  source: AchievementPlatform;
-  game_id: string;
-  game_name: string;
-  achievement_name: string;
-  description: string | null;
-  icon_url: string | null;
-  rarity_percent: number | null;
-  rarity_slug: string | null;
-  category: string | null;
-  unlock_time: number;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+interface AchievementsProps {
+  cachedAchievements: AchievementDetail[];
+  setCachedAchievements: (list: AchievementDetail[]) => void;
+  cachedFetchedAt: number | null;
+  setCachedFetchedAt: (value: number | null) => void;
 }
 
-const PLATFORM_STYLES: Record<
-  AchievementPlatform,
-  { label: string; className: string }
-> = {
-  steam: { label: 'Steam', className: 'bg-sky-500/10 text-sky-500' },
-  epic: { label: 'Epic', className: 'bg-neutral-500/10 text-neutral-400' },
-  gog: { label: 'GOG', className: 'bg-purple-500/10 text-purple-400' },
-  xbox: { label: 'Xbox', className: 'bg-green-500/10 text-green-500' },
-};
-
-export default function Achievements() {
+export default function Achievements({
+  cachedAchievements,
+  setCachedAchievements,
+  cachedFetchedAt,
+  setCachedFetchedAt,
+}: Readonly<AchievementsProps>) {
   const { t } = useTranslation('common');
-  const [achievements, setAchievements] = useState<AchievementDetail[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [libraryFilter, setLibraryFilter] = useState<
-    AchievementPlatform | 'all'
-  >('all');
+  const [loading, setLoading] = useState(cachedAchievements.length === 0);
 
   useEffect(() => {
+    const isStale =
+      cachedFetchedAt == null || Date.now() - cachedFetchedAt > CACHE_TTL_MS;
+
+    if (!isStale && cachedAchievements.length > 0) {
+      setLoading(false);
+
+      return;
+    }
+
+    setLoading(true);
     invoke<AchievementDetail[]>('get_all_achievements')
-      .then(setAchievements)
+      .then(data => {
+        setCachedAchievements(data);
+        setCachedFetchedAt(Date.now());
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filtered = useMemo(
-    () =>
-      libraryFilter === 'all'
-        ? achievements
-        : achievements.filter(a => a.source === libraryFilter),
-    [achievements, libraryFilter]
-  );
+  const achievements = cachedAchievements;
 
-  const availableLibraries = useMemo(
-    () => Array.from(new Set(achievements.map(a => a.source))),
-    [achievements]
-  );
-
-  if (loading) {
-    return (
-      <div className="flex h-full flex-1 items-center justify-center">
-        <Loader2 className="text-primary h-10 w-10 animate-spin" />
-      </div>
-    );
-  }
+  const {
+    platformFilter,
+    togglePlatform,
+    availablePlatforms,
+    sort,
+    setSort,
+    visibleAchievements,
+    hasMore,
+    loadMore,
+    totalFiltered,
+  } = useAchievementFilters(achievements);
 
   return (
-    <div className="custom-scrollbar bg-background flex-1 overflow-y-auto p-8">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <div className="flex items-center gap-2">
-          <Trophy className="text-yellow-500" size={24} />
-          <h1 className="text-2xl font-bold">{t('achievements_title')}</h1>
-        </div>
-
-        {availableLibraries.length > 1 && (
-          <div className="flex flex-wrap gap-2">
-            <FilterChip
-              active={libraryFilter === 'all'}
-              onClick={() => setLibraryFilter('all')}
-              label={t('achievements_filter_all')}
-            />
-            {availableLibraries.map(lib => (
-              <FilterChip
-                key={lib}
-                active={libraryFilter === lib}
-                onClick={() => setLibraryFilter(lib)}
-                label={PLATFORM_STYLES[lib].label}
-              />
-            ))}
+    <div className="bg-background flex h-full flex-1 flex-col overflow-hidden">
+      <div className="border-border/40 shrink-0 border-b px-5 pt-5 pb-3 lg:px-8 lg:pt-6 lg:pb-4">
+        <div className="mb-2 flex items-center gap-2.5 lg:gap-3">
+          <div className="rounded-lg bg-purple-500/10 p-2 text-purple-500">
+            <Trophy size={24} className="lg:h-6 lg:w-6" />
           </div>
-        )}
+          <div>
+            <h1 className="text-xl font-bold lg:text-2xl">
+              {t('achievements_title')}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {t('achievements_description', { count: achievements.length })}
+            </p>
+          </div>
+        </div>
+      </div>
 
-        {filtered.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            {t('achievements_empty')}
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {filtered.map(ach => {
-              const library = PLATFORM_STYLES[ach.source];
+      <div className="custom-scrollbar flex-1 overflow-y-auto p-5 lg:p-8">
+        <div className="mx-auto max-w-7xl space-y-6">
+          {loading ? (
+            <div className="flex h-64 items-center justify-center">
+              <Loader2 className="text-primary h-10 w-10 animate-spin" />
+            </div>
+          ) : (
+            <>
+              {achievements.length > 0 && (
+                <div>
+                  <div className="mb-6 flex items-center gap-2">
+                    <div className="rounded-lg bg-purple-500/10 p-2 text-purple-400">
+                      <Clock size={24} />
+                    </div>
+                    <h2 className="text-2xl font-bold">
+                      {t('achievement_summary_section')}
+                    </h2>
+                  </div>
+                  <AchievementStatsGrid achievements={achievements} />
+                </div>
+              )}
 
-              return (
-                <div
-                  key={`${ach.source}-${ach.game_id}-${ach.achievement_name}`}
-                  className="bg-card hover:bg-accent/5 flex items-start gap-3 rounded-lg border p-4 transition-colors"
-                >
-                  {ach.icon_url ? (
-                    <img
-                      src={ach.icon_url}
-                      alt=""
-                      className="h-10 w-10 shrink-0 rounded"
+              <Separator />
+
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-lg bg-purple-500/10 p-2 text-purple-400">
+                    <Clock size={24} />
+                  </div>
+                  <h2 className="text-2xl font-bold">
+                    {t('achievement_list_section')}
+                  </h2>
+                </div>
+
+                <div className="flex gap-2">
+                  {availablePlatforms.length > 1 && (
+                    <PlatformFilterDropdown
+                      availablePlatforms={availablePlatforms}
+                      selected={platformFilter}
+                      onToggle={togglePlatform}
                     />
-                  ) : (
-                    <div className="shrink-0 rounded-full bg-yellow-500/10 p-2 text-yellow-500">
-                      <Medal size={18} />
+                  )}
+                  <AchievementSortDropdown sort={sort} onChange={setSort} />
+                </div>
+              </div>
+
+              {totalFiltered === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  {t('achievements_empty')}
+                </p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {visibleAchievements.map(ach => (
+                      <AchievementCard
+                        key={`${ach.source}-${ach.game_id}-${ach.achievement_name}`}
+                        achievement={ach}
+                      />
+                    ))}
+                  </div>
+
+                  {hasMore && (
+                    <div className="flex justify-end pt-2">
+                      <Button variant="outline" onClick={loadMore}>
+                        {t('achievements_load_more')}
+                      </Button>
                     </div>
                   )}
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-semibold">
-                        {ach.achievement_name}
-                      </p>
-                      {ach.rarity_percent != null && (
-                        <span className="text-muted-foreground shrink-0 text-[10px]">
-                          {ach.rarity_percent.toFixed(1)}%
-                        </span>
-                      )}
-                    </div>
-
-                    {ach.description && (
-                      <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
-                        {ach.description}
-                      </p>
-                    )}
-
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 overflow-hidden">
-                        <span
-                          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${library.className}`}
-                        >
-                          {library.label}
-                        </span>
-                        <p className="text-muted-foreground truncate text-xs">
-                          {ach.game_name}
-                        </p>
+                  {achievements.length > 0 && (
+                    <>
+                      <Separator />
+                      <div className="mb-6 flex items-center gap-2">
+                        <div className="rounded-lg bg-purple-500/10 p-2 text-purple-400">
+                          <ChartBar size={24} />
+                        </div>
+                        <h2 className="text-2xl font-bold">
+                          {t('achievements_statistics_section')}
+                        </h2>
                       </div>
-                      <span className="text-muted-foreground shrink-0 text-[10px] whitespace-nowrap">
-                        {formatDistanceToNow(new Date(ach.unlock_time * 1000), {
-                          addSuffix: true,
-                          locale: ptBR,
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+
+                      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-8">
+                        <AchievementLeaderboard achievements={achievements} />
+                        <PlatformBreakdown achievements={achievements} />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  label,
-}: Readonly<{ active: boolean; onClick: () => void; label: string }>) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-        active
-          ? 'bg-primary text-primary-foreground border-primary'
-          : 'text-muted-foreground hover:bg-accent/10 border-white/10'
-      }`}
-    >
-      {label}
-    </button>
   );
 }

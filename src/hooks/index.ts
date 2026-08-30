@@ -51,6 +51,9 @@ export * from './game_detail';
 // Plataforms hooks
 export * from './stores';
 
+// Achievements hooks
+export * from './achievements';
+
 // Special hooks (na raiz)
 export * from './useEnrichmentNotifications';
 export * from './useEnrichmentProgressNotifications';

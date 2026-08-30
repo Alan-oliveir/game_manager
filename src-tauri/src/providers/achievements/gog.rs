@@ -19,7 +19,26 @@ use crate::database::AppState;
 use crate::errors::AppError;
 use crate::providers::achievements::core::{AchievementDetail, AchievementPlatform, AchievementProvider, DashboardAchievement};
 use async_trait::async_trait;
+use std::collections::HashMap;
 use tauri::{AppHandle, Manager};
+
+// === STRUCTS ===
+
+struct UnlockedRow {
+    gog_id: String,
+    achievement_name: String,
+    unlock_time_raw: String,
+}
+
+struct UnlockedDetailRow {
+    gog_id: String,
+    achievement_name: String,
+    description: Option<String>,
+    icon_url: Option<String>,
+    rarity_percent: Option<f64>,
+    rarity_slug: Option<String>,
+    unlock_time_raw: String,
+}
 
 pub struct GogProvider;
 
@@ -54,9 +73,8 @@ impl AchievementProvider for GogProvider {
                 )
                     .map_err(|e| e.to_string())?;
 
-                // `best` escolhe, por conquista, a linha de tradução
-                // preferida (isLocalized=1 primeiro; se não houver,
-                // cai pro menor languageId como fallback determinístico).
+                // `best` escolhe, por conquista, a linha de tradução preferida (isLocalized=1 e se
+                // não houver, cai pro menor languageId como fallback determinístico).
                 let mut stmt = conn
                     .prepare(
                         "SELECT
@@ -102,17 +120,15 @@ impl AchievementProvider for GogProvider {
                 .map_err(|e| AppError::ExternalApiError(e.to_string()))?
                 .unwrap_or_default(); // esquema mudou / tabela ausente: não derruba o dashboard
 
+        let ids: Vec<String> = rows.iter().map(|r| r.gog_id.clone()).collect();
+        let names = resolve_game_names(app, &ids).await;
+
         let mut achievements = Vec::with_capacity(rows.len());
         for row in rows {
-            // TODO: confirmar o formato real de `unlockTime` (ISO8601?
-            // epoch em texto?) antes de finalizar esse parse.
             let Some(unlock_time) = parse_unlock_time(&row.unlock_time_raw) else {
                 continue;
             };
-
-            let game_name = resolve_game_name(app, &row.gog_id)
-                .await
-                .unwrap_or_else(|| row.gog_id.clone());
+            let game_name = names.get(&row.gog_id).cloned().unwrap_or_else(|| row.gog_id.clone());
 
             achievements.push(DashboardAchievement {
                 source: AchievementPlatform::Gog,
@@ -122,7 +138,6 @@ impl AchievementProvider for GogProvider {
                 game_id: row.gog_id,
             });
         }
-
         Ok(achievements)
     }
 
@@ -201,15 +216,15 @@ impl AchievementProvider for GogProvider {
                 .map_err(|e| AppError::ExternalApiError(e.to_string()))?
                 .unwrap_or_default();
 
+        let ids: Vec<String> = rows.iter().map(|r| r.gog_id.clone()).collect();
+        let names = resolve_game_names(app, &ids).await;
+
         let mut achievements = Vec::with_capacity(rows.len());
         for row in rows {
             let Some(unlock_time) = parse_unlock_time(&row.unlock_time_raw) else {
                 continue;
             };
-
-            let game_name = resolve_game_name(app, &row.gog_id)
-                .await
-                .unwrap_or_else(|| row.gog_id.clone());
+            let game_name = names.get(&row.gog_id).cloned().unwrap_or_else(|| row.gog_id.clone());
 
             achievements.push(AchievementDetail {
                 source: AchievementPlatform::Gog,
@@ -220,33 +235,15 @@ impl AchievementProvider for GogProvider {
                 icon_url: row.icon_url,
                 rarity_percent: row.rarity_percent,
                 rarity_slug: row.rarity_slug,
-                category: None, // GOG não expõe categoria de conquista.
+                category: None,
                 unlock_time,
             });
         }
-
         Ok(achievements)
     }
 }
 
-struct UnlockedRow {
-    gog_id: String,
-    achievement_name: String,
-    unlock_time_raw: String,
-}
-
-struct UnlockedDetailRow {
-    gog_id: String,
-    achievement_name: String,
-    description: Option<String>,
-    icon_url: Option<String>,
-    rarity_percent: Option<f64>,
-    rarity_slug: Option<String>,
-    unlock_time_raw: String,
-}
-
-/// Formato confirmado: 'YYYY-MM-DD HH:MM:SS', sem timezone no texto —
-/// o Galaxy grava esse horário em UTC.
+/// Formato: 'YYYY-MM-DD HH:MM:SS', sem timezone no texto — o Galaxy grava esse horário em UTC.
 fn parse_unlock_time(raw: &str) -> Option<i64> {
     let naive = chrono::NaiveDateTime::parse_from_str(raw, "%Y-%m-%d %H:%M:%S").ok()?;
     Some(naive.and_utc().timestamp())
@@ -255,27 +252,43 @@ fn parse_unlock_time(raw: &str) -> Option<i64> {
 /// Resolve o nome do jogo pela sua própria tabela `games`, casando
 /// `library = 'GOG'` com `library_game_id` (mesmo valor do `gogId`
 /// extraído do banco do Galaxy).
-///
-/// PLACEHOLDER: `database::get_connection` é um chute — troque pelo
-/// helper real que seu `database` module expõe pra abrir uma conexão
-/// (ou me manda a assinatura real que eu ajusto).
-async fn resolve_game_name(app: &AppHandle, gog_id: &str) -> Option<String> {
-    let app = app.clone();
-    let gog_id_num: i64 = gog_id.parse().ok()?;
+async fn resolve_game_names(app: &AppHandle, gog_ids: &[String]) -> HashMap<String, String> {
+    if gog_ids.is_empty() {
+        return HashMap::new();
+    }
 
-    tokio::task::spawn_blocking(move || -> Option<String> {
+    let app = app.clone();
+    let ids = gog_ids.to_vec();
+
+    tokio::task::spawn_blocking(move || -> HashMap<String, String> {
         let state: tauri::State<AppState> = app.state();
-        let conn = state.games_db.lock().ok()?;
-        conn.query_row(
-            "SELECT name FROM games WHERE library = 'GOG' AND library_game_id = ?1",
-            [gog_id_num],
-            |row| row.get(0),
-        )
-            .ok()
+        let Ok(conn) = state.games_db.lock() else {
+            return HashMap::new();
+        };
+
+        let placeholders = vec!["?"; ids.len()].join(",");
+        let sql = format!(
+            "SELECT library_game_id, name FROM games \
+             WHERE UPPER(library) = 'GOG' AND library_game_id IN ({placeholders})"
+        );
+
+        let Ok(mut stmt) = conn.prepare(&sql) else {
+            return HashMap::new();
+        };
+
+        let params: Vec<&dyn rusqlite::ToSql> =
+            ids.iter().map(|id| id as &dyn rusqlite::ToSql).collect();
+
+        let Ok(mapped) = stmt.query_map(params.as_slice(), |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        }) else {
+            return HashMap::new();
+        };
+
+        mapped.filter_map(Result::ok).collect()
     })
         .await
-        .ok()
-        .flatten()
+        .unwrap_or_default()
 }
 
 fn gog_db_path() -> Option<std::path::PathBuf> {

@@ -9,6 +9,7 @@ import {
 
 import { SortDirection, SortField, SortOption, ViewFilters } from '@/hooks';
 import {
+  AchievementDetail,
   Game,
   Giveaway,
   TrendingGame,
@@ -70,6 +71,11 @@ interface UIContextType {
   openAddModal: () => void;
   openEditModal: (game: Game) => void;
   closeAddModal: () => void;
+
+  achievementsCache: AchievementDetail[];
+  setAchievementsCache: (list: AchievementDetail[]) => void;
+  achievementsFetchedAt: number | null;
+  setAchievementsFetchedAt: (value: number | null) => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -198,6 +204,13 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
     null
   );
 
+  const [achievementsCache, setAchievementsCache] = useState<
+    AchievementDetail[]
+  >([]);
+  const [achievementsFetchedAt, setAchievementsFetchedAt] = useState<
+    number | null
+  >(null);
+
   const [enableUpdaterChecks, setEnableUpdaterChecks] = useState(true);
 
   const library = useSectionFilters('playlite_libraries');
@@ -265,6 +278,10 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
       openAddModal,
       openEditModal,
       closeAddModal,
+      achievementsCache,
+      setAchievementsCache,
+      achievementsFetchedAt,
+      setAchievementsFetchedAt,
     }),
     [
       activeSection,
@@ -296,6 +313,8 @@ export function UIProvider({ children }: Readonly<{ children: ReactNode }>) {
       openAddModal,
       openEditModal,
       closeAddModal,
+      achievementsCache,
+      achievementsFetchedAt,
     ]
   );
 

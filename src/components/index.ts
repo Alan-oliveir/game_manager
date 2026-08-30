@@ -31,3 +31,6 @@ export * from './wrappers';
 
 // Subscriptions
 export * from './subscriptions';
+
+// Achievements
+export * from './achievements';

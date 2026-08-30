@@ -1,3 +1,4 @@
+export * from './achievements';
 export * from './age_rating';
 export * from './errors';
 export * from './game';

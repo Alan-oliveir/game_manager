@@ -74,6 +74,10 @@ function AppContent() {
     setGiveawaysCache,
     giveawaysFetchedAt,
     setGiveawaysFetchedAt,
+    achievementsCache,
+    setAchievementsCache,
+    achievementsFetchedAt,
+    setAchievementsFetchedAt,
     openAddModal,
     openEditModal,
     closeAddModal,
@@ -270,7 +274,14 @@ function AppContent() {
           />
         );
       case 'achievements':
-        return <Achievements />;
+        return (
+          <Achievements
+            cachedAchievements={achievementsCache}
+            setCachedAchievements={setAchievementsCache}
+            cachedFetchedAt={achievementsFetchedAt}
+            setCachedFetchedAt={setAchievementsFetchedAt}
+          />
+        );
       case 'playlist':
         return (
           <Playlist

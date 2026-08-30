@@ -18,8 +18,9 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { RecentAchievements } from '@/components/achievements';
 import { StandardGameCard, StatCard } from '@/components/cards';
-import { ActionButton, Hero, RecentAchievements } from '@/components/common';
+import { ActionButton, Hero } from '@/components/common';
 import {
   EAPlaySection,
   GamePassSection,

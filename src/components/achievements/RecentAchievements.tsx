@@ -5,28 +5,9 @@ import { ChevronRight, Medal, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Button } from '@/ui/button';
-import { Skeleton } from '@/ui/skeleton';
-
-type AchievementPlatform = 'steam' | 'epic' | 'gog' | 'xbox';
-
-interface Achievement {
-  source: AchievementPlatform;
-  game_name: string;
-  achievement_name: string;
-  unlock_time: number;
-  game_id: string;
-}
-
-const PLATFORM_STYLES: Record<
-  AchievementPlatform,
-  { label: string; className: string }
-> = {
-  steam: { label: 'Steam', className: 'bg-sky-500/10 text-sky-500' },
-  epic: { label: 'Epic', className: 'bg-neutral-500/10 text-neutral-400' },
-  gog: { label: 'GOG', className: 'bg-purple-500/10 text-purple-400' },
-  xbox: { label: 'Xbox', className: 'bg-green-500/10 text-green-500' },
-};
+import { DashboardAchievement, PLATFORM_STYLES } from '@/types';
+import { Button } from '@/ui/button.tsx';
+import { Skeleton } from '@/ui/skeleton.tsx';
 
 const PREVIEW_LIMIT = 3;
 
@@ -38,11 +19,11 @@ export function RecentAchievements({
   onViewAll,
 }: Readonly<RecentAchievementsProps>) {
   const { t } = useTranslation('common');
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [achievements, setAchievements] = useState<DashboardAchievement[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    invoke<Achievement[]>('get_recent_achievements')
+    invoke<DashboardAchievement[]>('get_recent_achievements')
       .then(setAchievements)
       .catch(console.error)
       .finally(() => setLoading(false));

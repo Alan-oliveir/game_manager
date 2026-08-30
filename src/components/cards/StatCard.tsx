@@ -6,12 +6,13 @@ interface StatCardProps {
   value: string | number;
   color: string;
   bg: string;
+  sublabel?: string;
 }
 
 /**
  * Card de estatística usado na página Início (total de jogos, tempo jogado,
- * favoritos, gênero favorito). Puramente apresentacional — recebe cor e
- * ícone já resolvidos pelo componente pai.
+ * favoritos, gênero favorito) e na página de conquistas. Puramente
+ * apresentacional — recebe cor eícone já resolvidos pelo componente pai.
  */
 export function StatCard({
   icon,
@@ -19,13 +20,17 @@ export function StatCard({
   value,
   color,
   bg,
+  sublabel,
 }: Readonly<StatCardProps>) {
   return (
     <div className="bg-card border-border hover:border-primary/50 flex items-center gap-4 rounded-xl border p-5 transition-colors">
       <div className={`rounded-lg p-3 ${bg} ${color}`}>{icon}</div>
-      <div>
+      <div className="min-w-0">
         <p className="text-muted-foreground text-sm">{label}</p>
-        <p className="text-2xl font-bold">{value}</p>
+        <p className="truncate text-2xl font-bold">{value}</p>
+        {sublabel && (
+          <p className="text-muted-foreground truncate text-xs">{sublabel}</p>
+        )}
       </div>
     </div>
   );
