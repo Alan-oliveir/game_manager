@@ -12,11 +12,7 @@
 //!   dos metadados. IGDB/Steam entram como candidatas de fallback (priority
 //!   1 e 2) e são persistidas em `game_images`, nunca mais em `games.cover_url`.
 
-use super::shared::{
-    apply_hltb_metadata, fetch_hltb_metadata, fetch_steam_reviews, fetch_steam_store_data,
-    resolve_steam_app_id, save_game_details, CoverCandidate, EnrichCompletePayload, EnrichProgress,
-    ProcessedGameDetails,
-};
+use super::shared::{apply_hltb_metadata, apply_igdb_time_to_beat_fallback, fetch_hltb_metadata, fetch_steam_reviews, fetch_steam_store_data, resolve_steam_app_id, save_game_details, CoverCandidate, EnrichCompletePayload, EnrichProgress, ProcessedGameDetails};
 use crate::database::cache;
 use crate::database::game_mods::get_cached_nexus_games;
 use crate::database::libraries::NewlyImportedGame;
@@ -340,10 +336,12 @@ async fn enrich_game_metadata(
     let mut found_raw_tags: Vec<String> = Vec::new();
     let mut igdb_dlcs: Vec<igdb::core::IgdbDlc> = Vec::new();
     let mut igdb_found = false;
+    let mut igdb_game_id: Option<i64> = None;
 
     match igdb_result {
         Ok(Some(game)) => {
             igdb_found = true;
+            igdb_game_id = Some(game.id);
             let mapped = igdb::core::map_igdb_game(&game, game_id);
             found_raw_tags = mapped.details.tags.iter().map(|t| t.slug.clone()).collect();
             igdb_dlcs = mapped.dlcs;
@@ -427,8 +425,19 @@ async fn enrich_game_metadata(
         details.external_links = serde_json::to_string(&links_map).ok();
     }
 
-    if let Some(hltb_det) = hltb_result {
-        apply_hltb_metadata(&mut details, &hltb_det);
+    match hltb_result {
+        Some(hltb_det) => apply_hltb_metadata(&mut details, &hltb_det),
+        None => {
+            if let Some(igdb_id) = igdb_game_id {
+                match igdb::fetch::fetch_time_to_beat(app, igdb_id).await {
+                    Ok(Some(ttb)) => apply_igdb_time_to_beat_fallback(&mut details, &ttb),
+                    Ok(None) => {
+                        warn!("IGDB time_to_beat: sem dados para '{}' (id {})", name, igdb_id);
+                    }
+                    Err(e) => warn!("IGDB time_to_beat falhou para '{}': {}", name, e),
+                }
+            }
+        }
     }
 
     (

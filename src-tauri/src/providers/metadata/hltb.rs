@@ -2,7 +2,6 @@ use crate::database::cache;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::collections::HashSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -62,58 +61,16 @@ impl HltbClient {
         }
     }
 
-    /// Gera os candidatos de endpoints mesclando descobertas dinâmicas e fallbacks históricos
-    async fn build_endpoint_candidates(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-        let mut candidates = Vec::new();
-
-        if let Ok(html) = self.client.get(&self.base_url).send().await?.text().await {
-            let script_regex = Regex::new(r#"src=["']([^"']+\.js)["']"#)?;
-            let script_urls: Vec<String> = script_regex
-                .captures_iter(&html)
-                .map(|cap| cap[1].to_string())
-                .collect();
-
-            let fetch_regex = Regex::new(
-                r#"(?i)fetch\s*\(\s*["']/api/([a-zA-Z0-9_/-]+)[^"']*["']\s*,\s*\{[^}]*method:\s*["']POST["']"#,
-            )?;
-
-            for url in script_urls {
-                let full_url = if url.starts_with("http") {
-                    url.clone()
-                } else if url.starts_with('/') {
-                    format!("{}{}", self.base_url, url)
-                } else {
-                    format!("{}/{}", self.base_url, url)
-                };
-
-                if let Ok(script_content) = self.client.get(&full_url).send().await?.text().await {
-                    if let Some(cap) = fetch_regex.captures(&script_content) {
-                        let path_suffix = cap[1].to_string();
-                        let base_path = path_suffix.split('/').next().unwrap_or("").to_string();
-                        candidates.push(format!("/api/{}", base_path));
-                        tracing::debug!("HLTB: endpoint descoberto dinamicamente: /api/{}", base_path);
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Fallbacks históricos
-        let fallbacks = vec!["/api/bleed", "/api/finder", "/api/search", "/api/s"];
-        for f in fallbacks {
-            candidates.push(f.to_string());
-        }
-
-        // Remove duplicatas mantendo a ordem (preferência para descoberta dinâmica)
-        let mut unique_candidates = Vec::new();
-        let mut seen = HashSet::new();
-        for c in candidates {
-            if seen.insert(c.clone()) {
-                unique_candidates.push(c);
-            }
-        }
-
-        Ok(unique_candidates)
+    /// Candidatos de endpoint de busca, em ordem de preferência. `/api/search/site` é o endpoint
+    /// confirmado (ago/2026); os demais ficam como fallback histórico.
+    fn build_endpoint_candidates(&self) -> Vec<String> {
+        vec![
+            "/api/search/site".to_string(),
+            "/api/bleed".to_string(),
+            "/api/finder".to_string(),
+            "/api/search".to_string(),
+            "/api/s".to_string(),
+        ]
     }
 
     /// Extrai dinamicamente as chaves (auth_token, key, val) do JSON
@@ -213,8 +170,8 @@ impl HltbClient {
             if let Some(val) = obj.get(*key) {
                 if let Some(num) = val.as_f64() {
                     if num > 0.0 {
-                        // Trata payloads antigos que expunham em segundos
-                        let hours = if num > 500.0 { num / 3600.0 } else { num };
+                        // API atual sempre retorna em segundos (verificado via /api/search/site)
+                        let hours = num / 3600.0;
                         return Some((hours * 100.0).round() / 100.0);
                     }
                 }
@@ -281,7 +238,7 @@ impl HltbClient {
         &self,
         game_name: &str,
     ) -> Result<Vec<HltbEntry>, Box<dyn std::error::Error>> {
-        let candidates = self.build_endpoint_candidates().await?;
+        let candidates = self.build_endpoint_candidates();
         let (endpoint, auth) = self.fetch_search_token(candidates).await?;
 
         let search_url = format!("{}{}", self.base_url, endpoint);

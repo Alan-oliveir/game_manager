@@ -254,6 +254,29 @@ pub fn apply_hltb_metadata(details: &mut ProcessedGameDetails, entry: &hltb::Hlt
     details.external_links = serde_json::to_string(&links_map).ok();
 }
 
+/// Converte segundos IGDB para horas, seguindo o mesmo arredondamento de `normalize_time`.
+fn secs_to_hours(secs: Option<i64>) -> Option<f64> {
+    secs.filter(|s| *s > 0)
+        .map(|s| ((s as f64 / 3600.0) * 100.0).round() / 100.0)
+}
+
+/// Preenche os campos de tempo de jogo com dados da IGDB SOMENTE quando o HLTB não retornou nada
+/// (`details.hltb_main_story.is_none()`), preservando a prioridade do HLTB quando disponível.
+pub fn apply_igdb_time_to_beat_fallback(
+    details: &mut ProcessedGameDetails,
+    ttb: &crate::providers::metadata::igdb::models::IgdbTimeToBeat,
+) {
+    if details.hltb_main_story.is_none() {
+        details.hltb_main_story = secs_to_hours(ttb.hastily);
+    }
+    if details.hltb_main_extra.is_none() {
+        details.hltb_main_extra = secs_to_hours(ttb.normally);
+    }
+    if details.hltb_completionist.is_none() {
+        details.hltb_completionist = secs_to_hours(ttb.completely);
+    }
+}
+
 // === PERSISTÊNCIA ===
 
 /// Salva detalhes do jogo no banco. Aceita tanto Connection quanto Transaction (via Deref trait)

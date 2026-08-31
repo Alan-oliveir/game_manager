@@ -1,4 +1,4 @@
-import { Medal, Trophy } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { useAchievementLeaderboards } from '@/hooks/achievements';
@@ -32,11 +32,8 @@ export function AchievementLeaderboard({
 
           return (
             <div key={game.key} className="flex w-full items-center gap-3 p-2">
-              <div className="text-muted-foreground w-6 text-center font-bold">
+              <div className="text-muted-foreground bg-muted flex w-6 justify-center rounded font-bold">
                 {index + 1}
-              </div>
-              <div className="bg-muted flex h-16 w-12 shrink-0 items-center justify-center rounded text-yellow-500">
-                <Medal size={20} />
               </div>
               <div className="min-w-0 flex-1">
                 <h4 className="truncate text-sm font-medium">

@@ -10,9 +10,9 @@
 //! - Reutiliza `ProcessedGameDetails` e `save_game_details` de `enrichment.rs`.
 
 use crate::commands::metadata::shared::{
-    apply_hltb_metadata, fetch_hltb_metadata, fetch_steam_reviews, fetch_steam_store_data,
-    resolve_steam_app_id, save_game_details, EnrichCompletePayload, EnrichProgress,
-    ProcessedGameDetails,
+    apply_hltb_metadata, apply_igdb_time_to_beat_fallback, fetch_hltb_metadata,
+    fetch_steam_reviews, fetch_steam_store_data, resolve_steam_app_id, save_game_details,
+    EnrichCompletePayload, EnrichProgress, ProcessedGameDetails,
 };
 use crate::constants::REQUISITIONS_PER_BATCH;
 use crate::database::cache;
@@ -26,6 +26,7 @@ use rusqlite::Connection;
 use std::collections::{HashMap, HashSet};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tracing::{info, warn};
+
 // === ESTRUTURAS DE DADOS ===
 
 struct MissingMetadataBatchItem {
@@ -182,10 +183,12 @@ async fn process_missing_metadata(
     let mut found_raw_tags: Vec<String> = Vec::new();
     let mut igdb_dlcs: Vec<igdb::core::IgdbDlc> = Vec::new();
     let mut igdb_found = false;
+    let mut igdb_game_id: Option<i64> = None;
 
     match igdb_result {
         Ok(Some(game)) => {
             igdb_found = true;
+            igdb_game_id = Some(game.id);
             let mapped = igdb::core::map_igdb_game(&game, game_id);
             found_raw_tags = mapped.details.tags.iter().map(|t| t.slug.clone()).collect();
             igdb_dlcs = mapped.dlcs;
@@ -258,8 +261,22 @@ async fn process_missing_metadata(
         details.external_links = serde_json::to_string(&links_map).ok();
     }
 
-    if let Some(hltb_det) = hltb_result {
-        apply_hltb_metadata(&mut details, &hltb_det);
+    match hltb_result {
+        Some(hltb_det) => apply_hltb_metadata(&mut details, &hltb_det),
+        None => {
+            if let Some(igdb_id) = igdb_game_id {
+                match igdb::fetch::fetch_time_to_beat(app, igdb_id).await {
+                    Ok(Some(ttb)) => apply_igdb_time_to_beat_fallback(&mut details, &ttb),
+                    Ok(None) => {
+                        warn!(
+                            "IGDB time_to_beat: sem dados para '{}' (id {})",
+                            name, igdb_id
+                        );
+                    }
+                    Err(e) => warn!("IGDB time_to_beat falhou para '{}': {}", name, e),
+                }
+            }
+        }
     }
 
     (details, found_raw_tags, igdb_dlcs)
@@ -276,7 +293,12 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
 
         // Marca início — se o app fechar/crashar antes do fim, o marcador persiste e o próximo boot detecta a interrupção.
         if let Ok(cache_conn) = state.cache_db.lock() {
-            let _ = cache::save_cached_api_data(&cache_conn, "app_state", "enrichment_in_progress", "1");
+            let _ = cache::save_cached_api_data(
+                &cache_conn,
+                "app_state",
+                "enrichment_in_progress",
+                "1",
+            );
         }
 
         let mut all_session_tags: HashSet<String> = HashSet::new();
@@ -396,7 +418,8 @@ pub async fn fill_missing_metadata(app: AppHandle) -> Result<(), AppError> {
 
         // Remove o marcador se terminou sem crash.
         if let Ok(cache_conn) = state.cache_db.lock() {
-            let _ = cache::delete_cached_api_data(&cache_conn, "app_state", "enrichment_in_progress");
+            let _ =
+                cache::delete_cached_api_data(&cache_conn, "app_state", "enrichment_in_progress");
         }
 
         info!("fill_missing_metadata concluído.");

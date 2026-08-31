@@ -26,6 +26,7 @@ pub mod analysis;
 pub mod cf_aggregator;
 pub mod core;
 pub mod filtering;
+pub mod orchestration;
 pub mod profile;
 pub mod ranking;
 pub mod reports;
@@ -41,7 +42,10 @@ pub use core::{
     RecommendationReason, SeriesLimit, UserPreferenceVector, UserSettings,
 };
 pub use filtering::{apply_diversity_rules, apply_hard_filters};
+pub use orchestration::*;
 pub use profile::calculate_user_profile;
 pub use ranking::{rank_games_collaborative, rank_games_content_based, rank_games_hybrid};
 pub use reports::{export_games_csv, export_report_json, export_report_txt};
-pub use scoring::{normalize_score, score_game_cb, score_game_cb_detailed, DetailedScoreComponents};
+pub use scoring::{
+    normalize_score, score_game_cb, score_game_cb_detailed, DetailedScoreComponents,
+};

@@ -125,6 +125,7 @@ pub fn get_tag_stats() -> TagStats {
 }
 
 /// Gera relatório de análise com tags normalizadas
+/// TODO - mudar o nome desta função para não confundir com a do sistema de recomendação com o mesmo nome.
 pub fn generate_analysis_report(
     app: &AppHandle,
     encountered_slugs: HashSet<String>,

@@ -1,5 +1,5 @@
 use crate::providers::metadata::igdb::client::igdb_request;
-use crate::providers::metadata::igdb::models::{IgdbGame, IgdbNamed};
+use crate::providers::metadata::igdb::models::{IgdbGame, IgdbNamed, IgdbTimeToBeat};
 use serde::Deserialize;
 use tauri::AppHandle;
 
@@ -90,4 +90,17 @@ pub async fn search_and_resolve(app: &AppHandle, name: &str) -> Result<Option<Ig
     }
 
     Ok(None)
+}
+
+pub async fn fetch_time_to_beat(
+    app: &AppHandle,
+    igdb_game_id: i64,
+) -> Result<Option<IgdbTimeToBeat>, String> {
+    let query = format!(
+        "fields game_id,hastily,normally,completely; where game_id = {igdb_game_id};"
+    );
+    let body = igdb_request(app, "game_time_to_beats", &query).await?;
+    let mut results: Vec<IgdbTimeToBeat> =
+        serde_json::from_str(&body).map_err(|e| e.to_string())?;
+    Ok(results.pop())
 }

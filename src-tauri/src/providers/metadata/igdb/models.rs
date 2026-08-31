@@ -65,6 +65,14 @@ pub struct IgdbExpansionRef {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct IgdbTimeToBeat {
+    pub game_id: i64,
+    pub hastily: Option<i64>,
+    pub normally: Option<i64>,
+    pub completely: Option<i64>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct IgdbGame {
     pub id: i64,
     pub name: String,

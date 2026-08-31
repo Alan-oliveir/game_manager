@@ -196,11 +196,11 @@ pub fn run() {
             commands::settings::get_app_language,
             commands::settings::set_app_language,
             // Comandos de Recomendação
-            commands::recommendation::core::get_user_profile,
-            commands::recommendation::core::recommend_hybrid_library,
-            commands::recommendation::core::recommend_collaborative_library,
-            commands::recommendation::core::recommend_from_library,
-            commands::recommendation::analysis::generate_recommendation_analysis,
+            commands::recommendation::get_user_profile,
+            commands::recommendation::recommend_hybrid_library,
+            commands::recommendation::recommend_collaborative_library,
+            commands::recommendation::recommend_from_library,
+            commands::recommendation::generate_recommendation_analysis,
             // Comandos de Tradução de Descrição
             commands::translation::translate_description,
             // Comandos de Conquistas de Jogos
